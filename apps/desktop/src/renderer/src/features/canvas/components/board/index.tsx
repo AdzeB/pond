@@ -1,11 +1,35 @@
-import type {
-  Canvas,
-  CanvasColor,
-  CanvasConnector,
-  CanvasContent,
-  CanvasItem,
-  CanvasOutline,
-  CanvasSide,
+import {
+  IconBorder,
+  IconBroom,
+  IconCode2,
+  IconContrast,
+  IconFill,
+  IconGroup,
+  IconLineWeight,
+  IconLock,
+  IconLockOpen,
+  IconRename,
+  IconSection,
+  IconTable,
+  IconTextA,
+  IconTextBold,
+  IconTextStrikethrough,
+  IconTypography,
+  IconUngroup,
+} from "@pond/icons";
+import {
+  type Canvas,
+  type CanvasAlign,
+  CanvasClipSchema,
+  type CanvasColor,
+  type CanvasConnector,
+  type CanvasContent,
+  type CanvasItem,
+  type CanvasOutline,
+  type CanvasSide,
+  type CanvasTheme,
+  type CanvasValign,
+  type CanvasWeight,
 } from "@shared/canvas-contracts";
 import {
   addEdge,
@@ -23,6 +47,7 @@ import {
   type OnSelectionChangeParams,
   ReactFlow,
   type Rect,
+  reconnectEdge,
   SelectionMode,
   useReactFlow,
   type Viewport,
@@ -30,51 +55,137 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { isLibrarySaveDrag, saveDropIds } from "@/features/saves";
+import {
+  isLibrarySaveDrag,
+  type PasteImport,
+  pasteImportOf,
+  runPasteImport,
+  saveDropIds,
+} from "@/features/saves";
 import {
   openSave,
   primarySelection,
   selection,
 } from "@/features/saves/navigation";
 import { ensureSaves, pool } from "@/features/saves/pool";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { isEditableTarget } from "@/shared/lib/editable-target";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
 import { claimUndo } from "@/shared/lib/undo-owner";
 import {
+  alignIcon,
+  alignItems,
+  arrangeItems,
+  boardItems,
+  borderItems,
+  fillItems,
+  fontItems,
+  languageItems,
+  type MenuTarget,
+  sizeItems,
+  type TableChange,
+  tableItems,
+  themeItems,
+  weightItems,
+} from "../../lib/board-menu";
+import {
+  type CanvasCommand,
+  commandForKey,
+  glyphsFor,
+} from "../../lib/commands";
+import {
+  alignFrames,
+  branchOf,
   type CanvasNode,
   type CanvasSnapshot,
   CONNECTOR_STYLE,
   type ConnectorEdge,
   type ConnectorStyle,
+  clipOf,
+  clipText,
+  codeAt,
   contentOf,
   createHistory,
+  distributeFrames,
   drawingFrom,
   duplicateOf,
   figureAt,
+  frameOf,
   GRID,
+  isLocked,
   newId,
   noteAt,
+  pasteOf,
   placeSaves,
+  reorder,
+  resizeTable,
   type StrokePoint,
+  sectionAround,
+  sectionAt,
   snapshotOf,
+  tableAt,
   textAt,
+  tidyFrames,
   toEdge,
+  toItem,
   toNode,
+  topicAt,
+  withBox,
+  withData,
+  withGroup,
+  withLock,
 } from "../../lib/document";
+import {
+  eraseDrawings,
+  flipped,
+  itemForRect,
+  noteFromText,
+  notesSorted,
+  quickPair,
+  type StampKind,
+  turned,
+} from "../../lib/edit";
+import { renderBoard } from "../../lib/export";
+import type { TextStyle } from "../../lib/text-style";
+import {
+  type Box,
+  type Corner,
+  groupScale,
+  MIN_SIZE,
+  type Size,
+  scaleBox,
+} from "../../lib/transform";
 import { canvases } from "../../state/canvases";
+import { Affordance } from "../affordance";
+import { CodeItem } from "../code-item";
 import { ConnectorEdge as ConnectorEdgeView } from "../connector-edge";
 import { DrawLayer } from "../draw-layer";
 import { DrawingItem } from "../drawing-item";
 import { FigureItem } from "../figure-item";
+import { Guides } from "../guides";
 import { NoteItem } from "../note-item";
+import { Picker } from "../picker";
+import { PlaceLayer } from "../place-layer";
 import { SaveItem } from "../save-item";
-import { SelectionBar } from "../selection-bar";
+import { SectionItem } from "../section-item";
+import { SelectionBar, type SelectionControl } from "../selection-bar";
+import { SelectionFrame } from "../selection-frame";
+import { TableItem } from "../table-item";
 import { TextItem } from "../text-item";
-import { type CanvasTool, Tools, toolForKey } from "../tools";
+import {
+  type CanvasTool,
+  COLORED_TOOLS,
+  type PenMode,
+  STAMP_TOOLS,
+  Tools,
+  toolForKey,
+} from "../tools";
+import { TopicItem } from "../topic-item";
 import { Zoom } from "../zoom";
 import { type BoardActions, BoardContext } from "./context";
 import styles from "./styles.module.css";
+import { useSettle } from "./use-settle";
 
 const NODE_TYPES: NodeTypes = {
   save: SaveItem,
@@ -82,33 +193,100 @@ const NODE_TYPES: NodeTypes = {
   text: TextItem,
   drawing: DrawingItem,
   figure: FigureItem,
+  section: SectionItem,
+  table: TableItem,
+  code: CodeItem,
+  topic: TopicItem,
 };
 
 const EDGE_TYPES: EdgeTypes = { connector: ConnectorEdgeView };
 
-const SNAP_GRID: [number, number] = [GRID, GRID];
+const DEFAULT_LANGUAGE = "typescript";
 const SAVE_DELAY_MS = 400;
 const PEN_SIZE = 4;
+const HIGHLIGHT_SIZE = 28;
+const CLIP_TYPE = "application/x-pond-canvas";
 
-function withColor(node: CanvasNode, color: CanvasColor): CanvasNode {
-  if (!node.selected) return node;
-  if (node.type === "note") return { ...node, data: { ...node.data, color } };
-  if (node.type === "drawing")
-    return { ...node, data: { ...node.data, color } };
-  if (node.type === "figure") return { ...node, data: { ...node.data, color } };
-  return node;
+function parseClip(raw: string): CanvasSnapshot | null {
+  if (!raw) return null;
+  try {
+    const parsed = CanvasClipSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
 }
 
-function withText(node: CanvasNode, id: string, text: string): CanvasNode {
-  if (node.id !== id) return node;
-  if (node.type === "note") return { ...node, data: { ...node.data, text } };
-  if (node.type === "text") return { ...node, data: { ...node.data, text } };
-  if (node.type === "figure") return { ...node, data: { ...node.data, text } };
-  return node;
+type ColoredNode = Exclude<CanvasNode, { type: "save" | "text" | "code" }>;
+type StyledNode = Extract<
+  CanvasNode,
+  { type: "note" | "text" | "figure" | "table" | "topic" }
+>;
+
+function isColored(node: CanvasNode): node is ColoredNode {
+  return node.type !== "save" && node.type !== "text" && node.type !== "code";
+}
+
+function isStyled(node: CanvasNode): node is StyledNode {
+  return (
+    node.type === "note" ||
+    node.type === "text" ||
+    node.type === "figure" ||
+    node.type === "table" ||
+    node.type === "topic"
+  );
+}
+
+function canQuickCreate(node: CanvasNode): boolean {
+  return (
+    !isLocked(node) &&
+    (node.type === "note" ||
+      node.type === "figure" ||
+      node.type === "text" ||
+      node.type === "topic")
+  );
+}
+
+function withText(node: CanvasNode, text: string): CanvasNode {
+  switch (node.type) {
+    case "note":
+    case "text":
+    case "figure":
+    case "code":
+    case "topic":
+      return withData(node, { text });
+    case "section":
+      return withData(node, { title: text });
+    default:
+      return node;
+  }
 }
 
 function hasText(node: CanvasNode): boolean {
-  return node.type === "note" || node.type === "text" || node.type === "figure";
+  return node.type !== "save" && node.type !== "drawing";
+}
+
+function inkSize(
+  ink: "pen" | "highlight" | undefined,
+  weight: CanvasWeight,
+): number {
+  const base = ink === "highlight" ? HIGHLIGHT_SIZE : PEN_SIZE;
+  return weight === "thick" ? base * 2 : base;
+}
+
+/** Notes read from the top; figures and topics center their text. */
+function defaultValign(node: StyledNode): CanvasValign {
+  return node.type === "note" ? "top" : "middle";
+}
+
+function defaultAlign(node: StyledNode): CanvasAlign {
+  return node.type === "figure" || node.type === "topic" ? "center" : "left";
+}
+
+function sharedValue<Value>(values: readonly Value[]): Value | null {
+  const unique = new Set(values);
+  const [only] = unique;
+  return unique.size === 1 && only !== undefined ? only : null;
 }
 
 function nearestSide(bounds: Rect, point: XYPosition): CanvasSide {
@@ -121,15 +299,12 @@ function nearestSide(bounds: Rect, point: XYPosition): CanvasSide {
   return gaps.reduce((best, gap) => (gap[1] < best[1] ? gap : best))[0];
 }
 
-function textOf(
-  snapshot: { nodes: readonly CanvasNode[]; edges: readonly ConnectorEdge[] },
-  id: string,
-): string | null {
-  const node = snapshot.nodes.find((entry) => entry.id === id);
-  if (node?.type === "note" || node?.type === "text" || node?.type === "figure")
-    return node.data.text;
-  const edge = snapshot.edges.find((entry) => entry.id === id);
-  return edge ? (edge.data?.label ?? "") : null;
+function entryOf(snapshot: CanvasSnapshot, id: string): string {
+  return JSON.stringify(
+    snapshot.items.find((entry) => entry.id === id) ??
+      snapshot.connectors.find((entry) => entry.id === id) ??
+      null,
+  );
 }
 
 interface BoardProps {
@@ -146,21 +321,42 @@ export function Board({ canvas }: BoardProps) {
     canvas.connectors.map(toEdge),
   );
   const [tool, setTool] = useState<CanvasTool>("select");
+  const [penMode, setPenMode] = useState<PenMode>("marker");
+  const [kept, setKept] = useState(false);
+  const [croppingId, setCroppingId] = useState<string | null>(null);
   const [color, setColor] = useState<CanvasColor>("yellow");
   const [outline, setOutline] = useState<CanvasOutline>("rectangle");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [savesReady, setSavesReady] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [history] = useState(() => createHistory());
 
   const latest = useRef({ nodes, edges });
   latest.current = { nodes, edges };
+  const {
+    guides,
+    settle,
+    begin: beginSettle,
+    end: endSettle,
+  } = useSettle(
+    useCallback(() => latest.current.nodes, []),
+    useCallback(() => flow.getZoom(), [flow]),
+  );
   const viewport = useRef<Viewport>(canvas.viewport);
   const editStart = useRef<{ id: string; snapshot: CanvasSnapshot } | null>(
     null,
   );
+  const editing = useRef<string | null>(null);
   const ownsSelection = useRef(false);
+  const pointer = useRef<XYPosition | null>(null);
+  const menuKind = useRef<MenuTarget["kind"]>("pane");
+  const groupResize = useRef<{
+    corner: Corner;
+    bounds: Box;
+    members: { id: string; box: Box; min: Size }[];
+  } | null>(null);
 
   const current = useCallback(
     () => snapshotOf(latest.current.nodes, latest.current.edges),
@@ -171,7 +367,14 @@ export function Board({ canvas }: BoardProps) {
     [current, history],
   );
 
+  const beginEdit = useCallback((id: string, start: CanvasSnapshot | null) => {
+    editStart.current = start ? { id, snapshot: start } : null;
+    editing.current = id;
+    setEditingId(id);
+  }, []);
+
   const restore = useCallback((snapshot: CanvasSnapshot) => {
+    editing.current = null;
     setEditingId(null);
     editStart.current = null;
     setNodes(snapshot.items.map(toNode));
@@ -195,12 +398,9 @@ export function Board({ canvas }: BoardProps) {
         ...(options?.connectors ?? []).map(toEdge),
       ]);
       const first = items[0];
-      if (options?.edit && first && added.size === 1) {
-        editStart.current = null;
-        setEditingId(first.id);
-      }
+      if (options?.edit && first && added.size === 1) beginEdit(first.id, null);
     },
-    [record],
+    [beginEdit, record],
   );
 
   const viewCenter = useCallback((): XYPosition => {
@@ -326,9 +526,11 @@ export function Board({ canvas }: BoardProps) {
   useEffect(() => () => flush(), [flush]);
 
   const onNodesChange = useCallback(
-    (changes: NodeChange<CanvasNode>[]) =>
-      setNodes((existing) => applyNodeChanges(changes, existing)),
-    [],
+    (changes: NodeChange<CanvasNode>[]) => {
+      const settled = settle(changes);
+      setNodes((existing) => applyNodeChanges(settled, existing));
+    },
+    [settle],
   );
   const onEdgesChange = useCallback(
     (changes: EdgeChange<ConnectorEdge>[]) =>
@@ -348,6 +550,18 @@ export function Board({ canvas }: BoardProps) {
           },
           existing,
         ),
+      );
+    },
+    [record],
+  );
+  const onReconnect = useCallback(
+    (previous: ConnectorEdge, connection: Connection) => {
+      if (connection.source === connection.target) return;
+      record();
+      setEdges((existing) =>
+        reconnectEdge(previous, connection, existing, {
+          shouldReplaceId: false,
+        }),
       );
     },
     [record],
@@ -402,24 +616,122 @@ export function Board({ canvas }: BoardProps) {
 
   const onStroke = useCallback(
     (points: StrokePoint[], size: number) => {
-      const drawing = drawingFrom(points, color, size);
+      const drawing = drawingFrom(
+        points,
+        color,
+        size,
+        penMode === "highlight" ? "highlight" : undefined,
+      );
       if (drawing) insert([drawing]);
     },
-    [color, insert],
+    [color, insert, penMode],
+  );
+
+  const onErase = useCallback(
+    (points: StrokePoint[]) => {
+      const next = eraseDrawings(current().items, points, 18 / flow.getZoom());
+      if (!next) return;
+      record();
+      const selectedIds = new Set(
+        latest.current.nodes.flatMap((node) =>
+          node.selected ? [node.id] : [],
+        ),
+      );
+      setNodes(
+        next.map((item) => ({
+          ...toNode(item),
+          selected: selectedIds.has(item.id),
+        })),
+      );
+    },
+    [current, flow, record],
   );
 
   const recolor = (next: CanvasColor) => {
     const recolors = latest.current.nodes.some(
-      (node) =>
-        node.selected &&
-        (node.type === "note" ||
-          node.type === "drawing" ||
-          node.type === "figure") &&
-        node.data.color !== next,
+      (node) => node.selected && isColored(node) && node.data.color !== next,
     );
     if (!recolors) return;
     record();
-    setNodes((existing) => existing.map((node) => withColor(node, next)));
+    setNodes((existing) =>
+      existing.map((node) =>
+        node.selected && isColored(node)
+          ? withData(node, { color: next })
+          : node,
+      ),
+    );
+  };
+
+  const restyleText = (style: TextStyle) => {
+    record();
+    setNodes((existing) =>
+      existing.map((node) =>
+        node.selected && isStyled(node) ? withData(node, style) : node,
+      ),
+    );
+  };
+
+  const restyleFigures = (
+    data: Partial<Extract<CanvasNode, { type: "figure" }>["data"]>,
+  ) => {
+    record();
+    setNodes((existing) =>
+      existing.map((node) =>
+        node.selected && node.type === "figure" ? withData(node, data) : node,
+      ),
+    );
+  };
+
+  const changeTheme = (theme: CanvasTheme | undefined) => {
+    record();
+    setNodes((existing) =>
+      existing.map((node) =>
+        node.selected && node.type === "code"
+          ? withData(node, { theme })
+          : node,
+      ),
+    );
+  };
+
+  const changeInkWeight = (weight: CanvasWeight) => {
+    record();
+    setNodes((existing) =>
+      existing.map((node) =>
+        node.selected && node.type === "drawing"
+          ? withData(node, { size: inkSize(node.data.ink, weight) })
+          : node,
+      ),
+    );
+  };
+
+  const changeLanguage = (language: string) => {
+    record();
+    setNodes((existing) =>
+      existing.map((node) =>
+        node.selected && node.type === "code"
+          ? withData(node, { language })
+          : node,
+      ),
+    );
+  };
+
+  const changeTable = (id: string, change: TableChange) => {
+    const item = current().items.find((entry) => entry.id === id);
+    if (item?.kind !== "table") return;
+    const next = resizeTable(item, change);
+    if (next === item) return;
+    record();
+    setNodes((existing) =>
+      existing.map((node) =>
+        node.id === id && node.type === "table"
+          ? {
+              ...withData(node, { rows: next.rows }),
+              width: next.width,
+              height: next.height,
+            }
+          : node,
+      ),
+    );
   };
 
   const changeOutline = (next: CanvasOutline) => {
@@ -438,6 +750,19 @@ export function Board({ canvas }: BoardProps) {
     );
   };
 
+  const finishEditing = useCallback(
+    (id: string) => {
+      if (editing.current !== id) return;
+      const start = editStart.current;
+      editStart.current = null;
+      editing.current = null;
+      setEditingId(null);
+      if (start && entryOf(start.snapshot, id) !== entryOf(current(), id))
+        history.record(start.snapshot);
+    },
+    [current, history],
+  );
+
   const selected = nodes.filter((node) => node.selected);
   const [only] = selected;
   const selectedEdges = edges.filter((edge) => edge.selected);
@@ -446,16 +771,50 @@ export function Board({ canvas }: BoardProps) {
       ? (selectedEdges.at(-1)?.id ?? null)
       : null;
 
-  const actions = useMemo<BoardActions>(
-    () => ({
+  const actions = useMemo<BoardActions>(() => {
+    const branch: BoardActions["branch"] = (id, kind) => {
+      finishEditing(id);
+      const result = branchOf(current(), id, kind);
+      if (!result) return;
+      record();
+      const positions = new Map(
+        result.snapshot.items.map((item) => [
+          item.id,
+          { x: item.x, y: item.y },
+        ]),
+      );
+      const knownNodes = new Set(latest.current.nodes.map((node) => node.id));
+      const knownEdges = new Set(latest.current.edges.map((edge) => edge.id));
+      setNodes((existing) => [
+        ...existing.map((node) => ({
+          ...node,
+          selected: false,
+          position: positions.get(node.id) ?? node.position,
+        })),
+        ...result.snapshot.items
+          .filter((item) => !knownNodes.has(item.id))
+          .map((item) => ({ ...toNode(item), selected: true })),
+      ]);
+      setEdges((existing) => [
+        ...existing.map((edge) => ({ ...edge, selected: false })),
+        ...result.snapshot.connectors
+          .filter((connector) => !knownEdges.has(connector.id))
+          .map(toEdge),
+      ]);
+      beginEdit(result.created, null);
+    };
+    return {
       editingId,
       savesReady,
       connectorBarId,
       barsHidden: dragging,
+      croppingId,
       record,
       setText: (id, text) => {
         setNodes((existing) =>
-          existing.map((node) => withText(node, id, text)),
+          existing.map((node) =>
+            node.id === id ? withText(node, text) : node,
+          ),
         );
         setEdges((existing) =>
           existing.map((edge) =>
@@ -468,29 +827,54 @@ export function Board({ canvas }: BoardProps) {
           ),
         );
       },
-      startEditing: (id) => {
-        editStart.current = { id, snapshot: current() };
-        setEditingId(id);
+      setCrop: (id, crop) => {
+        const node = latest.current.nodes.find((entry) => entry.id === id);
+        if (node?.type !== "save") return;
+        record();
+        setNodes((existing) =>
+          existing.map((entry) => {
+            if (entry.id !== id || entry.type !== "save") return entry;
+            if (!crop) {
+              const { crop: _crop, ...data } = entry.data;
+              return { ...entry, data };
+            }
+            return withData(entry, { crop });
+          }),
+        );
+        setCroppingId(null);
       },
-      finishEditing: () => {
-        const start = editStart.current;
-        editStart.current = null;
-        setEditingId(null);
-        if (!start) return;
-        const item = start.snapshot.items.find(
-          (entry) => entry.id === start.id,
+      replaceSave: (id, saveId) => {
+        record();
+        setNodes((existing) =>
+          existing.map((entry) => {
+            if (entry.id !== id || entry.type !== "save") return entry;
+            const { crop: _crop, ...data } = entry.data;
+            return { ...entry, data: { ...data, saveId } };
+          }),
         );
-        const connector = start.snapshot.connectors.find(
-          (entry) => entry.id === start.id,
+      },
+      setRows: (id, rows) => {
+        setNodes((existing) =>
+          existing.map((node) =>
+            node.id === id && node.type === "table"
+              ? withData(node, { rows })
+              : node,
+          ),
         );
-        const beforeText =
-          item && "text" in item
-            ? item.text
-            : connector
-              ? connector.label
-              : null;
-        if (beforeText !== textOf(latest.current, start.id))
-          history.record(start.snapshot);
+      },
+      startEditing: (id) => beginEdit(id, current()),
+      finishEditing,
+      branch,
+      quickCreate: (id, side) => {
+        const node = latest.current.nodes.find((entry) => entry.id === id);
+        if (!node || isLocked(node)) return;
+        if (node.type === "topic" && side === "right") {
+          branch(id, "child");
+          return;
+        }
+        const pair = quickPair(toItem(node), side);
+        if (!pair) return;
+        insert([pair.item], { connectors: [pair.connector], edit: true });
       },
       restyle: (patch: Partial<ConnectorStyle>) => {
         record();
@@ -509,217 +893,1103 @@ export function Board({ canvas }: BoardProps) {
         void flow.deleteElements({
           edges: latest.current.edges.filter((edge) => edge.selected),
         }),
-    }),
-    [
-      connectorBarId,
-      current,
-      dragging,
-      editingId,
-      flow,
-      history,
-      record,
-      savesReady,
-    ],
-  );
+    };
+  }, [
+    beginEdit,
+    connectorBarId,
+    croppingId,
+    current,
+    dragging,
+    editingId,
+    finishEditing,
+    flow,
+    insert,
+    record,
+    savesReady,
+  ]);
 
-  const duplicate = () => {
-    const picked = new Set(
+  const pickedIds = () =>
+    new Set(
       latest.current.nodes.flatMap((node) => (node.selected ? [node.id] : [])),
     );
-    const copy = duplicateOf(current(), picked);
+  const movable = () =>
+    latest.current.nodes.filter((node) => node.selected && !isLocked(node));
+
+  const duplicate = () => {
+    const copy = duplicateOf(current(), pickedIds());
     insert(copy.items, { connectors: copy.connectors });
+  };
+
+  const place = (positions: ReadonlyMap<string, XYPosition>) => {
+    const moves = latest.current.nodes.some((node) => {
+      const next = positions.get(node.id);
+      return next && (next.x !== node.position.x || next.y !== node.position.y);
+    });
+    if (!moves) return;
+    record();
+    setNodes((existing) =>
+      existing.map((node) => {
+        const next = positions.get(node.id);
+        return next ? { ...node, position: next } : node;
+      }),
+    );
+  };
+
+  const nudge = (x: number, y: number): boolean => {
+    const targets = movable();
+    if (!targets.length) return false;
+    place(
+      new Map(
+        targets.map((node) => [
+          node.id,
+          { x: node.position.x + x, y: node.position.y + y },
+        ]),
+      ),
+    );
+    return true;
+  };
+
+  const restack = (move: Parameters<typeof reorder>[2]) => {
+    const ids = pickedIds();
+    const next = reorder(latest.current.nodes, ids, move);
+    if (next.every((node, index) => node === latest.current.nodes[index]))
+      return;
+    record();
+    setNodes((existing) => reorder(existing, ids, move));
+  };
+
+  const toggleLock = () => {
+    const picked = latest.current.nodes.filter((node) => node.selected);
+    if (!picked.length) return;
+    const lock = picked.some((node) => !isLocked(node));
+    record();
+    setNodes((existing) =>
+      existing.map((node) => (node.selected ? withLock(node, lock) : node)),
+    );
+  };
+
+  const writeClip = (data: DataTransfer): boolean => {
+    const ids = pickedIds();
+    if (!ids.size) return false;
+    const clip = clipOf(current(), ids);
+    data.setData(CLIP_TYPE, JSON.stringify(clip));
+    data.setData("text/plain", clipText(clip));
+    return true;
+  };
+
+  const regroup = (group: string | null) => {
+    const picked = latest.current.nodes.filter((node) => node.selected);
+    if (group ? picked.length < 2 : !picked.some((node) => node.data.group))
+      return;
+    record();
+    setNodes((existing) =>
+      existing.map((node) => (node.selected ? withGroup(node, group) : node)),
+    );
+  };
+
+  const wrap = () => {
+    const picked = latest.current.nodes.filter((node) => node.selected);
+    const section = sectionAround(picked.map(frameOf), "gray");
+    if (!section) return;
+    record();
+    setNodes((existing) => {
+      const at = Math.max(
+        0,
+        existing.findIndex((node) => node.selected),
+      );
+      const rest = existing.map((node) => ({ ...node, selected: false }));
+      return [
+        ...rest.slice(0, at),
+        { ...toNode(section), selected: true },
+        ...rest.slice(at),
+      ];
+    });
+    beginEdit(section.id, null);
+  };
+
+  const exportImage = async (
+    format: "png" | "pdf",
+    scope: "board" | "selection" | undefined,
+  ) => {
+    const surface = wrapper.current;
+    const all = latest.current.nodes;
+    const picked = all.filter((node) => node.selected);
+    const targets =
+      scope === "board" || (!scope && !picked.length) ? all : picked;
+    if (!surface || !targets.length) return;
+    if (document.activeElement instanceof HTMLElement)
+      document.activeElement.blur();
+    const shown = new Set(targets.map((node) => node.id));
+    const wasSelected = new Set(picked.map((node) => node.id));
+    const selectedEdges = new Set(
+      latest.current.edges.flatMap((edge) => (edge.selected ? [edge.id] : [])),
+    );
+    const view = flow.getViewport();
+    const bounds = flow.getNodesBounds(targets);
+    const padding = 48;
+    setExporting(true);
+    setNodes((existing) =>
+      existing.map((node) => ({
+        ...node,
+        selected: false,
+        hidden: !shown.has(node.id) || undefined,
+      })),
+    );
+    setEdges((existing) =>
+      existing.map((edge) => ({ ...edge, selected: false })),
+    );
+    let image: Awaited<ReturnType<typeof renderBoard>>;
+    try {
+      image = await renderBoard({
+        surface,
+        bounds: {
+          x: bounds.x - padding,
+          y: bounds.y - padding,
+          width: bounds.width + padding * 2,
+          height: bounds.height + padding * 2,
+        },
+        setViewport: (next) => {
+          void flow.setViewport(next);
+        },
+      });
+    } catch (error) {
+      notify({
+        id: "canvas-export",
+        title: "Couldn't export the canvas",
+        description: errorCopy(error, "Try exporting again."),
+      });
+      return;
+    } finally {
+      setNodes((existing) =>
+        existing.map((node) => ({
+          ...node,
+          selected: wasSelected.has(node.id),
+          hidden: undefined,
+        })),
+      );
+      setEdges((existing) =>
+        existing.map((edge) => ({
+          ...edge,
+          selected: selectedEdges.has(edge.id),
+        })),
+      );
+      void flow.setViewport(view);
+      setExporting(false);
+    }
+    try {
+      const result = await window.pond.query("canvases.export", {
+        name: canvas.name,
+        format,
+        ...image,
+      });
+      if (result.ok)
+        notify({
+          id: "canvas-export",
+          title: format === "png" ? "Exported PNG" : "Exported PDF",
+        });
+    } catch (error) {
+      notify({
+        id: "canvas-export",
+        title: "Couldn't export the canvas",
+        description: errorCopy(error, "Try exporting again."),
+      });
+    }
+  };
+
+  const importAt = async (plan: PasteImport, at: XYPosition) => {
+    try {
+      const ids = await runPasteImport(plan);
+      if (ids.length) addSaves(ids, at);
+    } catch (error) {
+      notify({
+        id: "canvas-import",
+        title: "Couldn't add the pasted items",
+        description: errorCopy(error, "Try pasting again."),
+      });
+    }
+  };
+
+  const pasteFrom = (data: DataTransfer): boolean => {
+    const at = pointer.current
+      ? flow.screenToFlowPosition(pointer.current)
+      : viewCenter();
+    const clip = parseClip(data.getData(CLIP_TYPE));
+    if (clip) {
+      const onBoard = new Set(
+        latest.current.nodes.flatMap((node) =>
+          node.type === "save" ? [node.data.saveId] : [],
+        ),
+      );
+      const copy = pasteOf(clip, at, onBoard);
+      if (copy.items.length)
+        insert(copy.items, { connectors: copy.connectors });
+      else
+        addSaves(
+          clip.items.flatMap((item) =>
+            item.kind === "save" ? [item.saveId] : [],
+          ),
+        );
+      return true;
+    }
+    const plan = pasteImportOf(data);
+    if (plan) {
+      void importAt(plan, at);
+      return true;
+    }
+    const text = data.getData("text/plain").trim();
+    if (!text) return false;
+    insert([textAt(at, text)]);
+    return true;
+  };
+
+  const run = (command: CanvasCommand) => {
+    switch (command.type) {
+      case "select-all":
+        setNodes((existing) =>
+          existing.map((node) => ({ ...node, selected: true })),
+        );
+        return;
+      case "copy":
+      case "cut":
+        /** Menu clicks carry user activation, which lets `execCommand` raise a real clipboard event on the board. */
+        wrapper.current?.focus();
+        document.execCommand(command.type);
+        return;
+      case "duplicate":
+        duplicate();
+        return;
+      case "delete":
+        void flow.deleteElements({
+          nodes: latest.current.nodes.filter((node) => node.selected),
+          edges: latest.current.edges.filter((edge) => edge.selected),
+        });
+        return;
+      case "layer":
+        restack(command.move);
+        return;
+      case "align": {
+        const frames = movable().map(frameOf);
+        if (frames.length > 1) place(alignFrames(frames, command.edge));
+        return;
+      }
+      case "distribute":
+        place(distributeFrames(movable().map(frameOf), command.axis));
+        return;
+      case "tidy": {
+        const frames = movable().map(frameOf);
+        if (frames.length > 1) place(tidyFrames(frames));
+        return;
+      }
+      case "lock":
+        toggleLock();
+        return;
+      case "group":
+        regroup(newId());
+        return;
+      case "ungroup":
+        regroup(null);
+        return;
+      case "wrap":
+        wrap();
+        return;
+      case "export":
+        void exportImage(command.format, command.scope);
+        return;
+      case "zoom": {
+        const picked = latest.current.nodes.filter((node) => node.selected);
+        if (command.to === "actual") void flow.zoomTo(1, { duration: 200 });
+        else if (command.to === "selection" && picked.length)
+          void flow.fitView({ nodes: picked, duration: 200, padding: 0.2 });
+        else if (command.to === "fit")
+          void flow.fitView({ duration: 200, padding: 0.2 });
+        return;
+      }
+      case "nudge":
+        nudge(command.x, command.y);
+        return;
+      case "rotate": {
+        const targets = movable().filter((node) => node.type !== "section");
+        if (!targets.length) return;
+        record();
+        const ids = new Set(targets.map((node) => node.id));
+        setNodes((existing) =>
+          existing.map((node) =>
+            ids.has(node.id)
+              ? withData(node, {
+                  rotation: turned(node.data.rotation, command.delta),
+                })
+              : node,
+          ),
+        );
+        return;
+      }
+      case "flip": {
+        const figures = latest.current.nodes.filter(
+          (node) => node.selected && node.type === "figure" && !isLocked(node),
+        );
+        if (!figures.length) return;
+        record();
+        const ids = new Set(figures.map((node) => node.id));
+        setNodes((existing) =>
+          existing.map((node) => {
+            if (!ids.has(node.id) || node.type !== "figure") return node;
+            const item = toItem(node);
+            if (item.kind !== "figure") return node;
+            return { ...toNode(flipped(item, command.axis)), selected: true };
+          }),
+        );
+        return;
+      }
+      case "convert-notes": {
+        const texts = latest.current.nodes.filter(
+          (node) => node.selected && node.type === "text" && !isLocked(node),
+        );
+        if (!texts.length) return;
+        record();
+        const ids = new Set(texts.map((node) => node.id));
+        setNodes((existing) =>
+          existing.map((node) => {
+            if (!ids.has(node.id) || node.type !== "text") return node;
+            const item = toItem(node);
+            return item.kind === "text"
+              ? { ...toNode(noteFromText(item, color)), selected: true }
+              : node;
+          }),
+        );
+        return;
+      }
+      case "sort-notes": {
+        const notes = latest.current.nodes.filter(
+          (node) => node.selected && node.type === "note" && !isLocked(node),
+        );
+        if (notes.length < 2) return;
+        place(
+          notesSorted(
+            notes.flatMap((node) =>
+              node.type === "note"
+                ? [
+                    {
+                      id: node.id,
+                      color: node.data.color,
+                      x: node.position.x,
+                      y: node.position.y,
+                      width: node.width ?? node.measured?.width ?? 0,
+                      height: node.height ?? node.measured?.height ?? 0,
+                    },
+                  ]
+                : [],
+            ),
+          ),
+        );
+        return;
+      }
+      case "crop": {
+        const save = latest.current.nodes.find(
+          (node) => node.selected && node.type === "save",
+        );
+        if (save) setCroppingId(save.id);
+        return;
+      }
+      case "reset-crop": {
+        const saves = latest.current.nodes.filter(
+          (node) => node.selected && node.type === "save" && node.data.crop,
+        );
+        if (!saves.length) return;
+        record();
+        const ids = new Set(saves.map((node) => node.id));
+        setNodes((existing) =>
+          existing.map((node) => {
+            if (!ids.has(node.id) || node.type !== "save") return node;
+            const { crop: _crop, ...data } = node.data;
+            return { ...node, data };
+          }),
+        );
+        return;
+      }
+      case "quick": {
+        const picked = latest.current.nodes.filter((node) => node.selected);
+        const [single] = picked;
+        if (picked.length === 1 && single)
+          actions.quickCreate(single.id, command.side);
+        return;
+      }
+    }
+  };
+
+  const startGroupResize = (corner: Corner) => {
+    const members = latest.current.nodes
+      .filter((node) => node.selected)
+      .map((node) => ({
+        id: node.id,
+        box: frameOf(node),
+        min: MIN_SIZE[node.type],
+      }));
+    const left = Math.min(...members.map(({ box }) => box.x));
+    const top = Math.min(...members.map(({ box }) => box.y));
+    const right = Math.max(...members.map(({ box }) => box.x + box.width));
+    const bottom = Math.max(...members.map(({ box }) => box.y + box.height));
+    record();
+    groupResize.current = {
+      corner,
+      bounds: { x: left, y: top, width: right - left, height: bottom - top },
+      members,
+    };
+  };
+
+  const resizeGroup = (point: XYPosition, keepAspect: boolean) => {
+    const resize = groupResize.current;
+    if (!resize) return;
+    const scale = groupScale(
+      resize.bounds,
+      resize.corner,
+      point,
+      resize.members.map(({ box, min }) => ({ ...box, min })),
+      keepAspect,
+    );
+    const boxes = new Map(
+      resize.members.map(({ id, box }) => [id, scaleBox(box, scale)]),
+    );
+    setNodes((existing) =>
+      existing.map((node) => {
+        const box = boxes.get(node.id);
+        return box ? withBox(node, box) : node;
+      }),
+    );
+  };
+
+  const startDrag = (dragged: readonly CanvasNode[]) => {
+    record();
+    setDragging(true);
+    beginSettle(dragged);
+  };
+
+  const stopDrag = () => {
+    endSettle();
+    setDragging(false);
+  };
+
+  const menuItems = () => {
+    if (menuKind.current !== "nodes")
+      return boardItems({ kind: menuKind.current }, run);
+    const picked = latest.current.nodes.filter((node) => node.selected);
+    return boardItems(
+      {
+        kind: "nodes",
+        count: picked.length,
+        grouped: picked.some((node) => node.data.group),
+        movable: picked.filter((node) => !isLocked(node)).length,
+        locked: picked.length > 0 && picked.every(isLocked),
+        duplicable: picked.some((node) => node.type !== "save"),
+        canRotate: picked.some(
+          (node) => node.type !== "section" && !isLocked(node),
+        ),
+        canFlip: picked.some(
+          (node) => node.type === "figure" && !isLocked(node),
+        ),
+        canConvert: picked.some(
+          (node) => node.type === "text" && !isLocked(node),
+        ),
+        canSort:
+          picked.filter((node) => node.type === "note" && !isLocked(node))
+            .length > 1,
+        canCrop: picked.some((node) => node.type === "save"),
+        cropped: picked.some((node) => node.type === "save" && node.data.crop),
+        canQuick:
+          picked.length === 1 && picked.some((node) => canQuickCreate(node)),
+      },
+      run,
+    );
   };
 
   const openable =
     selected.length === 1 && only?.type === "save" && pool.get(only.data.saveId)
       ? only.data.saveId
       : null;
-  const showColors = tool === "note" || tool === "pen" || tool === "figure";
+  const showColors =
+    COLORED_TOOLS.has(tool) && (tool !== "pen" || penMode !== "erase");
   const onCanvas = useMemo(
     () => new Set(saveIdsKey ? saveIdsKey.split("\n") : []),
     [saveIdsKey],
   );
 
+  const arrangeable = selected.filter((node) => !isLocked(node)).length;
+
+  const lead: SelectionControl[] = [];
+  const style: SelectionControl[] = [];
+  const extras: SelectionControl[] = [];
+  const figures = selected.filter((node) => node.type === "figure");
+  if (figures.length) {
+    lead.push({
+      kind: "custom",
+      label: "Shape",
+      element: (
+        <Picker.Outlines
+          value={sharedValue(figures.map((node) => node.data.outline))}
+          size="xs"
+          onChange={changeOutline}
+        />
+      ),
+    });
+    style.push(
+      {
+        kind: "menu",
+        label: "Fill",
+        icon: <IconFill />,
+        buildItems: () =>
+          fillItems(
+            sharedValue(figures.map((node) => node.data.fill ?? "solid")),
+            (fill) =>
+              restyleFigures({ fill: fill === "solid" ? undefined : fill }),
+          ),
+      },
+      {
+        kind: "menu",
+        label: "Border",
+        icon: <IconBorder />,
+        buildItems: () =>
+          borderItems(
+            sharedValue(figures.map((node) => node.data.border ?? "solid")),
+            (border) =>
+              restyleFigures({
+                border: border === "solid" ? undefined : border,
+              }),
+          ),
+      },
+    );
+  }
+  const codes = selected.filter((node) => node.type === "code");
+  if (codes.length) {
+    const language = sharedValue(codes.map((node) => node.data.language));
+    lead.push(
+      {
+        kind: "menu",
+        label: "Language",
+        icon: <IconCode2 />,
+        buildItems: () => languageItems(language, changeLanguage),
+      },
+      {
+        kind: "menu",
+        label: "Theme",
+        icon: <IconContrast />,
+        buildItems: () =>
+          themeItems(
+            sharedValue(codes.map((node) => node.data.theme ?? null)),
+            changeTheme,
+          ),
+      },
+    );
+  }
+  if (selected.length === 1 && only?.type === "table")
+    lead.push({
+      kind: "menu",
+      label: "Table",
+      icon: <IconTable />,
+      buildItems: () => tableItems((change) => changeTable(only.id, change)),
+    });
+  const inks = selected.filter((node) => node.type === "drawing");
+  if (inks.length)
+    style.push({
+      kind: "menu",
+      label: "Stroke",
+      icon: <IconLineWeight />,
+      buildItems: () =>
+        weightItems(
+          sharedValue(
+            inks.map((node) =>
+              node.data.size > inkSize(node.data.ink, "thin")
+                ? "thick"
+                : "thin",
+            ),
+          ),
+          changeInkWeight,
+        ),
+    });
+  const styled = selected.filter(isStyled);
+  if (styled.length) {
+    const bold = styled.every((node) => node.data.bold);
+    const strike = styled.every((node) => node.data.strike);
+    const align = sharedValue(
+      styled.map((node) => node.data.align ?? defaultAlign(node)),
+    );
+    style.push(
+      {
+        kind: "menu",
+        label: "Font",
+        icon: <IconTypography />,
+        buildItems: () =>
+          fontItems(
+            sharedValue(styled.map((node) => node.data.font ?? "simple")),
+            restyleText,
+          ),
+      },
+      {
+        kind: "menu",
+        label: "Size",
+        icon: <IconTextA />,
+        buildItems: () =>
+          sizeItems(
+            sharedValue(styled.map((node) => node.data.textSize ?? "medium")),
+            restyleText,
+          ),
+      },
+      {
+        kind: "action",
+        label: "Bold",
+        icon: <IconTextBold />,
+        pressed: bold,
+        onClick: () => restyleText({ bold: bold ? undefined : true }),
+      },
+      {
+        kind: "action",
+        label: "Strikethrough",
+        icon: <IconTextStrikethrough />,
+        pressed: strike,
+        onClick: () => restyleText({ strike: strike ? undefined : true }),
+      },
+      {
+        kind: "menu",
+        label: "Align",
+        icon: alignIcon(align),
+        buildItems: () =>
+          alignItems(
+            {
+              align,
+              valign: sharedValue(
+                styled.map((node) => node.data.valign ?? defaultValign(node)),
+              ),
+            },
+            restyleText,
+            styled.every(
+              (node) => node.type === "note" || node.type === "figure",
+            ),
+          ),
+      },
+    );
+  }
+  if (selected.length === 1 && only?.type === "section" && !isLocked(only))
+    extras.push({
+      kind: "action",
+      label: "Rename",
+      icon: <IconRename />,
+      onClick: () => actions.startEditing(only.id),
+    });
+  if (arrangeable > 1)
+    extras.push(
+      {
+        kind: "action",
+        label: "Tidy Up",
+        icon: <IconBroom />,
+        shortcut: glyphsFor({ type: "tidy" }),
+        onClick: () => run({ type: "tidy" }),
+      },
+      {
+        kind: "action",
+        label: "Wrap in Section",
+        icon: <IconSection />,
+        onClick: () => run({ type: "wrap" }),
+      },
+    );
+  if (selected.some((node) => node.data.group))
+    extras.push({
+      kind: "action",
+      label: "Ungroup",
+      icon: <IconUngroup />,
+      shortcut: glyphsFor({ type: "ungroup" }),
+      onClick: () => run({ type: "ungroup" }),
+    });
+  else if (selected.length > 1)
+    extras.push({
+      kind: "action",
+      label: "Group",
+      icon: <IconGroup />,
+      shortcut: glyphsFor({ type: "group" }),
+      onClick: () => run({ type: "group" }),
+    });
+  if (selected.length) {
+    const locked = selected.every(isLocked);
+    extras.push({
+      kind: "action",
+      label: locked ? "Unlock" : "Lock",
+      icon: locked ? <IconLock /> : <IconLockOpen />,
+      shortcut: glyphsFor({ type: "lock" }),
+      pressed: locked,
+      onClick: () => run({ type: "lock" }),
+    });
+  }
+
+  const placeAt = (point: XYPosition): CanvasItem | null => {
+    switch (tool) {
+      case "note":
+        return noteAt(point, color);
+      case "figure":
+        return figureAt(point, outline, color);
+      case "text":
+        return textAt(point);
+      case "section":
+        return sectionAt(point, color);
+      case "table":
+        return tableAt(point, color);
+      case "code":
+        return codeAt(point, DEFAULT_LANGUAGE);
+      case "topic":
+        return topicAt(point, color);
+      default:
+        return null;
+    }
+  };
+
+  const placeStamp = (
+    rect: { x: number; y: number; width: number; height: number } | null,
+    point: XYPosition,
+  ) => {
+    if (!isStamp(tool)) return;
+    const item = rect
+      ? itemForRect(tool, rect, {
+          color,
+          outline,
+          language: DEFAULT_LANGUAGE,
+        })
+      : placeAt(point);
+    if (!item) return;
+    insert([item], {
+      edit:
+        item.kind === "note" ||
+        item.kind === "text" ||
+        item.kind === "figure" ||
+        item.kind === "topic" ||
+        item.kind === "code",
+    });
+    if (!kept) setTool("select");
+  };
+
+  function isStamp(value: CanvasTool): value is StampKind {
+    return STAMP_TOOLS.has(value);
+  }
+
   return (
     <BoardContext.Provider value={actions}>
-      <div
-        ref={wrapper}
-        className={styles.board}
-        role="application"
-        aria-label={canvas.name}
-        aria-roledescription="canvas"
-        data-tool={tool}
-        data-connecting={connecting || undefined}
-        tabIndex={-1}
-        onKeyDown={(event) => {
-          if (isEditableTarget(event.target)) return;
-          if (event.metaKey || event.ctrlKey || event.altKey) {
-            const key = event.key.toLowerCase();
-            if (key === "a" && !event.altKey) {
+      <SpecContextMenu buildItems={menuItems}>
+        <div
+          ref={wrapper}
+          className={styles.board}
+          role="application"
+          aria-label={canvas.name}
+          aria-roledescription="canvas"
+          data-tool={tool}
+          data-connecting={connecting || undefined}
+          data-multiple={selected.length > 1 || undefined}
+          data-exporting={exporting || undefined}
+          tabIndex={-1}
+          onPointerMove={(event) => {
+            pointer.current = { x: event.clientX, y: event.clientY };
+          }}
+          onPointerLeave={() => {
+            pointer.current = null;
+          }}
+          onCopy={(event) => {
+            if (isEditableTarget(event.target)) return;
+            if (writeClip(event.clipboardData)) event.preventDefault();
+          }}
+          onCut={(event) => {
+            if (isEditableTarget(event.target)) return;
+            if (!writeClip(event.clipboardData)) return;
+            event.preventDefault();
+            void flow.deleteElements({
+              nodes: latest.current.nodes.filter((node) => node.selected),
+            });
+          }}
+          onPaste={(event) => {
+            if (isEditableTarget(event.target)) return;
+            if (!pasteFrom(event.clipboardData)) return;
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onKeyDownCapture={(event) => {
+            if (isEditableTarget(event.target)) return;
+            const command = commandForKey(event);
+            if (command?.type !== "nudge") return;
+            /** React Flow moves focused nodes on arrow keys too, so the board takes the key first. */
+            if (!nudge(command.x, command.y)) return;
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onKeyDown={(event) => {
+            if (isEditableTarget(event.target)) return;
+            const command = commandForKey(event);
+            if (command && command.type !== "copy" && command.type !== "cut") {
+              if (command.type === "nudge") return;
               event.preventDefault();
-              setNodes((existing) =>
-                existing.map((node) => ({ ...node, selected: true })),
-              );
-            } else if (key === "d" && !event.altKey) {
-              event.preventDefault();
-              duplicate();
+              run(command);
+              return;
             }
-            return;
-          }
-          if (event.key === "Enter" && selected.length === 1 && only) {
+            if (event.metaKey || event.ctrlKey || event.altKey) return;
+            if (event.key === "Enter" && selected.length === 1 && only) {
+              event.preventDefault();
+              if (openable) openSave(openable);
+              else if (hasText(only) && !isLocked(only))
+                actions.startEditing(only.id);
+              return;
+            }
+            if (
+              event.key === "Tab" &&
+              selected.length === 1 &&
+              only?.type === "topic"
+            ) {
+              event.preventDefault();
+              actions.branch(only.id, "child");
+              return;
+            }
+            if (event.key === "Enter" && connectorBarId) {
+              event.preventDefault();
+              actions.startEditing(connectorBarId);
+              return;
+            }
+            if (event.key === "Escape") {
+              if (croppingId) {
+                setCroppingId(null);
+                return;
+              }
+              setKept(false);
+              setTool("select");
+              return;
+            }
+            const next = toolForKey(event.key, event.shiftKey);
+            if (next) {
+              event.preventDefault();
+              setKept(false);
+              setTool(next);
+            }
+          }}
+          onDragOver={(event) => {
+            const types = Array.from(event.dataTransfer.types);
+            if (
+              !isLibrarySaveDrag(event.dataTransfer) &&
+              !types.includes("Files") &&
+              !types.includes("text/uri-list")
+            )
+              return;
             event.preventDefault();
-            if (openable) openSave(openable);
-            else if (hasText(only)) actions.startEditing(only.id);
-            return;
-          }
-          if (event.key === "Enter" && connectorBarId) {
-            event.preventDefault();
-            actions.startEditing(connectorBarId);
-            return;
-          }
-          if (event.shiftKey && event.code === "Digit1") {
-            event.preventDefault();
-            void flow.fitView({ duration: 200, padding: 0.2 });
-            return;
-          }
-          if (event.key === "Escape") {
-            setTool("select");
-            return;
-          }
-          const next = event.shiftKey ? undefined : toolForKey(event.key);
-          if (next) {
-            event.preventDefault();
-            setTool(next);
-          }
-        }}
-        onDragOver={(event) => {
-          if (!isLibrarySaveDrag(event.dataTransfer)) return;
-          event.preventDefault();
-          event.stopPropagation();
-          event.dataTransfer.dropEffect = "copy";
-        }}
-        onDrop={(event) => {
-          if (!isLibrarySaveDrag(event.dataTransfer)) return;
-          event.preventDefault();
-          event.stopPropagation();
-          addSaves(
-            saveDropIds(event.dataTransfer),
-            flow.screenToFlowPosition({ x: event.clientX, y: event.clientY }),
-          );
-        }}
-      >
-        <ReactFlow<CanvasNode, ConnectorEdge>
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={NODE_TYPES}
-          edgeTypes={EDGE_TYPES}
-          defaultViewport={canvas.viewport}
-          minZoom={0.05}
-          maxZoom={8}
-          connectionMode={ConnectionMode.Loose}
-          connectionRadius={40}
-          snapToGrid
-          snapGrid={SNAP_GRID}
-          deleteKeyCode={["Backspace", "Delete"]}
-          multiSelectionKeyCode={["Meta", "Shift"]}
-          selectionMode={SelectionMode.Partial}
-          selectionOnDrag={tool === "select"}
-          panOnDrag={
-            tool === "hand" ? true : tool === "select" ? [1, 2] : false
-          }
-          panOnScroll
-          elementsSelectable={tool !== "pen" && tool !== "hand"}
-          nodesDraggable={tool === "select"}
-          nodesConnectable={tool === "select"}
-          proOptions={{ hideAttribution: true }}
-          isValidConnection={(connection) =>
-            connection.source !== connection.target
-          }
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onConnectStart={() => setConnecting(true)}
-          onConnectEnd={onConnectEnd}
-          onSelectionChange={onSelectionChange}
-          onNodeDragStart={() => {
-            record();
-            setDragging(true);
+            event.stopPropagation();
+            event.dataTransfer.dropEffect = "copy";
           }}
-          onSelectionDragStart={() => {
-            record();
-            setDragging(true);
-          }}
-          onNodeDragStop={() => setDragging(false)}
-          onSelectionDragStop={() => setDragging(false)}
-          onBeforeDelete={async () => {
-            record();
-            return true;
-          }}
-          onMoveEnd={(_, next) => {
-            viewport.current = next;
-            flush();
-          }}
-          onNodeDoubleClick={(_, node) => {
-            if (tool !== "select") return;
-            if (node.type === "save") {
-              if (pool.get(node.data.saveId)) openSave(node.data.saveId);
-            } else if (hasText(node)) actions.startEditing(node.id);
-          }}
-          onEdgeDoubleClick={(_, edge) => {
-            if (tool === "select") actions.startEditing(edge.id);
-          }}
-          onPaneClick={(event) => {
-            if (tool !== "note" && tool !== "text" && tool !== "figure") return;
-            const point = flow.screenToFlowPosition({
+          onDrop={(event) => {
+            const at = flow.screenToFlowPosition({
               x: event.clientX,
               y: event.clientY,
             });
-            const item =
-              tool === "note"
-                ? noteAt(point, color)
-                : tool === "figure"
-                  ? figureAt(point, outline, color)
-                  : textAt(point);
-            insert([item], { edit: true });
-            setTool("select");
+            if (isLibrarySaveDrag(event.dataTransfer)) {
+              event.preventDefault();
+              event.stopPropagation();
+              addSaves(saveDropIds(event.dataTransfer), at);
+              return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            const plan = pasteImportOf(event.dataTransfer);
+            if (plan && plan.kind !== "clipboard") void importAt(plan, at);
           }}
         >
-          <Background
-            variant={BackgroundVariant.Dots}
-            gap={GRID}
-            size={1.5}
-            className={styles.dots}
-          />
-          {tool === "pen" ? (
-            <DrawLayer color={color} size={PEN_SIZE} onStroke={onStroke} />
-          ) : null}
-          <SelectionBar
-            nodes={tool === "select" ? selected : []}
-            hidden={dragging}
-            canOpen={openable !== null}
-            onColor={recolor}
-            onOutline={changeOutline}
-            onOpen={() => {
-              if (openable) openSave(openable);
+          <ReactFlow<CanvasNode, ConnectorEdge>
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={NODE_TYPES}
+            edgeTypes={EDGE_TYPES}
+            defaultViewport={canvas.viewport}
+            minZoom={0.05}
+            maxZoom={8}
+            connectionMode={ConnectionMode.Loose}
+            connectionRadius={40}
+            deleteKeyCode={["Backspace", "Delete"]}
+            multiSelectionKeyCode={["Meta", "Shift"]}
+            selectionMode={SelectionMode.Partial}
+            selectionOnDrag={tool === "select"}
+            panOnDrag={tool === "hand" ? true : tool === "select" ? [1] : false}
+            panOnScroll
+            elevateNodesOnSelect={false}
+            elementsSelectable={tool === "select"}
+            nodesDraggable={tool === "select"}
+            nodesConnectable={tool === "select"}
+            proOptions={{ hideAttribution: true }}
+            isValidConnection={(connection) =>
+              connection.source !== connection.target
+            }
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onReconnect={onReconnect}
+            connectOnClick={false}
+            onConnectStart={() => setConnecting(true)}
+            onConnectEnd={onConnectEnd}
+            onSelectionChange={onSelectionChange}
+            onNodeDragStart={(_, __, dragged) => startDrag(dragged)}
+            onSelectionDragStart={(_, dragged) => startDrag(dragged)}
+            onNodeDragStop={stopDrag}
+            onSelectionDragStop={stopDrag}
+            onBeforeDelete={async () => {
+              record();
+              return true;
             }}
-            onDuplicate={duplicate}
-            onDelete={() => void flow.deleteElements({ nodes: selected })}
+            onMoveEnd={(_, next) => {
+              viewport.current = next;
+              flush();
+            }}
+            onNodeDoubleClick={(_, node) => {
+              if (tool !== "select") return;
+              if (node.type === "save") {
+                if (pool.get(node.data.saveId)) openSave(node.data.saveId);
+              } else if (hasText(node) && !isLocked(node))
+                actions.startEditing(node.id);
+            }}
+            onNodeContextMenu={(_, node) => {
+              menuKind.current = "nodes";
+              if (node.selected) return;
+              setNodes((existing) =>
+                existing.map((entry) => ({
+                  ...entry,
+                  selected: entry.id === node.id,
+                })),
+              );
+              setEdges((existing) =>
+                existing.map((edge) => ({ ...edge, selected: false })),
+              );
+            }}
+            onSelectionContextMenu={() => {
+              menuKind.current = "nodes";
+            }}
+            onEdgeContextMenu={(_, edge) => {
+              menuKind.current = "edge";
+              setNodes((existing) =>
+                existing.map((node) => ({ ...node, selected: false })),
+              );
+              setEdges((existing) =>
+                existing.map((entry) => ({
+                  ...entry,
+                  selected: entry.id === edge.id,
+                })),
+              );
+            }}
+            onPaneContextMenu={() => {
+              menuKind.current = "pane";
+            }}
+            onEdgeDoubleClick={(_, edge) => {
+              if (tool === "select") actions.startEditing(edge.id);
+            }}
+            onPaneClick={() => {
+              if (croppingId) setCroppingId(null);
+            }}
+          >
+            <Background
+              variant={BackgroundVariant.Dots}
+              gap={GRID}
+              size={1.5}
+              className={styles.dots}
+            />
+            {tool === "pen" ? (
+              <DrawLayer
+                color={color}
+                size={
+                  penMode === "highlight"
+                    ? HIGHLIGHT_SIZE
+                    : penMode === "erase"
+                      ? 18
+                      : PEN_SIZE
+                }
+                mode={penMode}
+                onStroke={onStroke}
+                onErase={onErase}
+              />
+            ) : null}
+            {isStamp(tool) ? <PlaceLayer onPlace={placeStamp} /> : null}
+            {tool === "select" &&
+            !dragging &&
+            !editingId &&
+            !croppingId &&
+            selected.length === 1 &&
+            only &&
+            only.type !== "section" &&
+            !isLocked(only) ? (
+              <Affordance
+                frame={frameOf(only)}
+                rotation={only.data.rotation}
+                min={MIN_SIZE[only.type]}
+                onStart={record}
+                onRotate={(rotation) => {
+                  const id = only.id;
+                  setNodes((existing) =>
+                    existing.map((node) =>
+                      node.id === id ? withData(node, { rotation }) : node,
+                    ),
+                  );
+                }}
+                onResize={(box) => {
+                  const id = only.id;
+                  setNodes((existing) =>
+                    existing.map((node) =>
+                      node.id === id ? withBox(node, box) : node,
+                    ),
+                  );
+                }}
+              />
+            ) : null}
+            {tool === "select" && selected.length > 1 ? (
+              <SelectionFrame
+                frame={flow.getNodesBounds(selected)}
+                resizable={!dragging && !selected.some(isLocked)}
+                onResizeStart={startGroupResize}
+                onResize={resizeGroup}
+              />
+            ) : null}
+            <Guides guides={guides} />
+            <SelectionBar
+              nodes={tool === "select" ? selected : []}
+              hidden={dragging}
+              canOpen={openable !== null}
+              canCrop={selected.length === 1 && only?.type === "save"}
+              onCanvas={onCanvas}
+              arrange={
+                arrangeable > 1 ? () => arrangeItems(arrangeable, run) : null
+              }
+              lead={lead}
+              style={style}
+              extras={extras}
+              onColor={recolor}
+              onOpen={() => {
+                if (openable) openSave(openable);
+              }}
+              onCrop={() => {
+                if (only?.type === "save") setCroppingId(only.id);
+              }}
+              onReplace={(ids) => {
+                const next = ids[0];
+                if (next && only?.type === "save")
+                  actions.replaceSave(only.id, next);
+              }}
+              onDuplicate={duplicate}
+              onDelete={() => void flow.deleteElements({ nodes: selected })}
+            />
+          </ReactFlow>
+          <Tools
+            tool={tool}
+            color={color}
+            outline={outline}
+            penMode={penMode}
+            kept={kept}
+            showColors={showColors}
+            showOutlines={tool === "figure"}
+            onCanvas={onCanvas}
+            onTool={(next) => {
+              setKept(false);
+              setTool(next);
+            }}
+            onColor={setColor}
+            onOutline={setOutline}
+            onPenMode={setPenMode}
+            onKeep={setKept}
+            onAddSaves={(saveIds) => addSaves(saveIds)}
           />
-        </ReactFlow>
-        <Tools
-          tool={tool}
-          color={color}
-          outline={outline}
-          showColors={showColors}
-          showOutlines={tool === "figure"}
-          onCanvas={onCanvas}
-          onTool={setTool}
-          onColor={setColor}
-          onOutline={setOutline}
-          onAddSaves={(saveIds) => addSaves(saveIds)}
-        />
-        <Zoom />
-      </div>
+          <Zoom />
+        </div>
+      </SpecContextMenu>
     </BoardContext.Provider>
   );
 }

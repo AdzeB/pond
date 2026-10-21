@@ -1,3 +1,8 @@
+.bounds {
+  width: 100%;
+  height: 100%;
+}
+
 .figure {
   position: relative;
   display: flex;
@@ -18,8 +23,7 @@
     border-radius: 50%;
   }
 
-  &[data-outline="diamond"],
-  &[data-outline="triangle"] {
+  &[data-drawn] {
     background: none;
     border: 0;
   }
@@ -32,8 +36,38 @@
     --figure-inset: 40% 22% 8%;
   }
 
+  &[data-outline="hexagon"] {
+    --figure-inset: 12% 22%;
+  }
+
+  &[data-outline="parallelogram"],
+  &[data-outline="trapezoid"] {
+    --figure-inset: 12% 20%;
+  }
+
+  &[data-outline="star"] {
+    --figure-inset: 38% 30% 24%;
+  }
+
+  &[data-outline="cylinder"] {
+    --figure-inset: 28% 12% 14%;
+  }
+
+  &[data-outline="speech"] {
+    --figure-inset: 10% 10% 30%;
+  }
+
+  &[data-outline="document"] {
+    --figure-inset: 12% 12% 30%;
+  }
+
+  &[data-outline="chevron"] {
+    --figure-inset: 16% 34% 16% 14%;
+  }
+
   &[data-selected] {
     outline: var(--canvas-selection);
+    outline-offset: -1.5px;
   }
 }
 
@@ -46,11 +80,35 @@
   overflow: visible;
   pointer-events: none;
 
-  & polygon {
+  & path {
     fill: var(--figure-fill);
     stroke: var(--figure-edge);
     stroke-width: 1.5px;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
+  }
+
+  & .details {
+    fill: none;
+  }
+}
+
+.figure[data-flip-x] .outline {
+  transform: scaleX(-1);
+}
+
+.figure[data-flip-y] .outline {
+  transform: scaleY(-1);
+}
+
+.figure[data-flip-x][data-flip-y] .outline {
+  transform: scale(-1);
+}
+
+.figure[data-border="dashed"] {
+  border-style: dashed;
+
+  & .outline path {
+    stroke-dasharray: 6 4;
   }
 }

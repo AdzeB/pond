@@ -1,0 +1,20 @@
+.guide {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+  background: var(--ds-pink-9);
+
+  &[data-axis="x"] {
+    top: var(--guide-from);
+    left: var(--guide-at);
+    width: var(--guide-width);
+    height: var(--guide-length);
+  }
+
+  &[data-axis="y"] {
+    top: var(--guide-at);
+    left: var(--guide-from);
+    width: var(--guide-length);
+    height: var(--guide-width);
+  }
+}

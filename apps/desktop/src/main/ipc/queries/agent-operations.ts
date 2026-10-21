@@ -31,9 +31,9 @@ const descriptions = new Map<string, string>(
     "folders.rules.set":
       "Set inherited tags for a Folder and optionally apply them to existing Saves.",
     "canvases.list":
-      "List Canvases: boards where Saves from anywhere in the Library sit beside notes, text, drawings, and connectors.",
+      "List Canvases: boards where Saves from anywhere in the Library sit beside notes, text, shapes, sections, tables, code, mind maps, drawings, and connectors.",
     "canvases.get":
-      "Read one Canvas: its Save cards, sticky notes, text, drawings, and the connectors between them.",
+      "Read one Canvas: its Save cards, sticky notes, text, shapes, sections, tables, code blocks, mind-map topics, drawings, and the connectors between them.",
     "canvases.create":
       "Create a Canvas, optionally starting with explicit Save IDs placed in a grid.",
     "canvases.addSaves":

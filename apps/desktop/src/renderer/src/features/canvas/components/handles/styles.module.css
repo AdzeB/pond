@@ -1,14 +1,22 @@
 .handle {
-  --handle-gap: 12px;
+  --handle-gap: 14px;
 
-  width: 8px;
-  height: 8px;
-  background: var(--ds-gray-1);
-  border: 1.5px solid var(--ds-accent-9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  height: 10px;
+  color: var(--ds-accent-contrast);
+  background: var(--ds-accent-7);
+  border: 2px solid var(--ds-gray-1);
   border-radius: var(--ds-radius-full);
+  box-shadow: 0 0 0 0.5px var(--ds-gray-a5);
   opacity: 0;
   transition:
     opacity var(--ds-duration-fast) var(--ds-easing-standard),
+    width var(--ds-duration-snap) var(--ds-easing-decelerate),
+    height var(--ds-duration-snap) var(--ds-easing-decelerate),
+    background-color var(--ds-duration-snap) var(--ds-easing-standard),
     scale var(--ds-duration-snap) var(--ds-easing-decelerate);
 
   /* The hit area reaches back to the card edge so the pointer never crosses a gap that drops hover. */
@@ -42,13 +50,22 @@
   }
 }
 
+.arrow {
+  flex: none;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .handle {
+  .handle,
+  .arrow {
     transition: none;
   }
 }
 
-:global([data-reduce-motion]) .handle {
+:global([data-reduce-motion]) .handle,
+:global([data-reduce-motion]) .arrow {
   transition: none;
 }
 
@@ -63,4 +80,37 @@
 
 :global(.react-flow__node.dragging) .handle {
   opacity: 0;
+}
+
+.handle:global(.react-flow__handle-top) .arrow {
+  rotate: -90deg;
+}
+
+.handle:global(.react-flow__handle-bottom) .arrow {
+  rotate: 90deg;
+}
+
+.handle:global(.react-flow__handle-left) .arrow {
+  rotate: 180deg;
+}
+
+/* On a selected item the dot grows into a create button; dragging from it still connects. */
+:global(.react-flow__node.selected) .handle[data-creates]:hover {
+  width: 24px;
+  height: 24px;
+  scale: 1;
+
+  & .arrow {
+    opacity: 1;
+  }
+}
+
+:global([data-connecting] .react-flow__node.selected)
+  .handle[data-creates]:hover {
+  width: 10px;
+  height: 10px;
+
+  & .arrow {
+    opacity: 0;
+  }
 }

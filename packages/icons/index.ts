@@ -487,6 +487,16 @@ export const IconBookmarkSlashFill = /* @__PURE__ */ createIcon(
     ],
   ],
 );
+export const IconBorder = /* @__PURE__ */ createIcon("Border", "outline", [
+  ["path", { d: "M2.75 6V5.25A2.5 2.5 0 0 1 5.25 2.75H6" }],
+  ["path", { d: "M12 2.75H12.75A2.5 2.5 0 0 1 15.25 5.25V6" }],
+  ["path", { d: "M15.25 12V12.75A2.5 2.5 0 0 1 12.75 15.25H12" }],
+  ["path", { d: "M6 15.25H5.25A2.5 2.5 0 0 1 2.75 12.75V12" }],
+  ["path", { d: "M8.25 2.75H9.75" }],
+  ["path", { d: "M15.25 8.25V9.75" }],
+  ["path", { d: "M9.75 15.25H8.25" }],
+  ["path", { d: "M2.75 9.75V8.25" }],
+]);
 export const IconBracketsCurly = /* @__PURE__ */ createIcon(
   "BracketsCurly",
   "outline",
@@ -724,6 +734,12 @@ export const IconCheckboxChecked = /* @__PURE__ */ createIcon(
     ["path", { d: "M6 9.25L8 11.25L12 6.75" }],
   ],
 );
+export const IconChevron = /* @__PURE__ */ createIcon("Chevron", "outline", [
+  [
+    "path",
+    { d: "M2.75 4.25H10.25L15.25 9L10.25 13.75H2.75L6.75 9L2.75 4.25Z" },
+  ],
+]);
 export const IconChevronDown = /* @__PURE__ */ createIcon(
   "ChevronDown",
   "outline",
@@ -1004,6 +1020,20 @@ export const IconCursor = /* @__PURE__ */ createIcon("Cursor", "outline", [
     },
   ],
 ]);
+export const IconCylinder = /* @__PURE__ */ createIcon("Cylinder", "outline", [
+  [
+    "path",
+    {
+      d: "M3.25 4.5C3.25 3.4 5.82 2.5 9 2.5C12.18 2.5 14.75 3.4 14.75 4.5C14.75 5.6 12.18 6.5 9 6.5C5.82 6.5 3.25 5.6 3.25 4.5Z",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M3.25 4.5V13.5C3.25 14.6 5.82 15.5 9 15.5C12.18 15.5 14.75 14.6 14.75 13.5V4.5",
+    },
+  ],
+]);
 export const IconDescendingSorting = /* @__PURE__ */ createIcon(
   "DescendingSorting",
   "outline",
@@ -1078,6 +1108,14 @@ export const IconDice = /* @__PURE__ */ createIcon("Dice", "outline", [
     { cx: "12", cy: "12", r: "1", fill: "currentColor", stroke: "none" },
   ],
 ]);
+export const IconDocument = /* @__PURE__ */ createIcon("Document", "outline", [
+  [
+    "path",
+    {
+      d: "M4.75 2.75H13.25V11.5C12.1 12.6 11 11.6 9.9 12.6C8.8 13.6 7.7 12.6 6.6 13.6C5.5 14.6 4.75 13.6 4.75 13.6V2.75Z",
+    },
+  ],
+]);
 export const IconDots = /* @__PURE__ */ createIcon("Dots", "outline", [
   [
     "circle",
@@ -1135,6 +1173,10 @@ export const IconDuplicate = /* @__PURE__ */ createIcon(
 export const IconEnvelope = /* @__PURE__ */ createIcon("Envelope", "outline", [
   ["rect", { x: "2.25", y: "3.5", width: "13.5", height: "11", rx: "2.75" }],
   ["path", { d: "M2.75 5.5L9 9.75L15.25 5.5" }],
+]);
+export const IconEraser = /* @__PURE__ */ createIcon("Eraser", "outline", [
+  ["path", { d: "M10.5 3.75L14.25 7.5L8.25 13.5H4.5V9.75L10.5 3.75Z" }],
+  ["path", { d: "M3.25 15.25H14.75" }],
 ]);
 export const IconExpand = /* @__PURE__ */ createIcon("Expand", "outline", [
   ["path", { d: "M10.25 7.75L15.25 2.75M10.75 2.75L15.25 2.75L15.25 7.25" }],
@@ -1210,9 +1252,14 @@ export const IconFaceSmile = /* @__PURE__ */ createIcon(
   ],
 );
 export const IconFigures = /* @__PURE__ */ createIcon("Figures", "outline", [
-  ["path", { d: "M9 2.75L12.25 7.75H5.75Z" }],
-  ["rect", { x: "2.75", y: "10", width: "5.25", height: "5.25", rx: "1" }],
-  ["circle", { cx: "12.625", cy: "12.625", r: "2.625" }],
+  ["circle", { cx: "13.5", cy: "6", r: "3.25" }],
+  ["rect", { x: "4.75", y: "10.75", width: "5.5", height: "5.5", rx: "1" }],
+  [
+    "path",
+    {
+      d: "M3.818 1.99L1.189 6.498c-.194.333.046.752.432.752H6.879c.386 0 .626-.419.432-.752L4.682 1.99c-.193-.331-.671-.331-.864 0Z",
+    },
+  ],
 ]);
 export const IconFile = /* @__PURE__ */ createIcon("File", "outline", [
   [
@@ -1316,6 +1363,17 @@ export const IconFiles2 = /* @__PURE__ */ createIcon("Files2", "outline", [
   ["path", { d: "M11.75 5.25V7.5A1.25 1.25 0 0 0 13 8.75H15.25" }],
   ["path", { d: "M2.75 12.25V4.5A2.25 2.25 0 0 1 5 2.25H9.75" }],
 ]);
+export const IconFill = /* @__PURE__ */ createIcon("Fill", "outline", [
+  ["rect", { x: "2.75", y: "2.75", width: "12.5", height: "12.5", rx: "2.5" }],
+  [
+    "path",
+    {
+      d: "M2.75 9.5H15.25V12.75A2.5 2.5 0 0 1 12.75 15.25H5.25A2.5 2.5 0 0 1 2.75 12.75Z",
+      fill: "currentColor",
+      stroke: "none",
+    },
+  ],
+]);
 export const IconFilterOff = /* @__PURE__ */ createIcon(
   "FilterOff",
   "outline",
@@ -1377,6 +1435,25 @@ export const IconFlipHorizontal2 = /* @__PURE__ */ createIcon(
       },
     ],
     ["path", { d: "M9 2.25V15.75" }],
+  ],
+);
+export const IconFlipVertical2 = /* @__PURE__ */ createIcon(
+  "FlipVertical2",
+  "outline",
+  [
+    [
+      "path",
+      {
+        d: "M3.75 6.25V5.25A2 2 0 0 1 5.75 3.25H12.25A2 2 0 0 1 14.25 5.25V6.25",
+      },
+    ],
+    [
+      "path",
+      {
+        d: "M3.75 11.75V12.75A2 2 0 0 0 5.75 14.75H12.25A2 2 0 0 0 14.25 12.75V11.75",
+      },
+    ],
+    ["path", { d: "M2.25 9H15.75" }],
   ],
 );
 export const IconFloppyDisk = /* @__PURE__ */ createIcon(
@@ -1819,6 +1896,16 @@ export const IconGroundPlaneDetection = /* @__PURE__ */ createIcon(
     ["path", { d: "M9 5.25L9 8.5" }],
   ],
 );
+export const IconGroup = /* @__PURE__ */ createIcon("Group", "outline", [
+  [
+    "path",
+    {
+      d: "M2.75 5.25V2.75H5.25M12.75 2.75H15.25V5.25M15.25 12.75V15.25H12.75M5.25 15.25H2.75V12.75",
+    },
+  ],
+  ["rect", { x: "5.75", y: "5.75", width: "4.5", height: "4.5", rx: "1" }],
+  ["rect", { x: "8.75", y: "8.75", width: "3.5", height: "3.5", rx: "1" }],
+]);
 export const IconHand = /* @__PURE__ */ createIcon("Hand", "outline", [
   ["path", { d: "m10.75,7.749c0-.69-.564-1.25-1.25-1.25s-1.25.56-1.25,1.25" }],
   [
@@ -1882,6 +1969,9 @@ export const IconHeartFill = /* @__PURE__ */ createIcon("Heart", "fill", [
       d: "M8.628 15.902Q1.5 11.836 1.5 6.75Q1.5 3.507 4.577 2.481Q7.199 1.607 9 3.362Q10.801 1.607 13.423 2.481Q16.5 3.507 16.5 6.75Q16.5 11.836 9.372 15.902Q9.287 15.95 9.192 15.975Q9.098 16 9 16Q8.902 16 8.808 15.975Q8.713 15.95 8.628 15.902Z",
     },
   ],
+]);
+export const IconHexagon = /* @__PURE__ */ createIcon("Hexagon", "outline", [
+  ["path", { d: "M5.25 2.75H12.75L16.25 9L12.75 15.25H5.25L1.75 9Z" }],
 ]);
 export const IconHighlighter = /* @__PURE__ */ createIcon(
   "Highlighter",
@@ -2204,6 +2294,15 @@ export const IconLineStraight = /* @__PURE__ */ createIcon(
   "outline",
   [["path", { d: "M2.75 15.25L15.25 2.75" }]],
 );
+export const IconLineWeight = /* @__PURE__ */ createIcon(
+  "LineWeight",
+  "outline",
+  [
+    ["path", { d: "M2.75 4.25H15.25" }],
+    ["rect", { x: "2.75", y: "7.75", width: "12.5", height: "2", rx: "1" }],
+    ["rect", { x: "2.75", y: "12", width: "12.5", height: "3.25", rx: "1.25" }],
+  ],
+);
 export const IconLink2 = /* @__PURE__ */ createIcon("Link2", "outline", [
   [
     "path",
@@ -2256,6 +2355,14 @@ export const IconLocationFill = /* @__PURE__ */ createIcon("Location", "fill", [
       d: "M3 7.25Q3 11.595 8.512 16.319Q8.562 16.363 8.62 16.397Q8.677 16.43 8.74 16.453Q8.802 16.477 8.868 16.488Q8.933 16.5 9 16.5Q9.067 16.5 9.132 16.488Q9.198 16.477 9.26 16.453Q9.323 16.43 9.38 16.397Q9.438 16.363 9.488 16.319Q15 11.595 15 7.25Q15 4.765 13.243 3.007Q11.485 1.25 9 1.25Q6.515 1.25 4.757 3.007Q3 4.765 3 7.25ZM7 7.25Q7 7.348 7.01 7.446Q7.019 7.544 7.038 7.64Q7.058 7.737 7.086 7.831Q7.115 7.925 7.152 8.015Q7.19 8.106 7.236 8.193Q7.282 8.279 7.337 8.361Q7.392 8.443 7.454 8.519Q7.516 8.595 7.586 8.664Q7.655 8.734 7.731 8.796Q7.807 8.858 7.889 8.913Q7.971 8.968 8.057 9.014Q8.144 9.06 8.235 9.098Q8.325 9.135 8.419 9.164Q8.513 9.192 8.61 9.212Q8.706 9.231 8.804 9.24Q8.902 9.25 9 9.25Q9.098 9.25 9.196 9.24Q9.294 9.231 9.39 9.212Q9.487 9.192 9.581 9.164Q9.675 9.135 9.765 9.098Q9.856 9.06 9.943 9.014Q10.029 8.968 10.111 8.913Q10.193 8.858 10.269 8.796Q10.345 8.734 10.414 8.664Q10.484 8.595 10.546 8.519Q10.608 8.443 10.663 8.361Q10.718 8.279 10.764 8.193Q10.81 8.106 10.848 8.015Q10.885 7.925 10.914 7.831Q10.942 7.737 10.962 7.64Q10.981 7.544 10.99 7.446Q11 7.348 11 7.25Q11 7.152 10.99 7.054Q10.981 6.956 10.962 6.86Q10.942 6.763 10.914 6.669Q10.885 6.575 10.848 6.485Q10.81 6.394 10.764 6.307Q10.718 6.221 10.663 6.139Q10.608 6.057 10.546 5.981Q10.484 5.905 10.414 5.836Q10.345 5.766 10.269 5.704Q10.193 5.642 10.111 5.587Q10.029 5.532 9.943 5.486Q9.856 5.44 9.765 5.402Q9.675 5.365 9.581 5.336Q9.487 5.308 9.39 5.288Q9.294 5.269 9.196 5.26Q9.098 5.25 9 5.25Q8.902 5.25 8.804 5.26Q8.706 5.269 8.61 5.288Q8.513 5.308 8.419 5.336Q8.325 5.365 8.235 5.402Q8.144 5.44 8.057 5.486Q7.971 5.532 7.889 5.587Q7.807 5.642 7.731 5.704Q7.655 5.766 7.586 5.836Q7.516 5.905 7.454 5.981Q7.392 6.057 7.337 6.139Q7.282 6.221 7.236 6.307Q7.19 6.394 7.152 6.485Q7.115 6.575 7.086 6.669Q7.058 6.763 7.038 6.86Q7.019 6.956 7.01 7.054Q7 7.152 7 7.25Z",
     },
   ],
+]);
+export const IconLock = /* @__PURE__ */ createIcon("Lock", "outline", [
+  ["rect", { x: "3.75", y: "8", width: "10.5", height: "7.25", rx: "2" }],
+  ["path", { d: "M5.75 8V5.75A3.25 3.25 0 0 1 12.25 5.75V8" }],
+]);
+export const IconLockOpen = /* @__PURE__ */ createIcon("LockOpen", "outline", [
+  ["rect", { x: "3.75", y: "8", width: "10.5", height: "7.25", rx: "2" }],
+  ["path", { d: "M5.75 8V5.75A3.25 3.25 0 0 1 11.85 4.2" }],
 ]);
 export const IconMagicWand = /* @__PURE__ */ createIcon(
   "MagicWand",
@@ -2415,6 +2522,17 @@ export const IconMicrophone = /* @__PURE__ */ createIcon(
     ["path", { d: "M9 13.5L9 15.75" }],
   ],
 );
+export const IconMindMap = /* @__PURE__ */ createIcon("MindMap", "outline", [
+  ["rect", { x: "1.75", y: "7.25", width: "5", height: "3.5", rx: "1.25" }],
+  ["rect", { x: "11.25", y: "2.25", width: "5", height: "3.5", rx: "1.25" }],
+  ["rect", { x: "11.25", y: "12.25", width: "5", height: "3.5", rx: "1.25" }],
+  [
+    "path",
+    {
+      d: "M6.75 9H8.25C8.8 9 9.25 8.55 9.25 8V5C9.25 4.45 9.7 4 10.25 4H11.25M9.25 10V13C9.25 13.55 9.7 14 10.25 14H11.25",
+    },
+  ],
+]);
 export const IconMinus = /* @__PURE__ */ createIcon("Minus", "outline", [
   ["path", { d: "M3.5 9L14.5 9" }],
 ]);
@@ -2619,6 +2737,11 @@ export const IconPaperclip = /* @__PURE__ */ createIcon(
     ],
   ],
 );
+export const IconParallelogram = /* @__PURE__ */ createIcon(
+  "Parallelogram",
+  "outline",
+  [["path", { d: "M5.75 4.25H16.25L12.25 13.75H1.75Z" }]],
+);
 export const IconPath = /* @__PURE__ */ createIcon("Path", "outline", [
   ["circle", { cx: "4.5", cy: "13.5", r: "1.75" }],
   ["circle", { cx: "13.5", cy: "4.5", r: "1.75" }],
@@ -2787,6 +2910,15 @@ export const IconScanImage = /* @__PURE__ */ createIcon(
     ],
   ],
 );
+export const IconSection = /* @__PURE__ */ createIcon("Section", "outline", [
+  [
+    "path",
+    {
+      d: "M2.75 7.25V14C2.75 14.69 3.31 15.25 4 15.25H14C14.69 15.25 15.25 14.69 15.25 14V7.25C15.25 6.56 14.69 6 14 6H4C3.31 6 2.75 6.56 2.75 7.25Z",
+    },
+  ],
+  ["path", { d: "M2.75 2.75H8.25" }],
+]);
 export const IconServer = /* @__PURE__ */ createIcon("Server", "outline", [
   ["rect", { x: "2.75", y: "2.75", width: "12.5", height: "5.5", rx: "2" }],
   ["rect", { x: "2.75", y: "9.75", width: "12.5", height: "5.5", rx: "2" }],
@@ -3069,6 +3201,43 @@ export const IconText = /* @__PURE__ */ createIcon("Text", "outline", [
 export const IconTextA = /* @__PURE__ */ createIcon("TextA", "outline", [
   ["path", { d: "M3.5 14.75L9 3.25L14.5 14.75M5.4 10.75H12.6" }],
 ]);
+export const IconTextAlignBottom = /* @__PURE__ */ createIcon(
+  "TextAlignBottom",
+  "outline",
+  [["path", { d: "M2.75 15.25H15.25M5.25 7.75H12.75M6.75 11.25H11.25" }]],
+);
+export const IconTextAlignCenter = /* @__PURE__ */ createIcon(
+  "TextAlignCenter",
+  "outline",
+  [["path", { d: "M2.75 4.25H15.25M5 9H13M3.75 13.75H14.25" }]],
+);
+export const IconTextAlignLeft = /* @__PURE__ */ createIcon(
+  "TextAlignLeft",
+  "outline",
+  [["path", { d: "M2.75 4.25H15.25M2.75 9H10.75M2.75 13.75H13.25" }]],
+);
+export const IconTextAlignMiddle = /* @__PURE__ */ createIcon(
+  "TextAlignMiddle",
+  "outline",
+  [
+    [
+      "path",
+      {
+        d: "M5.25 7.25H12.75M6.75 10.75H11.25M2.75 2.75H15.25M2.75 15.25H15.25",
+      },
+    ],
+  ],
+);
+export const IconTextAlignRight = /* @__PURE__ */ createIcon(
+  "TextAlignRight",
+  "outline",
+  [["path", { d: "M2.75 4.25H15.25M7.25 9H15.25M4.75 13.75H15.25" }]],
+);
+export const IconTextAlignTop = /* @__PURE__ */ createIcon(
+  "TextAlignTop",
+  "outline",
+  [["path", { d: "M2.75 2.75H15.25M5.25 6.75H12.75M6.75 10.25H11.25" }]],
+);
 export const IconTextBold = /* @__PURE__ */ createIcon("TextBold", "outline", [
   [
     "path",
@@ -3117,6 +3286,11 @@ export const IconTextUnderline = /* @__PURE__ */ createIcon(
     ["path", { d: "M5 3.25V8.5A4 4 0 0 0 13 8.5V3.25" }],
     ["path", { d: "M3.75 15.25L14.25 15.25" }],
   ],
+);
+export const IconTrapezoid = /* @__PURE__ */ createIcon(
+  "Trapezoid",
+  "outline",
+  [["path", { d: "M5.25 4.25H12.75L16.25 13.75H1.75Z" }]],
 );
 export const IconTrash = /* @__PURE__ */ createIcon("Trash", "outline", [
   [
@@ -3231,6 +3405,10 @@ export const IconTypographyFill = /* @__PURE__ */ createIcon(
 export const IconUndo = /* @__PURE__ */ createIcon("Undo", "outline", [
   ["path", { d: "M3 7.25H11A4.25 4.25 0 0 1 11 15.75H8.25" }],
   ["path", { d: "M6.25 4L3 7.25L6.25 10.5" }],
+]);
+export const IconUngroup = /* @__PURE__ */ createIcon("Ungroup", "outline", [
+  ["rect", { x: "2.75", y: "2.75", width: "6", height: "6", rx: "1.5" }],
+  ["rect", { x: "9.25", y: "9.25", width: "6", height: "6", rx: "1.5" }],
 ]);
 export const IconUpload = /* @__PURE__ */ createIcon("Upload", "outline", [
   ["path", { d: "M9 11L9 2.75M6.525 5.225L9 2.75L11.475 5.225" }],

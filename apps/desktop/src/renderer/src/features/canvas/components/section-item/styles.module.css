@@ -1,0 +1,27 @@
+.bounds {
+  width: 100%;
+  height: 100%;
+}
+
+.section {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: color-mix(in srgb, var(--section-fill) 55%, transparent);
+  border: 1.5px solid var(--section-edge);
+  border-radius: var(--ds-radius-lg);
+
+  &[data-selected] {
+    outline: var(--canvas-selection);
+  }
+}
+
+.title {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  max-width: calc(100% - 24px);
+  background: var(--section-fill);
+  border-radius: var(--ds-radius-sm);
+}

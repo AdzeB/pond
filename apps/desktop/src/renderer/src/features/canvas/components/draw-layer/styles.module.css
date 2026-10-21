@@ -4,6 +4,10 @@
   z-index: 5;
   touch-action: none;
   cursor: crosshair;
+
+  &[data-erase] {
+    cursor: cell;
+  }
 }
 
 .preview {

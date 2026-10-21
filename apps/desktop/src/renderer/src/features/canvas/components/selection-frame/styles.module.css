@@ -1,0 +1,50 @@
+.frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  pointer-events: none;
+  outline: var(--frame-line) solid var(--ds-accent-9);
+}
+
+.corner {
+  position: absolute;
+  box-sizing: border-box;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  pointer-events: all;
+  background: var(--ds-gray-1);
+  border: 1.5px solid var(--ds-accent-9);
+  border-radius: 2px;
+
+  &::before {
+    position: absolute;
+    inset: -6px;
+    content: "";
+  }
+
+  &[data-corner="nw"] {
+    top: -4px;
+    left: -4px;
+    cursor: nwse-resize;
+  }
+
+  &[data-corner="ne"] {
+    top: -4px;
+    right: -4px;
+    cursor: nesw-resize;
+  }
+
+  &[data-corner="se"] {
+    right: -4px;
+    bottom: -4px;
+    cursor: nwse-resize;
+  }
+
+  &[data-corner="sw"] {
+    bottom: -4px;
+    left: -4px;
+    cursor: nesw-resize;
+  }
+}

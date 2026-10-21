@@ -1,0 +1,15 @@
+.layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.preview {
+  position: absolute;
+  pointer-events: none;
+  background: var(--ds-accent-a3);
+  border: 1.5px solid var(--ds-accent-9);
+  border-radius: var(--ds-radius-sm);
+}

@@ -11,12 +11,12 @@
   margin: 0;
   background: var(--ds-gray-1);
   border: 0;
-  border-radius: calc(var(--ds-radius-md) + 4px);
+  border-radius: calc(var(--ds-radius-sm) + 4px);
   box-shadow: var(--canvas-shadow-float);
   translate: -50% 0;
 }
 
 .level {
-  min-width: 48px;
+  min-width: 40px;
   font-variant-numeric: tabular-nums;
 }

@@ -33,6 +33,11 @@ export {
   peekOpenWithApps,
 } from "./lib/menu";
 export { applyNavFilter, descendantFolderIds } from "./lib/nav-filter";
+export {
+  type PasteImport,
+  pasteImportOf,
+  runPasteImport,
+} from "./lib/paste-import";
 export { normalise } from "./lib/reconcile";
 export {
   clearSaveSelection,

@@ -11,10 +11,18 @@ const MAX_POINTS = 10_000;
 interface DrawLayerProps {
   color: CanvasColor;
   size: number;
+  mode: "marker" | "highlight" | "erase";
   onStroke(points: StrokePoint[], size: number): void;
+  onErase(points: StrokePoint[]): void;
 }
 
-export function DrawLayer({ color, size, onStroke }: DrawLayerProps) {
+export function DrawLayer({
+  color,
+  size,
+  mode,
+  onStroke,
+  onErase,
+}: DrawLayerProps) {
   const flow = useReactFlow();
   const screen = useRef<StrokePoint[]>([]);
   const client = useRef<StrokePoint[]>([]);
@@ -45,6 +53,10 @@ export function DrawLayer({ color, size, onStroke }: DrawLayerProps) {
     client.current = [];
     setPreview(null);
     if (!points.length) return;
+    if (mode === "erase") {
+      onErase(points);
+      return;
+    }
     const zoom = flow.getZoom();
     onStroke(points, Math.min(48, Math.max(1, size / zoom)));
   };
@@ -52,6 +64,7 @@ export function DrawLayer({ color, size, onStroke }: DrawLayerProps) {
   return (
     <div
       className={styles.layer}
+      data-erase={mode === "erase" || undefined}
       onPointerDown={(event) => {
         if (event.button !== 0) return;
         event.currentTarget.setPointerCapture(event.pointerId);
@@ -67,7 +80,11 @@ export function DrawLayer({ color, size, onStroke }: DrawLayerProps) {
     >
       {preview ? (
         <svg className={styles.preview} aria-hidden="true">
-          <path d={preview} fill={INK[color]} />
+          <path
+            d={preview}
+            fill={mode === "erase" ? "var(--ds-gray-a8)" : INK[color]}
+            opacity={mode === "highlight" ? 0.45 : undefined}
+          />
         </svg>
       ) : null}
     </div>
