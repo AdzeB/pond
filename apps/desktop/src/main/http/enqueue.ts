@@ -8,19 +8,13 @@ import { UnsupportedError } from "../core/pipeline/extractors/errors";
 import { setSaveTags } from "../core/tags";
 import { getDb } from "../db";
 import { type EnqueueOptions, enqueue } from "../ops";
+import { apiError, invalidRequest } from "./errors";
 
 export async function enqueueHandler(c: Context) {
-  let raw: unknown;
-  try {
-    raw = await c.req.json();
-  } catch {
-    return c.json({ status: "error", error: "invalid json body" }, 400);
-  }
-
-  const parsed = enqueueRequestSchema.safeParse(raw);
+  const parsed = enqueueRequestSchema.safeParse(await c.req.json());
   if (!parsed.success) {
     log.warn("[pond http] enqueue validation failed", parsed.error.flatten());
-    return c.json({ status: "error", error: parsed.error.flatten() }, 400);
+    return invalidRequest(c, parsed.error);
   }
 
   try {
@@ -43,9 +37,12 @@ export async function enqueueHandler(c: Context) {
     return c.json({ status: "success", data: result });
   } catch (err) {
     if (err instanceof UnsupportedError) {
-      return c.json({ status: "error", error: "unsupported_url" }, 422);
+      return apiError(
+        c,
+        "unsupported_url",
+        "Pond can't save from this link yet.",
+      );
     }
-    log.error("[pond http] enqueue failed", err);
-    return c.json({ status: "error", error: String(err) }, 500);
+    throw err;
   }
 }

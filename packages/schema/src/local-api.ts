@@ -2,6 +2,36 @@ import { z } from "zod";
 import { QuerySchema } from "./filters/schema";
 import { EMPTY_QUERY } from "./filters/types";
 
+/** Bumped on every change to the HTTP contract: minor for additions, major for breaks. */
+export const LOCAL_API_VERSION = "2.1.0";
+
+export const LOCAL_API_ERROR_CODES = [
+  "invalid_json",
+  "invalid_request",
+  "unauthorized",
+  "rate_limited",
+  "not_found",
+  "save_not_found",
+  "no_thumbnail",
+  "operation_not_found",
+  "operation_failed",
+  "unsupported_url",
+  "stale_cursor",
+  "library_mismatch",
+  "stale_preview",
+  "library_unavailable",
+  "internal",
+] as const;
+export const LocalApiErrorCodeSchema = z.enum(LOCAL_API_ERROR_CODES);
+export type LocalApiErrorCode = z.infer<typeof LocalApiErrorCodeSchema>;
+
+/** `code` parses as any string so clients built against this version still read codes added later. */
+export const LocalApiErrorBodySchema = z.object({
+  code: z.string(),
+  message: z.string(),
+});
+
+/** `error` stays loose so clients can still read the bare strings Pond sent before 2.1. */
 export const LocalApiErrorSchema = z.object({
   status: z.literal("error"),
   error: z.unknown(),
@@ -24,13 +54,20 @@ export const LocalApiAppInfoSchema = z.object({
   version: z.string(),
   platform: z.string(),
   arch: z.string(),
+  /** Absent before 2.1. */
+  apiVersion: z.string().optional(),
+  /** Only sent to loopback callers, since the path can reveal the account name. */
+  mcp: z.object({ command: z.string(), args: z.array(z.string()) }).optional(),
 });
 
 export const LocalApiCursorSchema = z.object({
   value: z.union([z.string(), z.number(), z.null()]),
   id: z.string(),
+  /** Pin position of the last row. Absent when it isn't pinned. */
+  rank: z.number().int().nonnegative().optional(),
   libraryId: z.string(),
-  revision: z.number(),
+  /** Ignored. Cursors are keyset positions, so writes between pages do not invalidate them. */
+  revision: z.number().optional(),
   sortSignature: z.string().optional(),
 });
 

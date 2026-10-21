@@ -3,6 +3,7 @@ import type { JsonObject, JsonValue } from "@pond/schema/json";
 import {
   LocalApiAppInfoSchema,
   LocalApiEnqueueResultSchema,
+  LocalApiErrorBodySchema,
   LocalApiErrorSchema,
   LocalApiJsonSchema,
   LocalApiLibrarySchema,
@@ -16,11 +17,17 @@ import {
 
 export type { JsonObject, JsonValue } from "@pond/schema/json";
 export type {
+  LocalApiAppInfo,
   LocalApiCursor,
+  LocalApiErrorCode,
   LocalApiLibrary,
   LocalApiLibraryQueryRequest,
   LocalApiSave,
   LocalApiSavesGetParams,
+} from "@pond/schema/local-api";
+export {
+  LOCAL_API_ERROR_CODES,
+  LOCAL_API_VERSION,
 } from "@pond/schema/local-api";
 
 import type {
@@ -49,18 +56,27 @@ export type LocalApiFailure =
   | "connection"
   | "conflict"
   | "internal"
+  | "invalid"
   | "not-found"
   | "response";
 
 export class PondLocalApiError extends Error {
   readonly kind: LocalApiFailure;
   readonly status?: number;
+  /** Stable machine-readable reason. Absent for connection failures and Pond before 2.1. */
+  readonly code?: string;
 
-  constructor(message: string, kind: LocalApiFailure, status?: number) {
+  constructor(
+    message: string,
+    kind: LocalApiFailure,
+    status?: number,
+    code?: string,
+  ) {
     super(message);
     this.name = "PondLocalApiError";
     this.kind = kind;
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -89,7 +105,8 @@ function endpoint(value: string, allowRemote: boolean): string {
   return url.toString().replace(/\/+$/, "");
 }
 
-function failureKind(status: number): LocalApiFailure {
+function failureKind(status: number, code?: string): LocalApiFailure {
+  if (code === "invalid_json" || code === "invalid_request") return "invalid";
   if (status === 401 || status === 403) return "authentication";
   if (status === 404) return "not-found";
   if (status === 409 || status === 422 || status === 429) return "conflict";
@@ -150,6 +167,16 @@ export class PondLocalApi {
     const parsed = LocalApiErrorSchema.safeParse(
       decoded.success ? decoded.data : null,
     );
+    const body = LocalApiErrorBodySchema.safeParse(
+      parsed.success ? parsed.data.error : null,
+    );
+    if (body.success)
+      return new PondLocalApiError(
+        body.data.message,
+        failureKind(response.status, body.data.code),
+        response.status,
+        body.data.code,
+      );
     const message = parsed.success
       ? Object(parsed.data.error) === parsed.data.error
         ? (JSON.stringify(parsed.data.error) ?? String(parsed.data.error))

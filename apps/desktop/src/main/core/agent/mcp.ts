@@ -1,4 +1,3 @@
-import { basename } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import log from "electron-log/main.js";
@@ -13,15 +12,13 @@ import {
   type LibraryQueryPage,
   LibraryQueryRequestSchema,
 } from "../../../shared/library-query";
-import { getDb } from "../../db";
-import { resolvePaths } from "../../paths";
+import { queryActiveLibraryPage } from "../active-library-query";
 import { conversionCapabilities } from "../conversion-capabilities";
 import {
   conversionJobs,
   conversionPresets,
   saveConversionPreset,
 } from "../conversion-jobs";
-import { queryLibraryPage } from "../library-query";
 import type { ToolResult } from "./complete";
 import {
   MCP_ACCESS_OFF,
@@ -85,13 +82,7 @@ export async function startPondMcp(): Promise<void> {
       annotations: { readOnlyHint: true },
     },
     withAccess("search", async (request) =>
-      textResult(
-        await queryLibraryPage(
-          await getDb(),
-          basename(resolvePaths().indexDb, ".db"),
-          request,
-        ),
-      ),
+      textResult(await queryActiveLibraryPage(request)),
     ),
   );
   server.registerTool(

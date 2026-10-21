@@ -1,4 +1,3 @@
-import { basename } from "node:path";
 import { saves, type Task, tasks } from "@pond/schema/db";
 import { buildWhere, isEmptyQuery } from "@pond/schema/filters";
 import type { RawJson } from "@pond/schema/raw";
@@ -18,18 +17,17 @@ import {
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { LibraryQueryRequestSchema as LibraryQueryParams } from "../../../shared/library-query";
-import { compileKeywordWhere } from "../../core/keyword-query";
 import {
-  librarySortColumn,
-  queryLibraryIds,
-  queryLibraryPage,
-} from "../../core/library-query";
+  queryActiveLibraryIds,
+  queryActiveLibraryPage,
+} from "../../core/active-library-query";
+import { compileKeywordWhere } from "../../core/keyword-query";
+import { librarySortColumn } from "../../core/library-query";
 import { libraryRetrievalInput } from "../../core/library-retrieval";
 import { getPrefs } from "../../core/prefs";
 import { querySidebarCounts } from "../../core/sidebar-counts";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
-import { resolvePaths } from "../../paths";
 import { resolveSaveFilePath } from "../helpers";
 import { type SaveListRow, toWireSaves } from "../wire";
 import {
@@ -116,32 +114,8 @@ export const savesReadQueries = {
       return querySidebarCounts(await getDb(), [], ids);
     },
   ),
-  "saves.queryPage": query(LibraryQueryParams, async (params) => {
-    const view = params.orderFolderId
-      ? (await getPrefs()).folderViews[params.orderFolderId]
-      : undefined;
-
-    return queryLibraryPage(
-      await getDb(),
-      basename(resolvePaths().indexDb, ".db"),
-      params,
-      params.sortKey === "manual" ? (view?.manualOrder ?? []) : [],
-      view?.pinnedIds ?? [],
-    );
-  }),
-  "saves.queryIds": query(LibraryQueryParams, async (params) => {
-    const view = params.orderFolderId
-      ? (await getPrefs()).folderViews[params.orderFolderId]
-      : undefined;
-
-    return queryLibraryIds(
-      await getDb(),
-      basename(resolvePaths().indexDb, ".db"),
-      params,
-      params.sortKey === "manual" ? (view?.manualOrder ?? []) : [],
-      view?.pinnedIds ?? [],
-    );
-  }),
+  "saves.queryPage": query(LibraryQueryParams, queryActiveLibraryPage),
+  "saves.queryIds": query(LibraryQueryParams, queryActiveLibraryIds),
   "saves.queryCount": query(z.object({ query: QueryParam }), async (params) => {
     const db = await getDb();
 

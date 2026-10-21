@@ -7,6 +7,7 @@ import type { Context } from "hono";
 import { readLibraryMedia } from "../core/storage/library-media-storage";
 import { getDb } from "../db";
 import { saveFile } from "../paths";
+import { apiError } from "./errors";
 
 const IMAGE_TYPES = new Map([
   [".jpg", "image/jpeg"],
@@ -19,7 +20,7 @@ const IMAGE_TYPES = new Map([
 
 export async function saveThumbHandler(c: Context): Promise<Response> {
   const id = c.req.query("id");
-  if (!id) return c.json({ status: "error", error: "missing id" }, 400);
+  if (!id) return apiError(c, "invalid_request", "Pass a Save id as ?id=.");
 
   const db = await getDb();
   const [row] = await db
@@ -27,23 +28,23 @@ export async function saveThumbHandler(c: Context): Promise<Response> {
     .from(saves)
     .where(eq(saves.id, id))
     .limit(1);
-  if (!row) return c.json({ status: "error", error: "not found" }, 404);
+  if (!row) return apiError(c, "save_not_found", `No Save has the id ${id}.`);
 
+  const noThumbnail = () =>
+    apiError(c, "no_thumbnail", "This Save has no image to show.");
   const list: SaveFile[] = row.files ?? [];
   const cover = pickCardFile(list);
-  if (!cover) return c.json({ status: "error", error: "no cover" }, 404);
+  if (!cover) return noThumbnail();
 
   const type =
     cover.mimeType?.startsWith("image/") === true
       ? cover.mimeType
       : IMAGE_TYPES.get(extname(cover.path).toLowerCase());
-  if (!type) return c.json({ status: "error", error: "no cover" }, 404);
+  if (!type) return noThumbnail();
 
   /** File names come from our own DB, but basename() keeps a corrupted row from escaping the Save directory. */
   const path = saveFile(id, basename(cover.path));
-  if (!existsSync(path)) {
-    return c.json({ status: "error", error: "no cover" }, 404);
-  }
+  if (!existsSync(path)) return noThumbnail();
 
   const bytes = await readLibraryMedia(path);
   return c.body(Uint8Array.from(bytes), 200, {

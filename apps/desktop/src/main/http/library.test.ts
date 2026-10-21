@@ -12,7 +12,11 @@ it("rejects unknown filter fields instead of silently broadening a query", async
       },
     }),
   });
-  expect(response.status).toBe(400);
+  expect(response.status).toBe(422);
+  expect(await response.json()).toMatchObject({
+    status: "error",
+    error: { code: "invalid_request" },
+  });
 });
 
 it("reports malformed request JSON as a client error", async () => {
@@ -24,7 +28,10 @@ it("reports malformed request JSON as a client error", async () => {
   expect(response.status).toBe(400);
   expect(await response.json()).toEqual({
     status: "error",
-    error: "Invalid JSON.",
+    error: {
+      code: "invalid_json",
+      message: "The request body isn't valid JSON.",
+    },
   });
 });
 
@@ -34,6 +41,6 @@ it("validates explicit image compression mode and quality inputs", async () => {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ ids: ["save"], mode: "quality", quality: 101 }),
   });
-  expect(response.status).toBe(400);
+  expect(response.status).toBe(422);
   expect(await response.text()).toContain("quality");
 });

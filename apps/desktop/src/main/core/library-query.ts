@@ -18,6 +18,7 @@ import type {
 } from "../../shared/library-query";
 import type { Db } from "../db";
 import { prepareManualOrder } from "../lib/folder-order";
+import { PondError } from "../lib/pond-error";
 import { compileKeywordWhere } from "./keyword-query";
 
 export function librarySortColumn(
@@ -103,6 +104,8 @@ export function libraryQueryWhere(
   );
 }
 
+const UNPINNED_RANK = 1_000_000_000;
+
 function queryOrder(
   request: LibraryQueryRequest,
   manualOrder: readonly string[],
@@ -116,7 +119,7 @@ function queryOrder(
       randomSeed: request.randomSeed,
       orderKey,
     }),
-    pinRank: sql`coalesce((select cast(key as integer) from json_each(${pinKey}) where value = ${saves.id} limit 1), 1000000000)`,
+    pinRank: sql`coalesce((select cast(key as integer) from json_each(${pinKey}) where value = ${saves.id} limit 1), ${UNPINNED_RANK})`,
     signature: `${request.sortKey}:${request.sortDir}:${request.randomSeed ?? "pond"}:${orderKey}:${pinKey}`,
   };
 }
@@ -131,6 +134,15 @@ function revisionOf(db: Db): number {
 interface LibraryPageRow {
   id: string;
   value: string | number | null;
+  rank: number;
+}
+
+function assertLibrary(request: LibraryQueryRequest, libraryId: string): void {
+  if (request.libraryId && request.libraryId !== libraryId)
+    throw new PondError(
+      "library_mismatch",
+      "The active Library changed. Run the search again.",
+    );
 }
 
 export async function queryLibraryPage(
@@ -141,8 +153,7 @@ export async function queryLibraryPage(
   pinnedIds: readonly string[] = [],
   hiddenFolderIds: readonly string[] = [],
 ): Promise<LibraryQueryPage> {
-  if (request.libraryId && request.libraryId !== libraryId)
-    throw new Error("The active library changed. Run the search again.");
+  assertLibrary(request, libraryId);
   const { column, pinRank, signature } = queryOrder(
     request,
     manualOrder,
@@ -150,23 +161,27 @@ export async function queryLibraryPage(
   );
   const revision = revisionOf(db);
   const cursor = request.cursor;
-  if (
-    cursor &&
-    (cursor.libraryId !== libraryId ||
-      cursor.revision !== revision ||
-      cursor.sortSignature !== signature)
-  ) {
-    throw new Error(
-      "The library changed. Refresh the search before loading more results.",
+  if (cursor && cursor.libraryId !== libraryId)
+    throw new PondError(
+      "library_mismatch",
+      "This cursor belongs to another Library. Run the search again.",
     );
-  }
+  if (cursor && cursor.sortSignature !== signature)
+    throw new PondError(
+      "stale_cursor",
+      "The sort order changed. Run the search again.",
+    );
   const ascending = request.sortDir === "asc";
   const where = libraryQueryWhere(request, hiddenFolderIds);
-  const after = !cursor
+  const rank = cursor?.rank ?? UNPINNED_RANK;
+  const within = !cursor
     ? undefined
     : cursor.value === null
       ? and(isNull(column), sql`${saves.id} < ${cursor.id}`)
       : sql`(${column} is null or ${ascending ? sql`${column} > ${cursor.value}` : sql`${column} < ${cursor.value}`} or (${column} = ${cursor.value} and ${saves.id} < ${cursor.id}))`;
+  const after = within
+    ? sql`(${pinRank} > ${rank} or (${pinRank} = ${rank} and ${within}))`
+    : undefined;
   const limit = Math.min(500, Math.max(1, request.limit ?? 250));
   const result: { total: number; rows: LibraryPageRow[] } = db.$raw.transaction(
     () => {
@@ -174,7 +189,11 @@ export async function queryLibraryPage(
         db.select({ count: count() }).from(saves).where(where).get()?.count ??
         0;
       const rows = db
-        .select({ id: saves.id, value: sql<string | number | null>`${column}` })
+        .select({
+          id: saves.id,
+          value: sql<string | number | null>`${column}`,
+          rank: sql<number>`${pinRank}`,
+        })
         .from(saves)
         .where(and(where, after))
         .orderBy(
@@ -200,7 +219,7 @@ export async function queryLibraryPage(
         ? {
             value: last.value,
             id: last.id,
-            revision,
+            ...(last.rank !== UNPINNED_RANK && { rank: last.rank }),
             libraryId,
             sortSignature: signature,
           }
@@ -216,8 +235,7 @@ export async function queryLibraryIds(
   pinnedIds: readonly string[] = [],
   hiddenFolderIds: readonly string[] = [],
 ) {
-  if (request.libraryId && request.libraryId !== libraryId)
-    throw new Error("The active library changed. Run the search again.");
+  assertLibrary(request, libraryId);
   const { column, pinRank } = queryOrder(request, manualOrder, pinnedIds);
   const rows = await db
     .select({ id: saves.id })

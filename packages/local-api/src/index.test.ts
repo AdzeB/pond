@@ -80,6 +80,45 @@ describe("PondLocalApi", () => {
     });
   });
 
+  it("reads the stable code and message from error bodies", async () => {
+    const client = new PondLocalApi({
+      fetch: async () =>
+        response(
+          {
+            status: "error",
+            error: {
+              code: "stale_cursor",
+              message: "The sort order changed. Run the search again.",
+            },
+          },
+          409,
+        ),
+    });
+    await expect(client.saves({})).rejects.toMatchObject({
+      kind: "conflict",
+      code: "stale_cursor",
+      status: 409,
+      message: "The sort order changed. Run the search again.",
+    });
+  });
+
+  it("reports rejected requests as invalid rather than conflicts", async () => {
+    const client = new PondLocalApi({
+      fetch: async () =>
+        response(
+          {
+            status: "error",
+            error: { code: "invalid_request", message: "limit: Too big" },
+          },
+          422,
+        ),
+    });
+    await expect(client.saves({ limit: 9000 })).rejects.toMatchObject({
+      kind: "invalid",
+      code: "invalid_request",
+    });
+  });
+
   it("maps API failures to typed errors", async () => {
     const client = new PondLocalApi({
       fetch: async () =>

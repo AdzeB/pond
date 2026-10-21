@@ -61,6 +61,6 @@ it("returns switch failures without claiming success", async () => {
   expect(response.status).toBe(409);
   expect(await response.json()).toEqual({
     status: "error",
-    error: "Library not found.",
+    error: { code: "library_unavailable", message: "Library not found." },
   });
 });

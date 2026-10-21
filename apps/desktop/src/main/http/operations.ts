@@ -3,12 +3,13 @@ import {
   LocalApiOperationRequestSchema,
   LocalApiOperationRunSchema,
 } from "@pond/schema/local-api";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { z } from "zod";
 import {
   applyPondOperation,
   pondOperationCatalog,
 } from "../core/agent/operations";
+import { apiError, handleApiError, invalidRequest } from "./errors";
 
 interface Preview {
   operation: string;
@@ -22,6 +23,10 @@ const PREVIEW_TTL_MS = 5 * 60_000;
 
 function operation(name: string) {
   return pondOperationCatalog().operations.find((entry) => entry.name === name);
+}
+
+function operationNotFound(c: Context, name: string): Response {
+  return apiError(c, "operation_not_found", `No operation is named ${name}.`);
 }
 
 function prunePreviews(now = Date.now()): void {
@@ -50,11 +55,9 @@ export function operationRoutes(): Hono {
 
   routes.post("/preview", async (c) => {
     const parsed = LocalApiOperationRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success)
-      return c.json({ status: "error", error: parsed.error.flatten() }, 400);
+    if (!parsed.success) return invalidRequest(c, parsed.error);
     const selected = operation(parsed.data.operation);
-    if (!selected)
-      return c.json({ status: "error", error: "operation_not_found" }, 404);
+    if (!selected) return operationNotFound(c, parsed.data.operation);
     selected.inputSchema.parse(parsed.data.arguments);
     const libraryId = pondOperationCatalog().libraryId();
     const token = randomUUID();
@@ -74,11 +77,9 @@ export function operationRoutes(): Hono {
 
   routes.post("/run", async (c) => {
     const parsed = LocalApiOperationRunSchema.safeParse(await c.req.json());
-    if (!parsed.success)
-      return c.json({ status: "error", error: parsed.error.flatten() }, 400);
+    if (!parsed.success) return invalidRequest(c, parsed.error);
     const selected = operation(parsed.data.operation);
-    if (!selected)
-      return c.json({ status: "error", error: "operation_not_found" }, 404);
+    if (!selected) return operationNotFound(c, parsed.data.operation);
     selected.inputSchema.parse(parsed.data.arguments);
     const libraryId = pondOperationCatalog().libraryId();
     if (selected.access === "review") {
@@ -93,7 +94,11 @@ export function operationRoutes(): Hono {
         preview.libraryId !== libraryId ||
         preview.arguments !== JSON.stringify(parsed.data.arguments)
       )
-        return c.json({ status: "error", error: "stale_preview" }, 409);
+        return apiError(
+          c,
+          "stale_preview",
+          "The preview expired or changed. Preview the operation again.",
+        );
     }
     const result = await applyPondOperation({
       operation: selected.name,
@@ -103,13 +108,7 @@ export function operationRoutes(): Hono {
     return c.json({ status: "success", data: result });
   });
 
-  routes.onError((error, c) => {
-    if (error instanceof SyntaxError)
-      return c.json({ status: "error", error: "invalid_json" }, 400);
-    if (error instanceof z.ZodError)
-      return c.json({ status: "error", error: error.flatten() }, 400);
-    return c.json({ status: "error", error: error.message }, 500);
-  });
+  routes.onError(handleApiError);
 
   return routes;
 }
