@@ -1242,9 +1242,14 @@ export const IconFaceSmile = /* @__PURE__ */ createIcon(
   ],
 );
 export const IconFigures = /* @__PURE__ */ createIcon("Figures", "outline", [
-  ["path", { d: "M9 2.75L12.25 7.75H5.75Z" }],
-  ["rect", { x: "2.75", y: "10", width: "5.25", height: "5.25", rx: "1" }],
-  ["circle", { cx: "12.625", cy: "12.625", r: "2.625" }],
+  ["circle", { cx: "13.5", cy: "6", r: "3.25" }],
+  ["rect", { x: "4.75", y: "10.75", width: "5.5", height: "5.5", rx: "1" }],
+  [
+    "path",
+    {
+      d: "M3.818 1.99L1.189 6.498c-.194.333.046.752.432.752H6.879c.386 0 .626-.419.432-.752L4.682 1.99c-.193-.331-.671-.331-.864 0Z",
+    },
+  ],
 ]);
 export const IconFile = /* @__PURE__ */ createIcon("File", "outline", [
   [

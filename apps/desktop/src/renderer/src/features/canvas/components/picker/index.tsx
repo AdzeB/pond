@@ -22,23 +22,21 @@ interface RootProps<Value extends string> {
   options: readonly PickerOption<Value>[];
   columns: number;
   size: "xs" | "sm";
-  /** Shown on the trigger when the selection mixes values. */
-  fallback: ReactElement;
+  trigger: ReactElement;
   onChange(value: Value): void;
 }
 
-/** One button for the current value; the full set opens as a grid so the bar stays short. */
+/** One button that opens the full set as a grid, so the bar stays short. */
 function Root<Value extends string>({
   label,
   value,
   options,
   columns,
   size,
-  fallback,
+  trigger,
   onChange,
 }: RootProps<Value>) {
   const [open, setOpen] = useState(false);
-  const current = options.find((option) => option.value === value);
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Tooltip label={label} side="top">
@@ -53,7 +51,7 @@ function Root<Value extends string>({
             />
           }
         >
-          {current?.icon ?? fallback}
+          {trigger}
         </Popover.Trigger>
       </Tooltip>
       <Popover.Portal>
@@ -132,7 +130,7 @@ function Colors({ value, size, onChange }: ColorsProps) {
       options={COLOR_OPTIONS}
       columns={5}
       size={size}
-      fallback={<Swatch color={null} />}
+      trigger={<Swatch color={value} />}
       onChange={onChange}
     />
   );
@@ -156,7 +154,7 @@ function Outlines({ value, size, onChange }: OutlinesProps) {
       options={OUTLINE_OPTIONS}
       columns={5}
       size={size}
-      fallback={<IconFigures />}
+      trigger={<IconFigures />}
       onChange={onChange}
     />
   );
