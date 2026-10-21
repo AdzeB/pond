@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { SETTINGS_GROUP_LABELS, SETTINGS_SECTIONS } from "@pond/schema";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  SETTINGS_MASTER_GROUPS,
+  sectionForId,
+  sectionForPath,
+} from "./registry";
 import { SETTINGS_SEARCH_INDEX } from "./search-index";
 
 function entry(id: string) {
@@ -43,6 +48,45 @@ describe("settings search index", () => {
     for (const section of SETTINGS_SECTIONS) {
       expect(section.label).not.toBe(SETTINGS_GROUP_LABELS[section.group]);
     }
+  });
+
+  it("indexes the global download settings under Harvesting", () => {
+    expect(entry("harvesting:autoDownload").title).toBe(
+      "Download Videos Automatically",
+    );
+    expect(entry("harvesting:autoDownload").groupTitle).toBe("Video Downloads");
+  });
+
+  it("leaves hidden sections out of search", () => {
+    const hidden = new Set(
+      SETTINGS_SECTIONS.filter((section) => section.hidden).map(
+        (section) => section.id,
+      ),
+    );
+    expect(hidden.has("harvesting-youtube")).toBe(true);
+    expect(
+      SETTINGS_SEARCH_INDEX.filter((candidate) =>
+        hidden.has(candidate.sectionId),
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe("settings child sections", () => {
+  it("registers a hidden page under Harvesting for each source", () => {
+    const youtube = sectionForPath("harvesting-youtube");
+    expect(youtube?.label).toBe("YouTube");
+    expect(youtube?.parent).toBe("harvesting");
+    expect(youtube?.hidden).toBe(true);
+    expect(youtube?.config.title).toBe("YouTube");
+  });
+
+  it("keeps hidden sections out of the sidebar index", () => {
+    const listed = SETTINGS_MASTER_GROUPS.flatMap((group) =>
+      group.sections.map((section) => section.id),
+    );
+    expect(listed).toContain("harvesting");
+    expect(listed.some((id) => sectionForId(id)?.hidden)).toBe(false);
   });
 });
 

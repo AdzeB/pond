@@ -99,6 +99,21 @@ describe("library breadcrumb paths", () => {
     ).toEqual(["Settings", label]);
   });
 
+  it("nests a source download page under Harvesting", () => {
+    expect(
+      buildBreadcrumbs({
+        pathname: "/settings/harvesting-youtube",
+        listPath: "/",
+        nav: { kind: "all" },
+        folders,
+      }).map(({ label, path }) => ({ label, path })),
+    ).toEqual([
+      { label: "Settings", path: "/settings" },
+      { label: "Harvesting", path: "/settings/harvesting" },
+      { label: "YouTube", path: "/settings/harvesting-youtube" },
+    ]);
+  });
+
   it("nests a source page under Sources", () => {
     expect(
       buildBreadcrumbs({

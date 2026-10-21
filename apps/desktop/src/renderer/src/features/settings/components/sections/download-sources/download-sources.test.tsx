@@ -1,0 +1,165 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { SettingsSectionView } from "@/features/settings/components/engine";
+import { sourceDownloadsSection } from "@/features/settings/lib/config-source-downloads";
+import {
+  DEFAULT_IMAGE_DOWNLOAD,
+  DEFAULT_VIDEO_DOWNLOAD,
+} from "@/features/settings/lib/section-types";
+import { DownloadSources, MissingVideos } from ".";
+
+interface QueryParams {
+  source?: string;
+}
+
+interface Call {
+  name: string;
+  params: QueryParams;
+}
+
+let host: HTMLDivElement;
+let root: Root;
+let calls: Call[];
+
+function stubPond(
+  overrides: {
+    videoDownloadSources?: Record<string, Record<string, number>>;
+    missing?: number;
+  } = {},
+) {
+  calls = [];
+  vi.stubGlobal("pond", {
+    async query(name: string, params: QueryParams) {
+      calls.push({ name, params });
+      if (name === "saves.missingVideoCount")
+        return { count: overrides.missing ?? 0 };
+      if (name === "saves.downloadMissingVideos")
+        return { ok: true, queued: overrides.missing ?? 0 };
+      return {
+        id: "singleton",
+        libraryRoot: null,
+        videoDownload: { ...DEFAULT_VIDEO_DOWNLOAD, maxHeight: 720 },
+        imageDownload: DEFAULT_IMAGE_DOWNLOAD,
+        videoDownloadSources: overrides.videoDownloadSources ?? {},
+        imageDownloadSources: {},
+      };
+    },
+    tx: async () => ({ ok: true }),
+  });
+}
+
+async function render(node: React.ReactNode) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  await act(async () => {
+    root.render(
+      <QueryClientProvider client={client}>{node}</QueryClientProvider>,
+    );
+  });
+  await settle();
+}
+
+async function settle() {
+  for (let tick = 0; tick < 5; tick += 1) {
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  }
+}
+
+function row(key: string) {
+  return host.querySelector(`#setting-harvesting-youtube-${key}`);
+}
+
+beforeEach(() => {
+  host = document.createElement("div");
+  document.body.append(host);
+  root = createRoot(host);
+});
+
+afterEach(async () => {
+  await act(async () => root.unmount());
+  host.remove();
+  vi.unstubAllGlobals();
+});
+
+it("shows global values on a source page and locks them while it follows global", async () => {
+  stubPond();
+  await render(
+    <SettingsSectionView
+      config={sourceDownloadsSection("youtube")}
+      sectionId="harvesting-youtube"
+    />,
+  );
+
+  expect(
+    row("useGlobal")
+      ?.querySelector("[role='switch']")
+      ?.getAttribute("aria-checked"),
+  ).toBe("true");
+  expect(row("useGlobal")?.hasAttribute("data-disabled")).toBe(false);
+  expect(row("autoDownload")?.hasAttribute("data-disabled")).toBe(true);
+  expect(row("maxLongEdge")?.hasAttribute("data-disabled")).toBe(true);
+  expect(row("maxHeight")?.hasAttribute("data-disabled")).toBe(true);
+  expect(row("maxHeight")?.textContent).toContain("720p");
+});
+
+it("unlocks a custom source and dims video rows until it downloads automatically", async () => {
+  stubPond({ videoDownloadSources: { youtube: { maxHeight: 2160 } } });
+  await render(
+    <SettingsSectionView
+      config={sourceDownloadsSection("youtube")}
+      sectionId="harvesting-youtube"
+    />,
+  );
+
+  expect(row("autoDownload")?.hasAttribute("data-disabled")).toBe(false);
+  expect(row("maxLongEdge")?.hasAttribute("data-disabled")).toBe(false);
+  expect(row("maxHeight")?.hasAttribute("data-disabled")).toBe(true);
+  expect(row("maxHeight")?.textContent).toContain("2160p");
+});
+
+it("lists each source with its status", async () => {
+  stubPond({ videoDownloadSources: { youtube: {} } });
+  await render(<DownloadSources />);
+
+  const item = (label: string) =>
+    host.querySelector(`[aria-label="Edit ${label}"]`)?.parentElement
+      ?.parentElement;
+
+  expect(item("YouTube")?.textContent).toContain("Custom");
+  expect(item("Reddit")?.textContent).toContain("Global");
+});
+
+it("downloads missing videos for one source", async () => {
+  stubPond({ missing: 12 });
+  await render(<MissingVideos source="youtube" />);
+
+  expect(host.textContent).toContain("12 video saves don't have a video file.");
+  const button = [...host.querySelectorAll("button")].find(
+    (candidate) => candidate.textContent === "Download",
+  );
+  await act(async () => button?.click());
+  await settle();
+
+  expect(calls).toContainEqual({
+    name: "saves.downloadMissingVideos",
+    params: { source: "youtube" },
+  });
+  const queued = [...host.querySelectorAll("button")].find(
+    (candidate) => candidate.textContent === "Queued",
+  );
+  expect(queued?.disabled).toBe(true);
+});
+
+it("disables the download when every video save has its file", async () => {
+  stubPond({ missing: 0 });
+  await render(<MissingVideos />);
+
+  expect(host.textContent).toContain("All video saves have a video file.");
+  const button = [...host.querySelectorAll("button")].find(
+    (candidate) => candidate.textContent === "Download",
+  );
+  expect(button?.disabled).toBe(true);
+});

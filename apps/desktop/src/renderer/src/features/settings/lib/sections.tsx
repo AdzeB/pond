@@ -1,3 +1,4 @@
+import { EXTERNAL_SOURCE_IDS } from "@pond/schema/sources";
 import { lazy } from "react";
 import type { SectionConfig } from "@/features/settings/components/engine";
 import { appearanceSection } from "@/features/settings/lib/config-appearance";
@@ -8,8 +9,10 @@ import { harvestingSection } from "@/features/settings/lib/config-harvesting";
 import { librarySection } from "@/features/settings/lib/config-library";
 import { mcpSection } from "@/features/settings/lib/config-mcp";
 import { processingSection } from "@/features/settings/lib/config-processing";
+import { sourceDownloadsSection } from "@/features/settings/lib/config-source-downloads";
 import { storageSection } from "@/features/settings/lib/config-storage";
 import { viewerSection } from "@/features/settings/lib/config-viewer";
+import { sourceSectionId } from "@/features/settings/lib/download-sources";
 
 const TagsSection = lazy(() =>
   import("@/features/tags/manager").then((m) => ({
@@ -135,4 +138,8 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
       component: McpSection,
     },
   ],
+  ...EXTERNAL_SOURCE_IDS.map((source): [string, SectionConfig] => [
+    sourceSectionId(source),
+    sourceDownloadsSection(source),
+  ]),
 ]);

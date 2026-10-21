@@ -1,3 +1,6 @@
+import { sourceLabel } from "./source-ids";
+import { EXTERNAL_SOURCE_IDS } from "./sources/registry";
+
 export type SettingsGroup = "general" | "library" | "ai";
 
 export interface SettingsSection {
@@ -65,6 +68,16 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     group: "ai",
   },
   { id: "mcp", path: "mcp", label: "Model Context Protocol", group: "ai" },
+  ...EXTERNAL_SOURCE_IDS.map(
+    (source): SettingsSection => ({
+      id: `harvesting-${source}`,
+      path: `harvesting-${source}`,
+      label: sourceLabel(source),
+      group: "library",
+      hidden: true,
+      parent: "harvesting",
+    }),
+  ),
 ];
 
 export const SETTINGS_GROUP_ORDER: readonly SettingsGroup[] = [

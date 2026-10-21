@@ -1,6 +1,7 @@
+import type { ExternalSource } from "@pond/schema/sources";
 import { useImageDownloadBinding } from "@/features/settings/components/sections/downloads";
 import {
-  defineCustomSection,
+  type GroupConfig,
   group,
   type SettingsValues,
 } from "@/features/settings/lib/engine-types";
@@ -12,17 +13,18 @@ const imageLossless = (v: SettingsValues) =>
   v.format === "webp" || v.format === "avif";
 const imageProgressive = (v: SettingsValues) =>
   v.format === "jpeg" || v.format === "png";
+const followsGlobal = (v: SettingsValues) => v.followsGlobal === true;
 
-export const imagesSection = defineCustomSection({
-  title: "Images",
-  description: "Resize, format, and encoding for saved images.",
-  groups: [
-    group.with(useImageDownloadBinding, {
-      title: "Format",
+export function imageDownloadGroups(source?: ExternalSource): GroupConfig[] {
+  const useBinding = () => useImageDownloadBinding(source);
+  return [
+    group.with(useBinding, {
+      title: "Images",
       items: [
         {
           control: "select",
           key: "maxLongEdge",
+          disabled: followsGlobal,
           title: "Resolution",
           description: "Resize anything larger than this.",
           options: [
@@ -36,6 +38,7 @@ export const imagesSection = defineCustomSection({
         {
           control: "select",
           key: "format",
+          disabled: followsGlobal,
           title: "Format",
           description: "Keep the format or convert future downloads.",
           options: [
@@ -48,12 +51,13 @@ export const imagesSection = defineCustomSection({
         },
       ],
     }),
-    group.with(useImageDownloadBinding, {
-      title: "Advanced encoding",
+    group.with(useBinding, {
+      title: "Image Encoding",
       items: [
         {
           control: "select",
           key: "quality",
+          disabled: followsGlobal,
           title: "Quality",
           description: "Higher keeps more detail.",
           visible: imageQuality,
@@ -70,6 +74,7 @@ export const imagesSection = defineCustomSection({
         {
           control: "switch",
           key: "lossless",
+          disabled: followsGlobal,
           title: "Lossless",
           description: "Encode WebP/AVIF without quality loss.",
           visible: imageLossless,
@@ -77,6 +82,7 @@ export const imagesSection = defineCustomSection({
         {
           control: "switch",
           key: "progressive",
+          disabled: followsGlobal,
           title: "Progressive",
           description: "Load JPEG and PNG in passes.",
           visible: imageProgressive,
@@ -84,10 +90,11 @@ export const imagesSection = defineCustomSection({
         {
           control: "switch",
           key: "preserveMetadata",
+          disabled: followsGlobal,
           title: "Preserve Metadata",
           description: "Keep camera, location, and color details.",
         },
       ],
     }),
-  ],
-});
+  ];
+}

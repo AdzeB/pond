@@ -23,8 +23,11 @@ import {
   type SettingsGroup,
   type SettingsSection,
 } from "@pond/schema";
+import { EXTERNAL_SOURCE_IDS } from "@pond/schema/sources";
 import type { SectionConfig } from "@/features/settings/components/engine";
+import { sourceSectionId } from "@/features/settings/lib/download-sources";
 import { SECTION_CONFIGS } from "@/features/settings/lib/sections";
+import { getSourceIcon } from "@/features/sources";
 
 const ICONS = new Map<string, IconComponent>([
   ["general", General],
@@ -42,6 +45,10 @@ const ICONS = new Map<string, IconComponent>([
   ["mcp", Mcp],
   ["storage", Storage],
   ["harvesting", Videos],
+  ...EXTERNAL_SOURCE_IDS.map((source): [string, IconComponent] => [
+    sourceSectionId(source),
+    getSourceIcon(source) ?? Videos,
+  ]),
 ]);
 
 export interface SectionDef extends SettingsSection {
