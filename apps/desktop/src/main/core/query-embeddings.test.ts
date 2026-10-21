@@ -78,9 +78,7 @@ describe("hybrid retrieval ranking", () => {
 });
 
 describe("modelCacheDir", () => {
-  it("keeps downloaded models in user data on Windows only", () => {
-    expect(modelCacheDir("win32", "/data")).toBe(join("/data", "models"));
-    expect(modelCacheDir("darwin", "/data")).toBeUndefined();
-    expect(modelCacheDir("linux", "/data")).toBeUndefined();
+  it("keeps downloaded models in user data", () => {
+    expect(modelCacheDir("/data")).toBe(join("/data", "models"));
   });
 });
