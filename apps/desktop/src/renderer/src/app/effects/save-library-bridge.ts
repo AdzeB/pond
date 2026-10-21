@@ -1,3 +1,4 @@
+import { addSavesToCanvas, canvases, createCanvas } from "@/features/canvas";
 import {
   lastUsedFolderId,
   rememberFolderDestinations,
@@ -48,4 +49,7 @@ registerSaveLibraryBridge({
   refreshFolders: () => folders.refresh(),
   startEditingFolder: (id) => folders.startEditing(id),
   saveFolderPresentation,
+  canvasesSnapshot: () => canvases.snapshot(),
+  addSavesToCanvas: (canvasId, ids) => addSavesToCanvas(canvasId, ids),
+  createCanvasWithSaves: (ids) => createCanvas(ids),
 });

@@ -1,0 +1,166 @@
+import { IconCheck, IconMagnifier } from "@pond/icons";
+import { domainFromUrl } from "@pond/schema/domain";
+import { Button, Empty, Input, Popover, Tooltip } from "@pond/ui";
+import { type ReactElement, useEffect, useState } from "react";
+import { CardThumb } from "@/features/saves";
+import { ensureSaves, useSave } from "@/features/saves/pool";
+import styles from "./styles.module.css";
+
+const LIMIT = 48;
+
+async function findSaveIds(query: string): Promise<string[]> {
+  const q = query.trim();
+  const ids = q
+    ? (await window.pond.query("saves.searchFts", { q, limit: LIMIT })).ids
+    : (await window.pond.query("saves.listPage", { limit: LIMIT })).rows.map(
+        (row) => row.id,
+      );
+  await ensureSaves(ids);
+  return ids;
+}
+
+interface PickerProps {
+  onCanvas: ReadonlySet<string>;
+  onAdd(saveIds: string[]): void;
+}
+
+interface AddSavesProps extends PickerProps {
+  children: ReactElement;
+}
+
+export function AddSaves({ onCanvas, onAdd, children }: AddSavesProps) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Tooltip label="Add Saves" side="top">
+        <Popover.Trigger render={children} aria-label="Add Saves" />
+      </Tooltip>
+      <Popover.Portal>
+        <Popover.Positioner side="top" align="center" sideOffset={10}>
+          <Popover.Popup className={styles.popup} aria-label="Add Saves">
+            <Picker
+              onCanvas={onCanvas}
+              onAdd={(ids) => {
+                onAdd(ids);
+                setOpen(false);
+              }}
+            />
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+
+function Picker({ onCanvas, onAdd }: PickerProps) {
+  const [query, setQuery] = useState("");
+  const [ids, setIds] = useState<string[] | null>(null);
+  const [picked, setPicked] = useState<string[]>([]);
+
+  useEffect(() => {
+    let live = true;
+    const timer = window.setTimeout(
+      () => {
+        void findSaveIds(query)
+          .then((next) => {
+            if (live) setIds(next);
+          })
+          .catch(() => {
+            if (live) setIds([]);
+          });
+      },
+      query ? 150 : 0,
+    );
+    return () => {
+      live = false;
+      window.clearTimeout(timer);
+    };
+  }, [query]);
+
+  const toggle = (id: string) =>
+    setPicked((current) =>
+      current.includes(id)
+        ? current.filter((other) => other !== id)
+        : [...current, id],
+    );
+
+  return (
+    <>
+      <Input.Root size="sm" variant="secondary">
+        <Input.Icon>
+          <IconMagnifier size={12} />
+        </Input.Icon>
+        <Input.Field
+          autoFocus
+          aria-label="Search saves"
+          placeholder="Search saves…"
+          value={query}
+          onChange={(event) => setQuery(event.currentTarget.value)}
+        />
+      </Input.Root>
+      {ids && ids.length === 0 ? (
+        <Empty.Root className={styles.empty}>
+          <Empty.Title>No results found</Empty.Title>
+        </Empty.Root>
+      ) : (
+        <div className={styles.grid} data-loading={ids ? undefined : true}>
+          {ids?.map((id) => (
+            <Choice
+              key={id}
+              id={id}
+              placed={onCanvas.has(id)}
+              picked={picked.includes(id)}
+              onToggle={toggle}
+            />
+          ))}
+        </div>
+      )}
+      <Button
+        size="sm"
+        variant="secondary"
+        width="full"
+        disabled={!picked.length}
+        onClick={() => onAdd(picked)}
+      >
+        {picked.length > 1 ? `Add ${picked.length} Saves` : "Add Save"}
+      </Button>
+    </>
+  );
+}
+
+interface ChoiceProps {
+  id: string;
+  placed: boolean;
+  picked: boolean;
+  onToggle(id: string): void;
+}
+
+function Choice({ id, placed, picked, onToggle }: ChoiceProps) {
+  const save = useSave(id);
+  if (!save) return null;
+  const title =
+    save.title?.trim() ||
+    (save.url ? domainFromUrl(save.url) : null) ||
+    "Untitled";
+  return (
+    <button
+      type="button"
+      className={styles.choice}
+      aria-pressed={picked}
+      disabled={placed}
+      data-picked={picked || undefined}
+      title={placed ? `${title} is on this canvas` : title}
+      onClick={() => onToggle(id)}
+    >
+      <span className={styles.thumb}>
+        <CardThumb save={save} view="grid" width={120} />
+        {picked || placed ? (
+          <span className={styles.tick} aria-hidden="true">
+            <IconCheck size={12} />
+          </span>
+        ) : null}
+      </span>
+      <span className={styles.label}>{title}</span>
+    </button>
+  );
+}

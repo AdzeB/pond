@@ -30,6 +30,14 @@ const descriptions = new Map<string, string>(
       "Permanently delete every Save in Trash. Cannot be undone.",
     "folders.rules.set":
       "Set inherited tags for a Folder and optionally apply them to existing Saves.",
+    "canvases.list":
+      "List Canvases: boards where Saves from anywhere in the Library sit beside notes, text, drawings, and connectors.",
+    "canvases.get":
+      "Read one Canvas: its Save cards, sticky notes, text, drawings, and the connectors between them.",
+    "canvases.create":
+      "Create a Canvas, optionally starting with explicit Save IDs placed in a grid.",
+    "canvases.addSaves":
+      "Add explicit Save IDs to a Canvas. Saves already on it are skipped; new cards land beside existing content.",
     "conversion.start":
       "Export converted image or video-to-GIF copies using a preset. Opens a native export directory picker; originals are retained. Returns a job ID for progress and cancellation.",
     "conversion.capabilities":

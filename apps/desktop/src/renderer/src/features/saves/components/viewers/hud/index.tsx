@@ -127,11 +127,13 @@ function Tools({
 }) {
   return (
     <HudTooltipSide value={tooltipSide}>
-      <div
-        className={cn(styles.tools, className)}
-        data-layout={layout}
-        {...props}
-      />
+      <Tooltip.Group>
+        <div
+          className={cn(styles.tools, className)}
+          data-layout={layout}
+          {...props}
+        />
+      </Tooltip.Group>
     </HudTooltipSide>
   );
 }

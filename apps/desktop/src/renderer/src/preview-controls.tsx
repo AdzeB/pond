@@ -85,128 +85,134 @@ export function PreviewControls({
           onClose={actions.close}
         />
       </div>
-      <nav aria-label={"Preview Controls"} className="preview-controls">
-        <div className="preview-control-group">
-          <PreviewTool
-            label={"Previous"}
-            onClick={actions.previous}
-            side={tooltipSide}
-          >
-            <IconArrowLeft />
-          </PreviewTool>
-          <PreviewTool label={"Next"} onClick={actions.next} side={tooltipSide}>
-            <IconArrowRight />
-          </PreviewTool>
-          {state.kind === "presentation" ? (
-            <PreviewTool
-              label={slideshow ? "Pause Slideshow" : "Play Slideshow"}
-              onClick={actions.toggleSlideshow}
-              pressed={slideshow}
-              side={tooltipSide}
-            >
-              {slideshow ? <IconMediaPause /> : <IconMediaPlay />}
-            </PreviewTool>
-          ) : null}
-        </div>
-
-        {state.mediaType === "image" ? (
+      <Tooltip.Group>
+        <nav aria-label={"Preview Controls"} className="preview-controls">
           <div className="preview-control-group">
             <PreviewTool
-              label={"Rotate"}
-              onClick={actions.rotate}
+              label={"Previous"}
+              onClick={actions.previous}
               side={tooltipSide}
             >
-              <IconRotateImageClockwise />
+              <IconArrowLeft />
             </PreviewTool>
             <PreviewTool
-              label={"Mirror"}
-              onClick={actions.toggleMirror}
-              pressed={state.mirrored}
+              label={"Next"}
+              onClick={actions.next}
               side={tooltipSide}
             >
-              <IconFlipHorizontal2 />
+              <IconArrowRight />
             </PreviewTool>
-            <PreviewTool
-              label={"Grayscale"}
-              onClick={actions.toggleGrayscale}
-              pressed={state.grayscale}
-              side={tooltipSide}
-            >
-              <IconContrast />
-            </PreviewTool>
-            <PreviewTool
-              label={state.zoom === null ? "Actual Size" : "Fit"}
-              onClick={actions.toggleSize}
-              pressed={state.zoom !== null}
-              side={tooltipSide}
-            >
-              {state.zoom === null ? <IconSizeLg /> : <IconExpand />}
-            </PreviewTool>
+            {state.kind === "presentation" ? (
+              <PreviewTool
+                label={slideshow ? "Pause Slideshow" : "Play Slideshow"}
+                onClick={actions.toggleSlideshow}
+                pressed={slideshow}
+                side={tooltipSide}
+              >
+                {slideshow ? <IconMediaPause /> : <IconMediaPlay />}
+              </PreviewTool>
+            ) : null}
           </div>
-        ) : (
+
+          {state.mediaType === "image" ? (
+            <div className="preview-control-group">
+              <PreviewTool
+                label={"Rotate"}
+                onClick={actions.rotate}
+                side={tooltipSide}
+              >
+                <IconRotateImageClockwise />
+              </PreviewTool>
+              <PreviewTool
+                label={"Mirror"}
+                onClick={actions.toggleMirror}
+                pressed={state.mirrored}
+                side={tooltipSide}
+              >
+                <IconFlipHorizontal2 />
+              </PreviewTool>
+              <PreviewTool
+                label={"Grayscale"}
+                onClick={actions.toggleGrayscale}
+                pressed={state.grayscale}
+                side={tooltipSide}
+              >
+                <IconContrast />
+              </PreviewTool>
+              <PreviewTool
+                label={state.zoom === null ? "Actual Size" : "Fit"}
+                onClick={actions.toggleSize}
+                pressed={state.zoom !== null}
+                side={tooltipSide}
+              >
+                {state.zoom === null ? <IconSizeLg /> : <IconExpand />}
+              </PreviewTool>
+            </div>
+          ) : (
+            <div className="preview-control-group">
+              <PreviewTool
+                label={state.size === "fill" ? "Fit" : "Fill"}
+                onClick={actions.toggleSize}
+                pressed={state.size === "fill"}
+                side={tooltipSide}
+              >
+                <IconExpand />
+              </PreviewTool>
+            </div>
+          )}
+
           <div className="preview-control-group">
             <PreviewTool
-              label={state.size === "fill" ? "Fit" : "Fill"}
-              onClick={actions.toggleSize}
-              pressed={state.size === "fill"}
+              label={"Open in Default App"}
+              onClick={actions.openOriginal}
               side={tooltipSide}
             >
-              <IconExpand />
+              <IconWindowShare />
+            </PreviewTool>
+            <PreviewTool
+              label={"Export Original"}
+              onClick={actions.exportOriginal}
+              side={tooltipSide}
+            >
+              <IconFileExport />
             </PreviewTool>
           </div>
-        )}
 
-        <div className="preview-control-group">
-          <PreviewTool
-            label={"Open in Default App"}
-            onClick={actions.openOriginal}
-            side={tooltipSide}
-          >
-            <IconWindowShare />
-          </PreviewTool>
-          <PreviewTool
-            label={"Export Original"}
-            onClick={actions.exportOriginal}
-            side={tooltipSide}
-          >
-            <IconFileExport />
-          </PreviewTool>
-        </div>
-
-        <div className="preview-control-group">
-          <PreviewTool
-            label={"Fullscreen"}
-            onClick={actions.toggleFullscreen}
-            pressed={state.fullscreen}
-            side={tooltipSide}
-          >
-            <IconFullScreen />
-          </PreviewTool>
-          <Tooltip
-            label={`${"Opacity"}: ${Math.round(state.opacity * 100)}%`}
-            side={tooltipSide}
-          >
-            <Button
-              aria-label={`${"Opacity"}: ${Math.round(state.opacity * 100)}%`}
-              className="preview-opacity"
-              onClick={actions.cycleOpacity}
-              size="sm"
-              type="button"
-              variant="ghost"
+          <div className="preview-control-group">
+            <PreviewTool
+              label={"Fullscreen"}
+              onClick={actions.toggleFullscreen}
+              pressed={state.fullscreen}
+              side={tooltipSide}
             >
-              {Math.round(state.opacity * 100)}%
-            </Button>
-          </Tooltip>
-          <PreviewTool
-            label={"Keep on Top"}
-            onClick={actions.togglePin}
-            pressed={state.alwaysOnTop}
-            side={tooltipSide}
-          >
-            <IconPinTack />
-          </PreviewTool>
-        </div>
-      </nav>
+              <IconFullScreen />
+            </PreviewTool>
+            <Tooltip
+              label={`${"Opacity"}: ${Math.round(state.opacity * 100)}%`}
+              side={tooltipSide}
+            >
+              <Button
+                aria-label={`${"Opacity"}: ${Math.round(state.opacity * 100)}%`}
+                className="preview-opacity"
+                onClick={actions.cycleOpacity}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                {Math.round(state.opacity * 100)}%
+              </Button>
+            </Tooltip>
+            <PreviewTool
+              label={"Keep on Top"}
+              onClick={actions.togglePin}
+              pressed={state.alwaysOnTop}
+              side={tooltipSide}
+            >
+              <IconPinTack />
+            </PreviewTool>
+          </div>
+        </nav>
+      </Tooltip.Group>
     </Tooltip.Provider>
   );
 }

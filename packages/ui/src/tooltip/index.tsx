@@ -1,10 +1,17 @@
 import { Tooltip as Base } from "@base-ui/react/tooltip";
 import { IconInfo } from "@pond/icons";
 import { clsx } from "clsx";
-import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from "react";
+import {
+  type ComponentPropsWithoutRef,
+  createContext,
+  type ReactElement,
+  type ReactNode,
+  useContext,
+  useState,
+} from "react";
 import styles from "./styles.module.css";
 
-function Root(props: Base.Root.Props) {
+function Root<Payload>(props: Base.Root.Props<Payload>) {
   return <Base.Root {...props} />;
 }
 
@@ -73,6 +80,16 @@ function tooltipContent(label: ReactNode, shortcut?: ReactNode): ReactNode {
   );
 }
 
+interface GroupPayload {
+  label: ReactNode;
+  shortcut?: ReactNode;
+  side?: TooltipProps["side"];
+  align?: TooltipProps["align"];
+  sideOffset?: number;
+}
+
+const GroupContext = createContext<Base.Handle<GroupPayload> | null>(null);
+
 function TooltipWrapper({
   label,
   shortcut,
@@ -84,6 +101,17 @@ function TooltipWrapper({
   trackCursorAxis,
   container,
 }: TooltipProps) {
+  const group = useContext(GroupContext);
+  if (group && !trackCursorAxis && !container) {
+    return (
+      <Trigger
+        handle={group}
+        payload={{ label, shortcut, side, align, sideOffset }}
+        delay={delay}
+        render={children}
+      />
+    );
+  }
   return (
     <Root trackCursorAxis={trackCursorAxis}>
       <Trigger delay={delay} render={children} />
@@ -97,6 +125,36 @@ function TooltipWrapper({
         </Positioner>
       </Portal>
     </Root>
+  );
+}
+
+/** Tooltips inside share one popup, so moving between neighbouring controls travels instead of reopening. */
+function Group({ children }: { children: ReactNode }) {
+  const [handle] = useState(() => Base.createHandle<GroupPayload>());
+  return (
+    <GroupContext.Provider value={handle}>
+      {children}
+      <Root handle={handle}>
+        {({ payload }) => (
+          <Portal>
+            <Positioner
+              side={payload?.side}
+              align={payload?.align}
+              sideOffset={payload?.sideOffset ?? 12}
+              className={styles.traveler}
+            >
+              <Popup className={styles.sized}>
+                <Viewport>
+                  {payload
+                    ? tooltipContent(payload.label, payload.shortcut)
+                    : null}
+                </Viewport>
+              </Popup>
+            </Positioner>
+          </Portal>
+        )}
+      </Root>
+    </GroupContext.Provider>
   );
 }
 
@@ -141,6 +199,7 @@ function Info({
 
 export const Tooltip = Object.assign(TooltipWrapper, {
   Root,
+  Group,
   Provider,
   Trigger,
   Portal,

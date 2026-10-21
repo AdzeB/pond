@@ -16,6 +16,7 @@ import type {
 } from "./account-contracts";
 import type { assistantSend } from "./assistant";
 import type { BulkQueryInputs, BulkQueryResults } from "./bulk-contracts";
+import type { CanvasQueryInputs, CanvasQueryResults } from "./canvas-contracts";
 import type {
   ConversionQueryInputs,
   ConversionQueryResults,
@@ -123,6 +124,7 @@ export interface QueryInputs
     BulkQueryInputs,
     FolderQueryInputs,
     InspectQueryInputs,
+    CanvasQueryInputs,
     ConversionQueryInputs,
     SavesReadQueryInputs,
     SavesMutationQueryInputs,
@@ -322,6 +324,7 @@ export interface QueryResults
     SystemQueryResults,
     FolderQueryResults,
     InspectQueryResults,
+    CanvasQueryResults,
     ConversionQueryResults,
     SavesReadQueryResults,
     SavesMutationQueryResults,

@@ -652,6 +652,12 @@ export const IconCameraSparkle = /* @__PURE__ */ createIcon(
     ],
   ],
 );
+export const IconCanvas = /* @__PURE__ */ createIcon("Canvas", "outline", [
+  ["rect", { x: "2.75", y: "2.75", width: "12.5", height: "12.5", rx: "3" }],
+  ["rect", { x: "5.5", y: "5.5", width: "3", height: "3", rx: "0.75" }],
+  ["rect", { x: "9.5", y: "9.5", width: "3", height: "3", rx: "0.75" }],
+  ["path", { d: "M8.5 7H11V9.5" }],
+]);
 export const IconCaretMinimize = /* @__PURE__ */ createIcon(
   "CaretMinimize",
   "outline",
@@ -753,6 +759,9 @@ export const IconChevronRightFill = /* @__PURE__ */ createIcon(
     ],
   ],
 );
+export const IconCircle = /* @__PURE__ */ createIcon("Circle", "outline", [
+  ["circle", { cx: "9", cy: "9", r: "6.25" }],
+]);
 export const IconCircleCheck = /* @__PURE__ */ createIcon(
   "CircleCheck",
   "outline",
@@ -987,6 +996,14 @@ export const IconCubeFill = /* @__PURE__ */ createIcon("Cube", "fill", [
     },
   ],
 ]);
+export const IconCursor = /* @__PURE__ */ createIcon("Cursor", "outline", [
+  [
+    "path",
+    {
+      d: "M3.474,2.784L14.897,6.958c.481,.176,.467,.861-.021,1.018l-5.228,1.673-1.673,5.228c-.156,.488-.842,.502-1.018,.021L2.784,3.474c-.157-.43,.26-.847,.69-.69Z",
+    },
+  ],
+]);
 export const IconDescendingSorting = /* @__PURE__ */ createIcon(
   "DescendingSorting",
   "outline",
@@ -1035,6 +1052,9 @@ export const IconDesignFile = /* @__PURE__ */ createIcon(
     ],
   ],
 );
+export const IconDiamond = /* @__PURE__ */ createIcon("Diamond", "outline", [
+  ["path", { d: "M9 2.25L15.75 9L9 15.75L2.25 9Z" }],
+]);
 export const IconDice = /* @__PURE__ */ createIcon("Dice", "outline", [
   ["rect", { x: "2.75", y: "2.75", width: "12.5", height: "12.5", rx: "3" }],
   [
@@ -1189,6 +1209,11 @@ export const IconFaceSmile = /* @__PURE__ */ createIcon(
     ["path", { d: "M6.25 10.75A3.25 3.25 0 0 0 11.75 10.75" }],
   ],
 );
+export const IconFigures = /* @__PURE__ */ createIcon("Figures", "outline", [
+  ["path", { d: "M9 2.75L12.25 7.75H5.75Z" }],
+  ["rect", { x: "2.75", y: "10", width: "5.25", height: "5.25", rx: "1" }],
+  ["circle", { cx: "12.625", cy: "12.625", r: "2.625" }],
+]);
 export const IconFile = /* @__PURE__ */ createIcon("File", "outline", [
   [
     "path",
@@ -1794,6 +1819,19 @@ export const IconGroundPlaneDetection = /* @__PURE__ */ createIcon(
     ["path", { d: "M9 5.25L9 8.5" }],
   ],
 );
+export const IconHand = /* @__PURE__ */ createIcon("Hand", "outline", [
+  ["path", { d: "m10.75,7.749c0-.69-.564-1.25-1.25-1.25s-1.25.56-1.25,1.25" }],
+  [
+    "path",
+    { d: "m13.25,8.249c0-.69-.564-1.25-1.25-1.25-.5615,0-1.1216.3392-1.25.75" },
+  ],
+  [
+    "path",
+    {
+      d: "m8.25,7.749V2.999c0-.69-.564-1.25-1.25-1.25s-1.25.56-1.25,1.25v7.715l-1.768-2.252c-.426-.543-1.215-.635-1.755-.211s-.604,1.131-.211,1.755l1.96,3.014c1.107,1.703,3,2.73,5.03,2.73h1.745c2.761,0,5-2.239,5-5v-2.001c0-.69-.564-1.25-1.25-1.25-.5719,0-1.0108.25-1.251.75",
+    },
+  ],
+]);
 export const IconHashtag = /* @__PURE__ */ createIcon("Hashtag", "outline", [
   ["path", { d: "M7.25 2.75L5.75 15.25" }],
   ["path", { d: "M12.25 2.75L10.75 15.25" }],
@@ -1845,6 +1883,37 @@ export const IconHeartFill = /* @__PURE__ */ createIcon("Heart", "fill", [
     },
   ],
 ]);
+export const IconHighlighter = /* @__PURE__ */ createIcon(
+  "Highlighter",
+  "outline",
+  [
+    [
+      "path",
+      {
+        d: "M7.35303 2.991C7.53203 3.634 7.69703 4.528 7.64003 5.591C7.61003 6.147 7.52503 6.643 7.42203 7.067C7.34703 7.372 7.49803 7.686 7.78703 7.809L9.17503 8.402L10.563 8.995C10.852 9.118 11.183 9.011 11.352 8.746C11.586 8.378 11.886 7.974 12.267 7.568C12.992 6.796 13.748 6.297 14.335 5.982",
+      },
+    ],
+    [
+      "path",
+      {
+        d: "M8.00101 1.24701L7.36001 2.35601C7.16701 2.68601 7.30801 3.11101 7.66001 3.26101L10.798 4.60101L13.936 5.94101C14.288 6.09101 14.691 5.89901 14.797 5.53201L15.167 4.23601",
+      },
+    ],
+    [
+      "path",
+      {
+        d: "M4.00098 10.75H3.25098C2.42298 10.75 1.75098 11.422 1.75098 12.25C1.75098 13.078 2.42298 13.75 3.25098 13.75H14.751C15.579 13.75 16.251 14.422 16.251 15.25C16.251 16.078 15.579 16.75 14.751 16.75H12.751",
+      },
+    ],
+    [
+      "path",
+      {
+        d: "M10.253 8.86101L9.495 10.75H6.789L8.028 7.91101L10.253 8.86101Z",
+        fill: "currentColor",
+      },
+    ],
+  ],
+);
 export const IconHistory = /* @__PURE__ */ createIcon("History", "outline", [
   [
     "path",
@@ -2107,6 +2176,33 @@ export const IconLightbulbFill = /* @__PURE__ */ createIcon(
       },
     ],
   ],
+);
+export const IconLineCurved = /* @__PURE__ */ createIcon(
+  "LineCurved",
+  "outline",
+  [["path", { d: "M2.75 15.25C9 15.25 9 2.75 15.25 2.75" }]],
+);
+export const IconLineDashed = /* @__PURE__ */ createIcon(
+  "LineDashed",
+  "outline",
+  [["path", { d: "M2.75 9H4.75M8 9H10M13.25 9H15.25" }]],
+);
+export const IconLineElbow = /* @__PURE__ */ createIcon(
+  "LineElbow",
+  "outline",
+  [
+    [
+      "path",
+      {
+        d: "M2.75 14.25H6.75C7.855 14.25 8.75 13.355 8.75 12.25V5.75C8.75 4.645 9.645 3.75 10.75 3.75H15.25",
+      },
+    ],
+  ],
+);
+export const IconLineStraight = /* @__PURE__ */ createIcon(
+  "LineStraight",
+  "outline",
+  [["path", { d: "M2.75 15.25L15.25 2.75" }]],
 );
 export const IconLink2 = /* @__PURE__ */ createIcon("Link2", "outline", [
   [
@@ -2400,6 +2496,23 @@ export const IconNoteFill = /* @__PURE__ */ createIcon("Note", "fill", [
     {
       fillRule: "evenodd",
       d: "M5.25 2Q2 2 2 5.25L2 12.75Q2 16 5.25 16L10.5 16Q10.426 16 10.354 15.986Q10.281 15.971 10.213 15.943Q10.145 15.915 10.083 15.874Q10.022 15.833 9.97 15.78Q9.917 15.728 9.876 15.667Q9.835 15.605 9.807 15.537Q9.779 15.469 9.764 15.396Q9.75 15.324 9.75 15.25L9.75 12Q9.75 9.75 12 9.75L15.25 9.75Q15.324 9.75 15.396 9.764Q15.469 9.779 15.537 9.807Q15.605 9.835 15.667 9.876Q15.728 9.917 15.78 9.97Q15.833 10.022 15.874 10.083Q15.915 10.145 15.943 10.213Q15.971 10.281 15.986 10.354Q16 10.426 16 10.5L16 5.25Q16 2 12.75 2L5.25 2ZM15.78 11.031L11.031 15.78Q11.136 15.674 11.193 15.537Q11.25 15.399 11.25 15.25L11.25 12Q11.25 11.25 12 11.25L15.25 11.25Q15.399 11.25 15.537 11.193Q15.674 11.136 15.78 11.031Z",
+    },
+  ],
+]);
+export const IconNoteEdit = /* @__PURE__ */ createIcon("NoteEdit", "outline", [
+  [
+    "path",
+    {
+      d: "M8.0425 15.75H4.75C3.645 15.75 2.75 14.855 2.75 13.75V3.75C2.75 2.645 3.645 1.75 4.75 1.75H12.75C13.855 1.75 14.75 2.645 14.75 3.75V7.1048",
+    },
+  ],
+  ["path", { d: "M5.75 5.75H11.75" }],
+  ["path", { d: "M5.75 8.75H11.75" }],
+  ["path", { d: "M5.75 11.75H8.25" }],
+  [
+    "path",
+    {
+      d: "M13.7959 15.4542L16.9571 12.293C17.3476 11.9025 17.3476 11.2693 16.9571 10.8788L16.3713 10.293C15.9808 9.9025 15.3476 9.9025 14.9571 10.293L11.7959 13.4542L11.0001 16.2501L13.7959 15.4542Z",
     },
   ],
 ]);
@@ -2828,6 +2941,9 @@ export const IconSpellCheck = /* @__PURE__ */ createIcon(
     ["path", { d: "M9 12L11 14L15.25 9.5" }],
   ],
 );
+export const IconSquare = /* @__PURE__ */ createIcon("Square", "outline", [
+  ["rect", { x: "2.75", y: "2.75", width: "12.5", height: "12.5", rx: "0.75" }],
+]);
 export const IconSquareCode = /* @__PURE__ */ createIcon(
   "SquareCode",
   "outline",
@@ -2835,6 +2951,16 @@ export const IconSquareCode = /* @__PURE__ */ createIcon(
     ["rect", { x: "2.75", y: "2.75", width: "12.5", height: "12.5", rx: "3" }],
     ["path", { d: "M7.25 6.75L5 9L7.25 11.25" }],
     ["path", { d: "M10.75 6.75L13 9L10.75 11.25" }],
+  ],
+);
+export const IconSquareRounded = /* @__PURE__ */ createIcon(
+  "SquareRounded",
+  "outline",
+  [
+    [
+      "rect",
+      { x: "2.75", y: "2.75", width: "12.5", height: "12.5", rx: "3.5" },
+    ],
   ],
 );
 export const IconStar = /* @__PURE__ */ createIcon("Star", "outline", [
@@ -3040,6 +3166,9 @@ export const IconTrashXmarkFill = /* @__PURE__ */ createIcon(
     ],
   ],
 );
+export const IconTriangle = /* @__PURE__ */ createIcon("Triangle", "outline", [
+  ["path", { d: "M9 2.75L15.75 14.75H2.25Z" }],
+]);
 export const IconTriangleWarning = /* @__PURE__ */ createIcon(
   "TriangleWarning",
   "outline",

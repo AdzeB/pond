@@ -24,6 +24,12 @@ describe("list-path", () => {
     expect(getLastListPath()).toBe("/");
   });
 
+  it("returns to the canvas a save was opened from", () => {
+    rememberListPath("/canvas/board");
+    expect(getLastListPath()).toBe("/canvas/board");
+    expect(listPathForLocation("/save/xyz")).toBe("/canvas/board");
+  });
+
   it("resolves list mode path while a save is open", () => {
     rememberListPath("/trash");
     expect(listPathForLocation("/save/xyz")).toBe("/trash");

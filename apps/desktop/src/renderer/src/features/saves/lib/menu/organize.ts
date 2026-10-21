@@ -1,4 +1,5 @@
 import {
+  IconCanvas,
   IconClipboard,
   IconFolderPlus,
   IconFolderSend,
@@ -6,6 +7,7 @@ import {
   IconImage,
   IconPencil,
   IconPinTack,
+  IconPlus,
   IconRename,
   IconTagPlus,
 } from "@pond/icons";
@@ -86,6 +88,30 @@ function buildFolderItems(ids: string[], batch: boolean): MenuItemSpec[] {
   ];
 }
 
+function buildCanvasItems(ids: string[]): MenuItemSpec[] {
+  return [
+    ...saveLibraryBridge.canvasesSnapshot().map((canvas): MenuItemSpec => {
+      const onCanvas = new Set(canvas.saveIds);
+      const inAll = ids.every((id) => onCanvas.has(id));
+      return {
+        type: "checkbox",
+        label: canvas.name,
+        icon: glyph(IconCanvas),
+        checked: inAll,
+        disabled: inAll,
+        onCheckedChange: () =>
+          saveLibraryBridge.addSavesToCanvas(canvas.id, ids),
+      };
+    }),
+    { type: "separator" },
+    {
+      label: "New Canvas",
+      icon: glyph(IconPlus),
+      onClick: () => saveLibraryBridge.createCanvasWithSaves(ids),
+    },
+  ];
+}
+
 function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
   const lastFolderId = saveLibraryBridge.lastUsedFolderId();
   const lastFolder = lastFolderId
@@ -123,6 +149,12 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
       icon: glyph(IconFolderPlus),
       hidden: !batch,
       onClick: () => createFolderWithSaves(ids),
+    },
+    {
+      type: "submenu",
+      label: "Add to Canvas",
+      icon: glyph(IconCanvas),
+      items: buildCanvasItems(ids),
     },
     {
       label: "Add to Other Library",

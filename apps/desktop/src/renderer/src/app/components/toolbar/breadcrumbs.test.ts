@@ -126,6 +126,28 @@ describe("library breadcrumb paths", () => {
     ]);
   });
 
+  it("names the open canvas and keeps it as the parent of a save opened from it", () => {
+    expect(
+      buildBreadcrumbs({
+        pathname: "/canvas/board",
+        listPath: "/",
+        nav: { kind: "folder", id: "child" },
+        folders,
+        canvasLabel: "App idea",
+      }),
+    ).toEqual([{ label: "App idea", path: "/canvas/board" }]);
+    expect(
+      buildBreadcrumbs({
+        pathname: "/save/one",
+        listPath: "/canvas/board",
+        nav: { kind: "all" },
+        folders,
+        canvasLabel: "App idea",
+        saveLabel: "Type specimen",
+      }).map((c) => c.path),
+    ).toEqual(["/canvas/board", "/save/one"]);
+  });
+
   it("uses the originating list for saves opened from Trash", () => {
     expect(
       buildBreadcrumbs({

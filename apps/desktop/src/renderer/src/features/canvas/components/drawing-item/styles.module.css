@@ -1,0 +1,10 @@
+.drawing {
+  display: block;
+  overflow: visible;
+  border-radius: var(--ds-radius-sm);
+
+  &[data-selected] {
+    outline: var(--canvas-selection);
+    outline-offset: 4px;
+  }
+}

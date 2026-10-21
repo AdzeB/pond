@@ -2,6 +2,7 @@ import {
   IconAlbum2,
   IconBookmark,
   IconBookmarkSlash,
+  IconCanvas,
   IconChatBubble,
   IconDots,
   IconGear3,
@@ -14,6 +15,7 @@ import { Button, Menu } from "@pond/ui";
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChromeHistoryNav } from "@/app/components/chrome-toolbar";
+import { canvasIdFromPath, useCanvas } from "@/features/canvas";
 import { AgentToggle } from "@/features/library/components/agent-toggle";
 import { FolderCustomizeDialog } from "@/features/library/components/folder-customize-dialog";
 import { SidebarToggle } from "@/features/library/components/sidebar-toggle";
@@ -62,7 +64,9 @@ function RootIcon({ path }: { path: string }) {
       ? IconGear3
       : path.startsWith("/source/")
         ? IconNodes3
-        : IconAlbum2);
+        : path.startsWith("/canvas/")
+          ? IconCanvas
+          : IconAlbum2);
   return <Icon aria-hidden="true" />;
 }
 
@@ -78,14 +82,19 @@ function Breadcrumbs() {
     null,
   );
   const save = useSave(saveIdFromPath(pathname));
+  const listPath = getLastListPath();
+  const canvas = useCanvas(
+    canvasIdFromPath(saveIdFromPath(pathname) ? listPath : pathname),
+  );
   const hasActiveSearch = useHasActiveSearch();
   const filteredCount = useViewFilteredCount();
   const crumbs = buildBreadcrumbs({
     pathname,
-    listPath: getLastListPath(),
+    listPath,
     nav,
     folders: folderRows,
     saveLabel: computeLabel(pathname, save),
+    canvasLabel: canvas?.name,
     searchResultCount: hasActiveSearch ? filteredCount : undefined,
   });
   const hidden = crumbs.length > 3 ? crumbs.slice(1, -2) : [];
