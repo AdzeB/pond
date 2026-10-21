@@ -41,6 +41,7 @@ describe("native host manifests", () => {
         type: "stdio",
         allowed_origins: [
           "chrome-extension://ihciihlcdkopghlpabpmnodncfdboplb/",
+          "chrome-extension://ghigndnldiagchoaifgndleogpkendbc/",
         ],
       },
       {
@@ -218,7 +219,10 @@ describe("native host manifests", () => {
     expect(chromiumPath).toBeDefined();
     expect(firefoxPath).toBeDefined();
     expect(JSON.parse(writes.get(chromiumPath ?? "") ?? "")).toMatchObject({
-      allowed_origins: ["chrome-extension://ihciihlcdkopghlpabpmnodncfdboplb/"],
+      allowed_origins: [
+        "chrome-extension://ihciihlcdkopghlpabpmnodncfdboplb/",
+        "chrome-extension://ghigndnldiagchoaifgndleogpkendbc/",
+      ],
     });
     expect(JSON.parse(writes.get(firefoxPath ?? "") ?? "")).toMatchObject({
       allowed_extensions: ["desktop@pond.so"],

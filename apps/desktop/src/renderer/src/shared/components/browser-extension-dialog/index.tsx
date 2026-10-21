@@ -49,19 +49,15 @@ export function BrowserExtensionDialog({
             </Dialog.Description>
             <ul className={styles.stores}>
               {STORES.map(({ store, title, browsers, action }) => {
-                const url = EXTENSION_STORE_URLS[store];
                 return (
                   <li key={store} className={styles.store}>
                     <div className={styles.details}>
                       <span className={styles.name}>{title}</span>
-                      <span className={styles.meta}>
-                        {url ? browsers : "Coming soon"}
-                      </span>
+                      <span className={styles.meta}>{browsers}</span>
                     </div>
                     <Button
                       variant={store === "chrome" ? "primary" : "secondary"}
-                      disabled={!url}
-                      onClick={() => url && openStore(url)}
+                      onClick={() => openStore(EXTENSION_STORE_URLS[store])}
                     >
                       {action}
                     </Button>
