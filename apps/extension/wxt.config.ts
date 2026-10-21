@@ -1,10 +1,6 @@
 import { resolve } from "node:path";
-import { FIREFOX_EXTENSION_ID } from "@pond/schema/native";
+import { EXTENSION_KEY, FIREFOX_EXTENSION_ID } from "@pond/schema/native";
 import { defineConfig } from "wxt";
-
-/** Pins unpacked builds to `EXTENSION_ID` in `@pond/schema/native`; the Chrome Web Store rejects `key` and assigns its own ID. */
-const EXTENSION_KEY =
-  "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3Zo8eCTaDeFH3Cc8yLtm6FiH3ALU8SMbH+oTFnjzBbD1+zUy1chc0P4c62tYvW4rBiO3CKt2Ycn3u1PmbkBPzuu/65YA7AZMA9+Oyp3QHhsjC1lED4EdCKQJK2WuyLv0k4kG22HQGUN83n9vdx/fPYRk3IL4yFplWUrcsApFOVAIVvhoMizpYfnBvey64aY9FTAFSKd+iYyA7J/yVzRh4AyjYRJFlmdA8K9aMaGZ/Ta4UvUrqoGBkgyGGH+hoVsPvgxW/+w5+JWAThT9ApAVEeuuZp9LeNwmnI2zUFxS0JRf6LHIDy7kbtTOVW5g9eOaS9G3Gs13j2VPC1Yyu7zxTQIDAQAB";
 
 const STORE_BUILD = process.env.POND_STORE_BUILD === "1";
 

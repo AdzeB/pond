@@ -4,7 +4,7 @@ Browser extension that saves pages, screenshots, and images into your local Pond
 
 ## Install
 
-Get the extension from [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/desktop%40pond.so/) or the Chrome Web Store, or open Pond and choose **Browser Extension** from the library menu.
+Open Pond, choose **Browser Extension** from the library menu, and click **Download** next to Chrome or Firefox. Pond downloads the extension zip from the GitHub release that matches your version and unpacks it into Downloads. Load it from `chrome://extensions` with Developer mode on, or from `about:debugging` with **Load Temporary Add-on**.
 
 Open Pond once so it can register the native host. On macOS this writes a manifest into each installed browser's native messaging folder. On Windows it registers the host under per-user `HKEY_CURRENT_USER` registry keys for Chrome, Edge, Brave, and other supported browsers.
 

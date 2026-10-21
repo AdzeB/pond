@@ -8,6 +8,10 @@ export const NATIVE_HOST_NAME = "so.pond.host";
 /** Pinned by `manifest.key` in unpacked builds; native-host `allowed_origins` must match. */
 export const EXTENSION_ID = "ihciihlcdkopghlpabpmnodncfdboplb";
 
+/** Public key that derives `EXTENSION_ID`; the Chrome Web Store rejects it, so store zips omit it and Pond adds it back when it unpacks one. */
+export const EXTENSION_KEY =
+  "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3Zo8eCTaDeFH3Cc8yLtm6FiH3ALU8SMbH+oTFnjzBbD1+zUy1chc0P4c62tYvW4rBiO3CKt2Ycn3u1PmbkBPzuu/65YA7AZMA9+Oyp3QHhsjC1lED4EdCKQJK2WuyLv0k4kG22HQGUN83n9vdx/fPYRk3IL4yFplWUrcsApFOVAIVvhoMizpYfnBvey64aY9FTAFSKd+iYyA7J/yVzRh4AyjYRJFlmdA8K9aMaGZ/Ta4UvUrqoGBkgyGGH+hoVsPvgxW/+w5+JWAThT9ApAVEeuuZp9LeNwmnI2zUFxS0JRf6LHIDy7kbtTOVW5g9eOaS9G3Gs13j2VPC1Yyu7zxTQIDAQAB";
+
 /** The Chrome Web Store assigns its own ID because it rejects `manifest.key` on a new listing. */
 export const CHROME_WEB_STORE_ID = "ghigndnldiagchoaifgndleogpkendbc";
 
@@ -18,14 +22,6 @@ export const CHROMIUM_EXTENSION_IDS: readonly string[] = [
   EXTENSION_ID,
   CHROME_WEB_STORE_ID,
 ];
-
-export type ExtensionStore = "chrome" | "firefox";
-
-/** Chrome, Arc, Brave, Edge, Dia, and Vivaldi install from the Chrome Web Store; Zen and other Firefox forks from AMO. */
-export const EXTENSION_STORE_URLS = {
-  chrome: `https://chromewebstore.google.com/detail/${CHROME_WEB_STORE_ID}`,
-  firefox: `https://addons.mozilla.org/firefox/addon/${encodeURIComponent(FIREFOX_EXTENSION_ID)}/`,
-} satisfies Record<ExtensionStore, string>;
 
 const captureIdSchema = z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/);
 

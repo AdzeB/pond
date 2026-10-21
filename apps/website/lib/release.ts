@@ -14,7 +14,7 @@ function windowsInstallerUrl(): string {
   return `${RELEASES_BASE}/Pond-${POND_VERSION}-x64.exe`;
 }
 
-/** Mirrors `EXTENSION_STORE_URLS` in `@pond/schema/native`, which would pull zod into this client bundle. */
+/** Hardcoded because importing `CHROME_WEB_STORE_ID` from `@pond/schema/native` would pull zod into this client bundle. */
 const CHROME_WEB_STORE_URL =
   "https://chromewebstore.google.com/detail/ghigndnldiagchoaifgndleogpkendbc";
 const FIREFOX_ADDONS_URL =

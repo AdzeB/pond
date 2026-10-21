@@ -1,6 +1,6 @@
 # Releasing Pond
 
-Pond ships via **GitHub Releases**: signed and notarized macOS `.dmg` and `.zip` files (arm64 + x64) with `latest-mac.yml` for auto-update, and a Windows x64 NSIS installer with `latest.yml` for auto-update. The browser extension ships through the Chrome Web Store and Firefox Add-ons, and each store zip is attached to the release.
+Pond ships via **GitHub Releases**: signed and notarized macOS `.dmg` and `.zip` files (arm64 + x64) with `latest-mac.yml` for auto-update, and a Windows x64 NSIS installer with `latest.yml` for auto-update. The extension zips are attached to the release too. Pond's Browser Extension dialog downloads the zip matching its own version, so every release must carry `pond-extension-X.Y.Z-chrome.zip` and `pond-extension-X.Y.Z-firefox.zip`.
 
 ## Version bump
 
@@ -199,7 +199,7 @@ Run these before announcing a release:
 - [ ] Fresh Windows 10/11 x64: run `Pond-X.Y.Z-x64.exe` → Pond installs without administrator rights and launches, and the installer's Properties → Digital Signatures tab shows the publisher
 - [ ] Website Download buttons (Mac, Intel Mac, Windows) hit the new artifacts
 - [ ] Open Pond once so it registers the native host (a manifest file on macOS; on Windows the installer writes the `HKCU` keys and Pond writes the manifests they point to)
-- [ ] Install the extension from its store listing → click the Pond icon or right-click a page → save appears in Pond
+- [ ] Browser Extension dialog → **Download** next to Chrome → load the Downloads folder unpacked → click the Pond icon or right-click a page → save appears in Pond
 - [ ] Settings → **Check for Updates** → shows "You're on the latest version"
 - [ ] Windows: Settings → **Check for Updates** → shows "You're on the latest version"
 - [ ] Optional: tag a patch on a fork and confirm auto-update downloads the new build on both platforms
