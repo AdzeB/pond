@@ -24,7 +24,8 @@ describe("settings hrefs", () => {
     expect(settingsHref("personalization")).toBe("/settings/personalization");
     expect(settingsHref("mcp")).toBe("/settings/mcp");
     expect(settingsHref("agent-models")).toBe("/settings/agent-models");
-    expect(settingsHref("harvesting")).toBe("/settings/harvesting");
+    expect(settingsHref("schedule")).toBe("/settings/schedule");
+    expect(settingsHref("sources-youtube")).toBe("/settings/sources-youtube");
     expect(settingsHref("shortcuts")).toBe("/settings/shortcuts");
   });
 

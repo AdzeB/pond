@@ -50,11 +50,17 @@ describe("settings search index", () => {
     }
   });
 
-  it("indexes the global download settings under Harvesting", () => {
-    expect(entry("harvesting:autoDownload").title).toBe(
+  it("indexes the global download settings under Images and Videos", () => {
+    expect(entry("videos:autoDownload").title).toBe(
       "Download Videos Automatically",
     );
-    expect(entry("harvesting:autoDownload").groupTitle).toBe("Video Downloads");
+    expect(entry("videos:autoDownload").groupTitle).toBe("Downloads");
+    expect(entry("images:maxLongEdge").sectionLabel).toBe("Images");
+  });
+
+  it("indexes the Harvesting pages under their own labels", () => {
+    expect(entry("schedule").sectionLabel).toBe("Schedule");
+    expect(entry("sources").sectionLabel).toBe("Sources");
   });
 
   it("leaves hidden sections out of search", () => {
@@ -63,7 +69,7 @@ describe("settings search index", () => {
         (section) => section.id,
       ),
     );
-    expect(hidden.has("harvesting-youtube")).toBe(true);
+    expect(hidden.has("sources-youtube")).toBe(true);
     expect(
       SETTINGS_SEARCH_INDEX.filter((candidate) =>
         hidden.has(candidate.sectionId),
@@ -73,10 +79,10 @@ describe("settings search index", () => {
 });
 
 describe("settings child sections", () => {
-  it("registers a hidden page under Harvesting for each source", () => {
-    const youtube = sectionForPath("harvesting-youtube");
+  it("registers a hidden page under Sources for each source", () => {
+    const youtube = sectionForPath("sources-youtube");
     expect(youtube?.label).toBe("YouTube");
-    expect(youtube?.parent).toBe("harvesting");
+    expect(youtube?.parent).toBe("sources");
     expect(youtube?.hidden).toBe(true);
     expect(youtube?.config.title).toBe("YouTube");
   });
@@ -85,7 +91,14 @@ describe("settings child sections", () => {
     const listed = SETTINGS_MASTER_GROUPS.flatMap((group) =>
       group.sections.map((section) => section.id),
     );
-    expect(listed).toContain("harvesting");
+    expect(
+      SETTINGS_MASTER_GROUPS.find((group) => group.group === "harvesting"),
+    ).toMatchObject({ label: "Harvesting" });
+    expect(
+      SETTINGS_MASTER_GROUPS.find(
+        (group) => group.group === "harvesting",
+      )?.sections.map((section) => section.id),
+    ).toEqual(["schedule", "sources", "images", "videos"]);
     expect(listed.some((id) => sectionForId(id)?.hidden)).toBe(false);
   });
 });

@@ -5,12 +5,17 @@ import { appearanceSection } from "@/features/settings/lib/config-appearance";
 import { backupsSection } from "@/features/settings/lib/config-backups";
 import { extensionSection } from "@/features/settings/lib/config-extension";
 import { generalSection } from "@/features/settings/lib/config-general";
-import { harvestingSection } from "@/features/settings/lib/config-harvesting";
+import {
+  scheduleSection,
+  sourcesSection,
+} from "@/features/settings/lib/config-harvesting";
+import { imagesSection } from "@/features/settings/lib/config-images";
 import { librarySection } from "@/features/settings/lib/config-library";
 import { mcpSection } from "@/features/settings/lib/config-mcp";
 import { processingSection } from "@/features/settings/lib/config-processing";
 import { sourceDownloadsSection } from "@/features/settings/lib/config-source-downloads";
 import { storageSection } from "@/features/settings/lib/config-storage";
+import { videosSection } from "@/features/settings/lib/config-videos";
 import { viewerSection } from "@/features/settings/lib/config-viewer";
 import { sourceSectionId } from "@/features/settings/lib/download-sources";
 
@@ -130,7 +135,10 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ["storage", storageSection],
   ["backups", backupsSection],
   ["processing", processingSection],
-  ["harvesting", harvestingSection],
+  ["schedule", scheduleSection],
+  ["sources", sourcesSection],
+  ["images", imagesSection],
+  ["videos", videosSection],
   [
     "mcp",
     {

@@ -1,4 +1,5 @@
 import type { ExternalSource } from "@pond/schema/sources";
+import type { SectionConfig } from "@/features/settings/components/engine";
 import { useImageDownloadBinding } from "@/features/settings/components/sections/downloads";
 import {
   type GroupConfig,
@@ -17,9 +18,11 @@ const followsGlobal = (v: SettingsValues) => v.followsGlobal === true;
 
 export function imageDownloadGroups(source?: ExternalSource): GroupConfig[] {
   const useBinding = () => useImageDownloadBinding(source);
+  /** Source pages mix image and video groups, so their titles name the kind. */
+  const title = (name: string) => (source ? `Image ${name}` : name);
   return [
     group.with(useBinding, {
-      title: "Images",
+      title: title("Format"),
       items: [
         {
           control: "select",
@@ -52,7 +55,7 @@ export function imageDownloadGroups(source?: ExternalSource): GroupConfig[] {
       ],
     }),
     group.with(useBinding, {
-      title: "Image Encoding",
+      title: title("Encoding"),
       items: [
         {
           control: "select",
@@ -98,3 +101,10 @@ export function imageDownloadGroups(source?: ExternalSource): GroupConfig[] {
     }),
   ];
 }
+
+export const imagesSection: SectionConfig = {
+  title: "Images",
+  description: "Resize, format, and encoding for saved images.",
+  keywords: ["downloads", "resolution", "format", "quality", "metadata"],
+  groups: imageDownloadGroups(),
+};

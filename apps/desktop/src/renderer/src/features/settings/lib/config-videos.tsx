@@ -1,4 +1,6 @@
 import type { ExternalSource } from "@pond/schema/sources";
+import type { SectionConfig } from "@/features/settings/components/engine";
+import { MissingVideos } from "@/features/settings/components/sections/download-sources";
 import { useVideoDownloadBinding } from "@/features/settings/components/sections/downloads";
 import {
   type GroupConfig,
@@ -11,9 +13,11 @@ const followsGlobal = (v: SettingsValues) => v.followsGlobal === true;
 
 export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
   const useBinding = () => useVideoDownloadBinding(source);
+  /** Source pages mix image and video groups, so their titles name the kind. */
+  const title = (name: string) => (source ? `Video ${name}` : name);
   return [
     group.with(useBinding, {
-      title: "Video Downloads",
+      title: title("Downloads"),
       items: [
         {
           control: "switch",
@@ -25,8 +29,12 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
         },
       ],
     }),
+    {
+      title: "Existing Saves",
+      render: () => <MissingVideos source={source} />,
+    },
     group.with(useBinding, {
-      title: "Video Quality",
+      title: title("Quality"),
       items: [
         {
           control: "select",
@@ -82,7 +90,7 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
       ],
     }),
     group.with(useBinding, {
-      title: "Video Formats",
+      title: title("Formats"),
       items: [
         {
           control: "select",
@@ -128,7 +136,7 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
       ],
     }),
     group.with(useBinding, {
-      title: "Video Subtitles",
+      title: title("Subtitles"),
       items: [
         {
           control: "select",
@@ -168,7 +176,7 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
       ],
     }),
     group.with(useBinding, {
-      title: "Video File Details",
+      title: title("File Details"),
       items: [
         {
           control: "switch",
@@ -194,7 +202,7 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
       ],
     }),
     group.with(useBinding, {
-      title: "Video Sponsor Block",
+      title: title("Sponsor Block"),
       items: [
         {
           control: "switch",
@@ -207,3 +215,17 @@ export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
     }),
   ];
 }
+
+export const videosSection: SectionConfig = {
+  title: "Videos",
+  description: "Quality, codecs, and extras for saved videos.",
+  keywords: [
+    "downloads",
+    "resolution",
+    "codec",
+    "subtitles",
+    "sponsorblock",
+    "missing",
+  ],
+  groups: videoDownloadGroups(),
+};

@@ -14,7 +14,7 @@ export type VideoDownloadValues = VideoDownloadPrefs & SourceLock;
 export type ImageDownloadValues = ImageDownloadPrefs & SourceLock;
 
 export function sourceSectionId(source: ExternalSource): string {
-  return `harvesting-${source}`;
+  return `sources-${source}`;
 }
 
 export function hasSourceOverrides(
@@ -25,13 +25,6 @@ export function hasSourceOverrides(
     settings.videoDownloadSources[source] !== undefined ||
     settings.imageDownloadSources[source] !== undefined
   );
-}
-
-export function sourceStatusLabel(
-  settings: DownloadSettings,
-  source: ExternalSource,
-): "Global" | "Custom" {
-  return hasSourceOverrides(settings, source) ? "Custom" : "Global";
 }
 
 function followsGlobal(

@@ -1,6 +1,5 @@
 import { type ExternalSource, sourceLabel } from "@pond/schema/sources";
 import type { SectionConfig } from "@/features/settings/components/engine";
-import { MissingVideos } from "@/features/settings/components/sections/download-sources";
 import { useSourceCustomBinding } from "@/features/settings/components/sections/downloads";
 import { imageDownloadGroups } from "@/features/settings/lib/config-images";
 import { videoDownloadGroups } from "@/features/settings/lib/config-videos";
@@ -27,10 +26,6 @@ export function sourceDownloadsSection(source: ExternalSource): SectionConfig {
       }),
       ...imageDownloadGroups(source),
       ...videoDownloadGroups(source),
-      {
-        title: "Existing Saves",
-        render: () => <MissingVideos source={source} />,
-      },
     ],
   };
 }

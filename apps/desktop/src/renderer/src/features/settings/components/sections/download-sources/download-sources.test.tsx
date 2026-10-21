@@ -69,7 +69,7 @@ async function settle() {
 }
 
 function row(key: string) {
-  return host.querySelector(`#setting-harvesting-youtube-${key}`);
+  return host.querySelector(`#setting-sources-youtube-${key}`);
 }
 
 beforeEach(() => {
@@ -89,7 +89,7 @@ it("shows global values on a source page and locks them while it follows global"
   await render(
     <SettingsSectionView
       config={sourceDownloadsSection("youtube")}
-      sectionId="harvesting-youtube"
+      sectionId="sources-youtube"
     />,
   );
 
@@ -110,7 +110,7 @@ it("unlocks every row on a custom source, even with auto-download off", async ()
   await render(
     <SettingsSectionView
       config={sourceDownloadsSection("youtube")}
-      sectionId="harvesting-youtube"
+      sectionId="sources-youtube"
     />,
   );
 
@@ -120,7 +120,7 @@ it("unlocks every row on a custom source, even with auto-download off", async ()
   expect(row("maxHeight")?.textContent).toContain("2160p");
 });
 
-it("lists each source with its status", async () => {
+it("marks only sources with custom settings", async () => {
   stubPond({ videoDownloadSources: { youtube: {} } });
   await render(<DownloadSources />);
 
@@ -129,7 +129,8 @@ it("lists each source with its status", async () => {
       ?.parentElement;
 
   expect(item("YouTube")?.textContent).toContain("Custom");
-  expect(item("Reddit")?.textContent).toContain("Global");
+  expect(item("Reddit")?.textContent).not.toContain("Custom");
+  expect(item("Reddit")?.textContent).not.toContain("Global");
 });
 
 it("downloads missing videos for one source", async () => {

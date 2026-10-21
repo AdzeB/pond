@@ -8,14 +8,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useDownloadSettings } from "@/features/settings/components/sections/downloads";
 import {
+  hasSourceOverrides,
   missingVideosDescription,
   queuedVideosTitle,
   sourceSectionId,
-  sourceStatusLabel,
 } from "@/features/settings/lib/download-sources";
 import { getSourceIcon } from "@/features/sources";
 import { openSettings } from "@/shared/lib/open-settings";
 import { notify } from "@/shared/lib/toast";
+import styles from "./styles.module.css";
 
 export function DownloadSources() {
   const { data } = useDownloadSettings();
@@ -26,13 +27,22 @@ export function DownloadSources() {
         const Icon = getSourceIcon(source);
         return (
           <Settings.Item key={source}>
-            {Icon ? <Icon aria-hidden /> : null}
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>{label}</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                {data ? sourceStatusLabel(data, source) : null}
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
+            <div className={styles.identity}>
+              {Icon ? (
+                <Icon
+                  aria-hidden
+                  width={20}
+                  height={20}
+                  className={styles.icon}
+                />
+              ) : null}
+              <Settings.ItemDetails>
+                <Settings.ItemTitle>{label}</Settings.ItemTitle>
+                {data && hasSourceOverrides(data, source) ? (
+                  <Settings.ItemDescription>Custom</Settings.ItemDescription>
+                ) : null}
+              </Settings.ItemDetails>
+            </div>
             <Settings.ItemControl>
               <Button
                 size="sm"

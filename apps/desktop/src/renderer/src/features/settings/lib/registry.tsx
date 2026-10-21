@@ -3,14 +3,17 @@ import {
   IconArchive as Backups,
   IconGlobe as Extension,
   IconGear3 as General,
-  IconImage as Images,
+  IconImages as Images,
   IconFolder as Library,
   IconBracketsCurly as Mcp,
   IconCube as Models,
   IconUser as Personalization,
+  IconImage as Preview,
   IconMagicWand as Processing,
   IconNodes3 as Providers,
+  IconCalendar as Schedule,
   IconKeyboard as Shortcuts,
+  IconDownload as Sources,
   IconServer as Storage,
   IconBookmark as Tags,
   IconMovie as Videos,
@@ -31,7 +34,7 @@ import { getSourceIcon } from "@/features/sources";
 
 const ICONS = new Map<string, IconComponent>([
   ["general", General],
-  ["viewer", Images],
+  ["viewer", Preview],
   ["appearance", Appearance],
   ["shortcuts", Shortcuts],
   ["extension", Extension],
@@ -44,10 +47,13 @@ const ICONS = new Map<string, IconComponent>([
   ["personalization", Personalization],
   ["mcp", Mcp],
   ["storage", Storage],
-  ["harvesting", Videos],
+  ["schedule", Schedule],
+  ["sources", Sources],
+  ["images", Images],
+  ["videos", Videos],
   ...EXTERNAL_SOURCE_IDS.map((source): [string, IconComponent] => [
     sourceSectionId(source),
-    getSourceIcon(source) ?? Videos,
+    getSourceIcon(source) ?? Sources,
   ]),
 ]);
 

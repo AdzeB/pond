@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  hasSourceOverrides,
   imageDownloadValues,
   missingVideosDescription,
   queuedVideosTitle,
   sourceSectionId,
-  sourceStatusLabel,
   videoDownloadValues,
 } from "./download-sources";
 import {
@@ -77,18 +77,15 @@ describe("download values", () => {
 });
 
 describe("source status", () => {
-  it("labels sources with overrides as Custom", () => {
-    expect(sourceStatusLabel(settings, "youtube")).toBe("Custom");
-    expect(sourceStatusLabel(settings, "pinterest")).toBe("Custom");
-    expect(sourceStatusLabel(settings, "tiktok")).toBe("Custom");
-  });
-
-  it("labels sources without overrides as Global", () => {
-    expect(sourceStatusLabel(settings, "reddit")).toBe("Global");
+  it("detects sources with overrides of either kind", () => {
+    expect(hasSourceOverrides(settings, "youtube")).toBe(true);
+    expect(hasSourceOverrides(settings, "pinterest")).toBe(true);
+    expect(hasSourceOverrides(settings, "tiktok")).toBe(true);
+    expect(hasSourceOverrides(settings, "reddit")).toBe(false);
   });
 
   it("names the child settings section under Harvesting", () => {
-    expect(sourceSectionId("youtube")).toBe("harvesting-youtube");
+    expect(sourceSectionId("youtube")).toBe("sources-youtube");
   });
 });
 

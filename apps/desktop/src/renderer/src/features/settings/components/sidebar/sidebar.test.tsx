@@ -29,14 +29,14 @@ it("starts with the search when there is no exit action", async () => {
   expect(host.textContent).not.toContain("Exit settings");
 });
 
-it("highlights Harvesting while a source page is open", async () => {
+it("highlights Sources while a source page is open", async () => {
   await act(async () => {
-    root.render(<SettingsSidebarView activeSection="harvesting-youtube" />);
+    root.render(<SettingsSidebarView activeSection="sources-youtube" />);
   });
 
   const current = host.querySelector('[aria-current="page"]');
 
-  expect(current?.textContent).toBe("Harvesting");
+  expect(current?.textContent).toBe("Sources");
   expect(host.textContent).not.toContain("YouTube");
 });
 
