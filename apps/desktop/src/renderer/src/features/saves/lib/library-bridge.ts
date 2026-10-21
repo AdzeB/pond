@@ -6,6 +6,12 @@ export interface SaveFolderReference {
   parentId?: string | null;
 }
 
+export interface SaveCanvasReference {
+  id: string;
+  name: string;
+  saveIds: readonly string[];
+}
+
 export type SaveInspectorTab = "organize" | "info";
 
 export interface SaveLibraryBridge {
@@ -38,6 +44,9 @@ export interface SaveLibraryBridge {
     folderId: string,
     patch: { pinnedIds?: string[]; coverSaveId?: string | null },
   ): Promise<void>;
+  canvasesSnapshot(): readonly SaveCanvasReference[];
+  addSavesToCanvas(canvasId: string, ids: readonly string[]): void;
+  createCanvasWithSaves(ids: readonly string[]): void;
 }
 
 function unavailable(): never {
@@ -67,6 +76,9 @@ let current: SaveLibraryBridge = {
   refreshFolders: unavailable,
   startEditingFolder: unavailable,
   saveFolderPresentation: unavailable,
+  canvasesSnapshot: unavailable,
+  addSavesToCanvas: unavailable,
+  createCanvasWithSaves: unavailable,
 };
 
 export function registerSaveLibraryBridge(bridge: SaveLibraryBridge): void {
@@ -98,4 +110,7 @@ export const saveLibraryBridge: SaveLibraryBridge = {
   startEditingFolder: (id) => current.startEditingFolder(id),
   saveFolderPresentation: (folderId, patch) =>
     current.saveFolderPresentation(folderId, patch),
+  canvasesSnapshot: () => current.canvasesSnapshot(),
+  addSavesToCanvas: (canvasId, ids) => current.addSavesToCanvas(canvasId, ids),
+  createCanvasWithSaves: (ids) => current.createCanvasWithSaves(ids),
 };

@@ -295,6 +295,7 @@ describe("buildSaveMenu", () => {
       "Replace File",
       "Add Tags",
       "Add to Folders",
+      "Add to Canvas",
       "Add to Other Library",
       "Export",
       "Share",

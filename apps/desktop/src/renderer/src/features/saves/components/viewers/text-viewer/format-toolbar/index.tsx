@@ -308,244 +308,250 @@ export function FormatToolbar() {
               event.preventDefault();
             }}
           >
-            <div ref={toolbarRef} className={styles.focus}>
-              {linkMode ? (
-                <Toolbar.Root className={styles.toolbar} aria-label="Link">
-                  <Toolbar.Input
-                    ref={urlRef}
-                    className={styles.url}
-                    placeholder="Enter link URL"
-                    aria-label="Enter link URL"
-                    value={draft}
-                    onChange={(event) => setDraft(event.currentTarget.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        skipBlur.current = true;
+            <Tooltip.Group>
+              <div ref={toolbarRef} className={styles.focus}>
+                {linkMode ? (
+                  <Toolbar.Root className={styles.toolbar} aria-label="Link">
+                    <Toolbar.Input
+                      ref={urlRef}
+                      className={styles.url}
+                      placeholder="Enter link URL"
+                      aria-label="Enter link URL"
+                      value={draft}
+                      onChange={(event) => setDraft(event.currentTarget.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          skipBlur.current = true;
+                          applyHref(draft);
+                          editor.focus();
+                        }
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          skipBlur.current = true;
+                          explicit.current = false;
+                          setDraft(formats.href);
+                          setLinkMode(Boolean(formats.href));
+                          editor.focus();
+                        }
+                      }}
+                      onBlur={() => {
+                        if (skipBlur.current) {
+                          skipBlur.current = false;
+                          return;
+                        }
                         applyHref(draft);
-                        editor.focus();
-                      }
-                      if (event.key === "Escape") {
-                        event.preventDefault();
+                      }}
+                    />
+                    <Toolbar.Separator />
+                    <FormatButton
+                      label="Open"
+                      onClick={() => {
+                        skipBlur.current = true;
+                        if (openHref) void window.pond.openExternal(openHref);
+                      }}
+                    >
+                      <IconArrowUpRight />
+                    </FormatButton>
+                    <FormatButton
+                      label="Remove Link"
+                      onClick={() => {
                         skipBlur.current = true;
                         explicit.current = false;
-                        setDraft(formats.href);
-                        setLinkMode(Boolean(formats.href));
-                        editor.focus();
+                        setDraft("");
+                        setLinkMode(false);
+                        applyHref("");
+                      }}
+                    >
+                      <IconTrash />
+                    </FormatButton>
+                  </Toolbar.Root>
+                ) : (
+                  <Toolbar.Root
+                    className={styles.toolbar}
+                    aria-label="Formatting"
+                  >
+                    <Menu.Root>
+                      <Tooltip label="Text Style" side="top">
+                        <Toolbar.Button
+                          render={
+                            <Menu.Trigger
+                              size="xs"
+                              variant="ghost"
+                              aria-label="Text Style"
+                              aria-pressed={heading}
+                              data-pressed={heading || undefined}
+                              className={styles.aa}
+                            />
+                          }
+                        >
+                          <StyleGlyph block={formats.block} />
+                          <IconChevronDown size={12} />
+                        </Toolbar.Button>
+                      </Tooltip>
+                      <Menu.Portal>
+                        <Menu.Positioner
+                          className={styles.menu}
+                          side="bottom"
+                          align="start"
+                        >
+                          <Menu.Popup>
+                            {STYLES.map((item) => (
+                              <Menu.Item
+                                key={item.block}
+                                onClick={() =>
+                                  applyNoteBlock(editor, item.block)
+                                }
+                              >
+                                <Menu.ItemIcon>
+                                  {item.Icon ? <item.Icon /> : "Aa"}
+                                </Menu.ItemIcon>
+                                <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
+                                <Menu.ItemKeyboard>
+                                  {platformGlyphs(item.shortcut)}
+                                </Menu.ItemKeyboard>
+                              </Menu.Item>
+                            ))}
+                          </Menu.Popup>
+                        </Menu.Positioner>
+                      </Menu.Portal>
+                    </Menu.Root>
+                    <FormatButton
+                      label="Bold"
+                      shortcut={["⌘", "B"]}
+                      pressed={formats.bold}
+                      onClick={() => toggle("bold")}
+                    >
+                      <IconTextBold />
+                    </FormatButton>
+                    <FormatButton
+                      label="Italic"
+                      shortcut={["⌘", "I"]}
+                      pressed={formats.italic}
+                      onClick={() => toggle("italic")}
+                    >
+                      <IconTextItalic />
+                    </FormatButton>
+                    <FormatButton
+                      label="Strikethrough"
+                      shortcut={["⌘", "⇧", "S"]}
+                      pressed={formats.strikethrough}
+                      onClick={() => toggle("strikethrough")}
+                    >
+                      <IconTextStrikethrough />
+                    </FormatButton>
+                    <FormatButton
+                      label="Underline"
+                      shortcut={["⌘", "U"]}
+                      pressed={formats.underline}
+                      onClick={() => toggle("underline")}
+                    >
+                      <IconTextUnderline />
+                    </FormatButton>
+                    <FormatButton
+                      label="Link"
+                      shortcut={["⌘", "K"]}
+                      pressed={Boolean(formats.href)}
+                      onClick={enterLink}
+                    >
+                      <IconLink2 />
+                    </FormatButton>
+                    <FormatButton
+                      label="Quote"
+                      shortcut={["⌥", "⇧", "."]}
+                      pressed={formats.block === "quote"}
+                      onClick={() =>
+                        applyNoteBlock(
+                          editor,
+                          formats.block === "quote" ? "paragraph" : "quote",
+                        )
                       }
-                    }}
-                    onBlur={() => {
-                      if (skipBlur.current) {
-                        skipBlur.current = false;
-                        return;
+                    >
+                      <IconBlockquote />
+                    </FormatButton>
+                    <FormatButton
+                      label="Collapse"
+                      shortcut={["⌘", "⇧", "6"]}
+                      pressed={formats.collapse}
+                      onClick={() => applyNoteBlock(editor, "collapse")}
+                    >
+                      <IconCaretMinimize />
+                    </FormatButton>
+                    <FormatButton
+                      label="Inline Code"
+                      shortcut={["⌘", "E"]}
+                      pressed={formats.code}
+                      onClick={() => toggle("code")}
+                    >
+                      <IconCode />
+                    </FormatButton>
+                    <FormatButton
+                      label="Code Block"
+                      shortcut={["⌘", "⇧", "\\"]}
+                      pressed={formats.block === "code"}
+                      onClick={() =>
+                        applyNoteBlock(
+                          editor,
+                          formats.block === "code" ? "paragraph" : "code",
+                        )
                       }
-                      applyHref(draft);
-                    }}
-                  />
-                  <Toolbar.Separator />
-                  <FormatButton
-                    label="Open"
-                    onClick={() => {
-                      skipBlur.current = true;
-                      if (openHref) void window.pond.openExternal(openHref);
-                    }}
-                  >
-                    <IconArrowUpRight />
-                  </FormatButton>
-                  <FormatButton
-                    label="Remove Link"
-                    onClick={() => {
-                      skipBlur.current = true;
-                      explicit.current = false;
-                      setDraft("");
-                      setLinkMode(false);
-                      applyHref("");
-                    }}
-                  >
-                    <IconTrash />
-                  </FormatButton>
-                </Toolbar.Root>
-              ) : (
-                <Toolbar.Root
-                  className={styles.toolbar}
-                  aria-label="Formatting"
-                >
-                  <Menu.Root>
-                    <Tooltip label="Text Style" side="top">
-                      <Toolbar.Button
-                        render={
-                          <Menu.Trigger
-                            size="xs"
-                            variant="ghost"
-                            aria-label="Text Style"
-                            aria-pressed={heading}
-                            data-pressed={heading || undefined}
-                            className={styles.aa}
-                          />
-                        }
-                      >
-                        <StyleGlyph block={formats.block} />
-                        <IconChevronDown size={12} />
-                      </Toolbar.Button>
-                    </Tooltip>
-                    <Menu.Portal>
-                      <Menu.Positioner
-                        className={styles.menu}
-                        side="bottom"
-                        align="start"
-                      >
-                        <Menu.Popup>
-                          {STYLES.map((item) => (
-                            <Menu.Item
-                              key={item.block}
-                              onClick={() => applyNoteBlock(editor, item.block)}
-                            >
-                              <Menu.ItemIcon>
-                                {item.Icon ? <item.Icon /> : "Aa"}
-                              </Menu.ItemIcon>
-                              <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
-                              <Menu.ItemKeyboard>
-                                {platformGlyphs(item.shortcut)}
-                              </Menu.ItemKeyboard>
-                            </Menu.Item>
-                          ))}
-                        </Menu.Popup>
-                      </Menu.Positioner>
-                    </Menu.Portal>
-                  </Menu.Root>
-                  <FormatButton
-                    label="Bold"
-                    shortcut={["⌘", "B"]}
-                    pressed={formats.bold}
-                    onClick={() => toggle("bold")}
-                  >
-                    <IconTextBold />
-                  </FormatButton>
-                  <FormatButton
-                    label="Italic"
-                    shortcut={["⌘", "I"]}
-                    pressed={formats.italic}
-                    onClick={() => toggle("italic")}
-                  >
-                    <IconTextItalic />
-                  </FormatButton>
-                  <FormatButton
-                    label="Strikethrough"
-                    shortcut={["⌘", "⇧", "S"]}
-                    pressed={formats.strikethrough}
-                    onClick={() => toggle("strikethrough")}
-                  >
-                    <IconTextStrikethrough />
-                  </FormatButton>
-                  <FormatButton
-                    label="Underline"
-                    shortcut={["⌘", "U"]}
-                    pressed={formats.underline}
-                    onClick={() => toggle("underline")}
-                  >
-                    <IconTextUnderline />
-                  </FormatButton>
-                  <FormatButton
-                    label="Link"
-                    shortcut={["⌘", "K"]}
-                    pressed={Boolean(formats.href)}
-                    onClick={enterLink}
-                  >
-                    <IconLink2 />
-                  </FormatButton>
-                  <FormatButton
-                    label="Quote"
-                    shortcut={["⌥", "⇧", "."]}
-                    pressed={formats.block === "quote"}
-                    onClick={() =>
-                      applyNoteBlock(
-                        editor,
-                        formats.block === "quote" ? "paragraph" : "quote",
-                      )
-                    }
-                  >
-                    <IconBlockquote />
-                  </FormatButton>
-                  <FormatButton
-                    label="Collapse"
-                    shortcut={["⌘", "⇧", "6"]}
-                    pressed={formats.collapse}
-                    onClick={() => applyNoteBlock(editor, "collapse")}
-                  >
-                    <IconCaretMinimize />
-                  </FormatButton>
-                  <FormatButton
-                    label="Inline Code"
-                    shortcut={["⌘", "E"]}
-                    pressed={formats.code}
-                    onClick={() => toggle("code")}
-                  >
-                    <IconCode />
-                  </FormatButton>
-                  <FormatButton
-                    label="Code Block"
-                    shortcut={["⌘", "⇧", "\\"]}
-                    pressed={formats.block === "code"}
-                    onClick={() =>
-                      applyNoteBlock(
-                        editor,
-                        formats.block === "code" ? "paragraph" : "code",
-                      )
-                    }
-                  >
-                    <IconCode2 />
-                  </FormatButton>
-                  <Menu.Root>
-                    <Tooltip label="List" side="top">
-                      <Toolbar.Button
-                        render={
-                          <Menu.Trigger
-                            size="xs"
-                            variant="ghost"
-                            aria-label="List"
-                            aria-pressed={listed}
-                            data-pressed={listed || undefined}
-                            className={styles.list}
-                          />
-                        }
-                      >
-                        <ListGlyph block={formats.block} />
-                        <IconChevronDown size={12} />
-                      </Toolbar.Button>
-                    </Tooltip>
-                    <Menu.Portal>
-                      <Menu.Positioner
-                        className={styles.menu}
-                        side="bottom"
-                        align="end"
-                      >
-                        <Menu.Popup>
-                          {LISTS.map((item) => (
-                            <Menu.Item
-                              key={item.block}
-                              onClick={() => applyNoteBlock(editor, item.block)}
-                            >
-                              <Menu.ItemIcon>{item.icon}</Menu.ItemIcon>
-                              <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
-                              <Menu.ItemKeyboard>
-                                {platformGlyphs(item.shortcut)}
-                              </Menu.ItemKeyboard>
-                            </Menu.Item>
-                          ))}
-                        </Menu.Popup>
-                      </Menu.Positioner>
-                    </Menu.Portal>
-                  </Menu.Root>
-                  <Toolbar.Separator />
-                  <FormatButton
-                    label="Assistant"
-                    onClick={() => saveLibraryBridge.setAgentOpen(true)}
-                  >
-                    <IconChatBubble />
-                  </FormatButton>
-                </Toolbar.Root>
-              )}
-            </div>
+                    >
+                      <IconCode2 />
+                    </FormatButton>
+                    <Menu.Root>
+                      <Tooltip label="List" side="top">
+                        <Toolbar.Button
+                          render={
+                            <Menu.Trigger
+                              size="xs"
+                              variant="ghost"
+                              aria-label="List"
+                              aria-pressed={listed}
+                              data-pressed={listed || undefined}
+                              className={styles.list}
+                            />
+                          }
+                        >
+                          <ListGlyph block={formats.block} />
+                          <IconChevronDown size={12} />
+                        </Toolbar.Button>
+                      </Tooltip>
+                      <Menu.Portal>
+                        <Menu.Positioner
+                          className={styles.menu}
+                          side="bottom"
+                          align="end"
+                        >
+                          <Menu.Popup>
+                            {LISTS.map((item) => (
+                              <Menu.Item
+                                key={item.block}
+                                onClick={() =>
+                                  applyNoteBlock(editor, item.block)
+                                }
+                              >
+                                <Menu.ItemIcon>{item.icon}</Menu.ItemIcon>
+                                <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
+                                <Menu.ItemKeyboard>
+                                  {platformGlyphs(item.shortcut)}
+                                </Menu.ItemKeyboard>
+                              </Menu.Item>
+                            ))}
+                          </Menu.Popup>
+                        </Menu.Positioner>
+                      </Menu.Portal>
+                    </Menu.Root>
+                    <Toolbar.Separator />
+                    <FormatButton
+                      label="Assistant"
+                      onClick={() => saveLibraryBridge.setAgentOpen(true)}
+                    >
+                      <IconChatBubble />
+                    </FormatButton>
+                  </Toolbar.Root>
+                )}
+              </div>
+            </Tooltip.Group>
           </Popover.Popup>
         </Popover.Positioner>
       </Popover.Portal>

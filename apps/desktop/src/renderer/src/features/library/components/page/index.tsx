@@ -1,6 +1,7 @@
 import { Shell } from "@pond/ui";
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { useLayoutEffect } from "react";
+import { canvasIdFromPath } from "@/features/canvas";
 import { LibraryChrome } from "@/features/library/components/chrome";
 import { LibraryView } from "@/features/library/components/view";
 import { AppShell } from "@/features/library/components/workspace-shell";
@@ -25,8 +26,15 @@ export function Library() {
   const isAssistant = pathname === "/assistant";
   const isTags = pathname === "/tags";
   const isSettings = pathname.startsWith("/settings");
+  const isCanvas =
+    canvasIdFromPath(isSave ? getLastListPath() : pathname) !== null;
   const showLibraryGrid =
-    !isSources && !isDownloads && !isAssistant && !isTags && !isSettings;
+    !isSources &&
+    !isDownloads &&
+    !isAssistant &&
+    !isTags &&
+    !isSettings &&
+    !isCanvas;
 
   useLayoutEffect(() => {
     rememberListPath(pathname, search);

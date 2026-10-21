@@ -42,6 +42,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { canvasIdFromPath } from "@/features/canvas";
 import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
 import type { LibraryNav } from "@/features/library/state/library-chrome";
 import {
@@ -188,12 +189,14 @@ export function LibraryDestinations({
   const downloadsPage = pathname === "/downloads";
   const tagsPage = pathname === "/tags";
   const untaggedPage = pathname === "/untagged";
+  const canvasPage = canvasIdFromPath(pathname) !== null;
   const libraryPage =
     !assistantPage &&
     !sourcesPage &&
     !downloadsPage &&
     !tagsPage &&
-    !untaggedPage;
+    !untaggedPage &&
+    !canvasPage;
   const downloadsCount = queueSummary.data?.actionable ?? 0;
 
   useEffect(() => setOrder(sidebar.order), [sidebar.order]);
@@ -214,9 +217,9 @@ export function LibraryDestinations({
       case "untagged":
         return untaggedPage;
       case "recentlyAdded":
-        return nav.kind === "recentlyAdded";
+        return !canvasPage && nav.kind === "recentlyAdded";
       case "recentlyUsed":
-        return nav.kind === "recents";
+        return !canvasPage && nav.kind === "recents";
       case "tags":
         return tagsPage;
       case "random":

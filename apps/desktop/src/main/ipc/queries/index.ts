@@ -11,6 +11,7 @@ import { accountsQueries } from "./accounts";
 import { agentQueries } from "./agent";
 import { agentOperationsForQueries } from "./agent-operations";
 import { bulkQueries } from "./bulk";
+import { canvasesQueries } from "./canvases";
 import { conversionQueries } from "./conversion";
 import { downloadsQueries } from "./downloads";
 import { foldersQueries } from "./folders";
@@ -39,6 +40,7 @@ const queryRegistry = {
   ...updateQueries,
   ...bulkQueries,
   ...openWithQueries,
+  ...canvasesQueries,
   ...conversionQueries,
   ...savesQueries,
   ...downloadsQueries,

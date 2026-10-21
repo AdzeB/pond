@@ -1,5 +1,6 @@
 import { Sidebar } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
+import { CanvasesSection, canvasIdFromPath } from "@/features/canvas";
 import { HarvesterButton } from "@/features/library/components/harvester-button";
 import { NewMenu } from "@/features/library/components/new-menu";
 import { SmartFoldersSection } from "@/features/library/components/smart-folders";
@@ -32,13 +33,12 @@ export function FolderSidebar() {
     select: (state) => state.location.pathname,
   });
   const folderRows = useFolders();
-  const libraryPage = ![
-    "/assistant",
-    "/downloads",
-    "/sources",
-    "/tags",
-    "/untagged",
-  ].includes(pathname);
+  const activeCanvasId = canvasIdFromPath(pathname);
+  const libraryPage =
+    activeCanvasId === null &&
+    !["/assistant", "/downloads", "/sources", "/tags", "/untagged"].includes(
+      pathname,
+    );
   useHydrateSavedViews();
 
   return (
@@ -59,6 +59,7 @@ export function FolderSidebar() {
           active={pathname === "/" && nav.kind === "all"}
           onSelect={() => selectLibraryNav({ kind: "all" })}
         />
+        <CanvasesSection activeId={activeCanvasId} />
         <FolderTree
           folderRows={folderRows}
           libraryPage={libraryPage}

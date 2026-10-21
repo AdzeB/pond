@@ -16,6 +16,7 @@ interface BreadcrumbInput {
   nav: LibraryNav;
   folders: readonly Pick<Folder, "id" | "name" | "parentId">[];
   saveLabel?: string;
+  canvasLabel?: string;
   searchResultCount?: number;
 }
 
@@ -27,7 +28,12 @@ function settingsCrumb(section: string): string {
   return SETTINGS_LABELS.get(section) ?? "Settings";
 }
 
-function destinationCrumbs(base: string): Breadcrumb[] | null {
+function destinationCrumbs(
+  base: string,
+  canvasLabel?: string,
+): Breadcrumb[] | null {
+  if (base.startsWith("/canvas/"))
+    return [{ label: canvasLabel || "Canvas", path: base }];
   switch (base) {
     case "/assistant":
       return [{ label: "Assistant", path: base }];
@@ -83,11 +89,12 @@ export function buildBreadcrumbs({
   nav,
   folders,
   saveLabel,
+  canvasLabel,
   searchResultCount,
 }: BreadcrumbInput): Breadcrumb[] {
   const isSave = saveIdFromPath(pathname) !== null;
   const base = isSave ? listPath : pathname;
-  const destination = destinationCrumbs(base);
+  const destination = destinationCrumbs(base, canvasLabel);
   const searchCrumb =
     !isSave && searchResultCount !== undefined
       ? { label: `Search results (${searchResultCount})`, path: base }

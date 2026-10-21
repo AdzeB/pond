@@ -1,0 +1,138 @@
+.dock {
+  position: absolute;
+  inset-block-end: 16px;
+  inset-inline-start: 50%;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+
+  & > * {
+    pointer-events: auto;
+  }
+
+  & > .bar {
+    position: relative;
+    flex-direction: row;
+    gap: 2px;
+    width: max-content;
+    padding: 4px;
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-1);
+    border-radius: calc(var(--ds-radius-md) + 4px);
+    box-shadow: var(--canvas-shadow-float);
+  }
+}
+
+.indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  background: var(--ds-gray-a3);
+  border-radius: var(--ds-radius-md);
+  transition:
+    translate var(--ds-duration-slow) var(--ds-easing-spring),
+    width var(--ds-duration-slow) var(--ds-easing-spring);
+
+  &[data-snap] {
+    transition: none;
+  }
+}
+
+.mode {
+  position: relative;
+}
+
+.palette {
+  position: absolute;
+  inset-block-end: calc(100% + 8px);
+  inset-inline-start: 50%;
+  display: flex;
+  visibility: hidden;
+  align-items: center;
+  width: max-content;
+  padding: 4px;
+  pointer-events: none;
+  background: var(--ds-gray-1);
+  border-radius: calc(var(--ds-radius-sm) + 4px);
+  box-shadow: var(--canvas-shadow-float);
+  opacity: 0;
+  transform-origin: bottom center;
+  scale: 0.96;
+  translate: -50% 6px;
+  transition:
+    opacity var(--ds-duration-snap) var(--ds-easing-standard),
+    translate var(--ds-duration-snap) var(--ds-easing-standard),
+    scale var(--ds-duration-snap) var(--ds-easing-standard),
+    visibility 0s linear var(--ds-duration-snap);
+
+  &[data-open] {
+    visibility: visible;
+    pointer-events: auto;
+    opacity: 1;
+    scale: 1;
+    translate: -50% 0;
+    transition:
+      opacity var(--ds-duration-snap) var(--ds-easing-decelerate),
+      translate var(--ds-duration-slow) var(--ds-easing-spring),
+      scale var(--ds-duration-slow) var(--ds-easing-spring),
+      visibility 0s;
+  }
+}
+
+.choices {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  min-inline-size: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+
+  & + & {
+    padding-inline-start: 4px;
+    margin-inline-start: 4px;
+    border-inline-start: 1px solid var(--ds-gray-a3);
+  }
+}
+
+.swatch {
+  width: 20px;
+  height: 20px;
+  background: var(--swatch);
+  border-radius: var(--ds-radius-full);
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a4);
+  transition:
+    box-shadow var(--ds-duration-fast) var(--ds-easing-standard),
+    scale var(--ds-duration-fast) var(--ds-easing-standard);
+
+  :hover > & {
+    scale: 1.1;
+  }
+
+  [data-pressed] > & {
+    box-shadow:
+      inset 0 0 0 2px var(--swatch),
+      inset 0 0 0 4px var(--ds-gray-1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicator,
+  .palette,
+  .palette[data-open],
+  .swatch {
+    transition: none;
+  }
+}
+
+:global([data-reduce-motion]) .indicator,
+:global([data-reduce-motion]) .palette,
+:global([data-reduce-motion]) .swatch {
+  transition: none;
+}

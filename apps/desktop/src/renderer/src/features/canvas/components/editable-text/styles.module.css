@@ -1,0 +1,76 @@
+.body,
+.field {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  font: inherit;
+  line-height: 1.4;
+  color: var(--ds-gray-12);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+
+  &[data-variant="note"] {
+    padding: 20px;
+    font-size: var(--ds-text-lg);
+  }
+
+  &[data-variant="text"] {
+    padding: 6px 8px;
+    font-size: var(--ds-text-xl);
+    font-weight: var(--ds-weight-lg);
+  }
+
+  &[data-variant="figure"] {
+    padding: var(--figure-inset, 16px);
+    font-size: var(--ds-text-lg);
+    text-align: center;
+  }
+
+  &[data-variant="label"] {
+    width: auto;
+    min-width: 2ch;
+    max-width: 240px;
+    height: auto;
+    padding: 2px 6px;
+    font-size: var(--ds-text-sm);
+    text-align: center;
+    background: var(--ds-gray-1);
+    border-radius: var(--ds-radius-xs);
+  }
+}
+
+.body[data-variant="figure"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.field[data-variant="figure"],
+.field[data-variant="label"] {
+  field-sizing: content;
+}
+
+.field[data-variant="figure"] {
+  height: auto;
+  max-height: 100%;
+}
+
+.body[data-empty] {
+  color: var(--ds-gray-a9);
+}
+
+.field {
+  display: block;
+  overflow-y: auto;
+  cursor: text;
+  resize: none;
+  outline: none;
+  background: transparent;
+  border: 0;
+
+  &::placeholder {
+    color: var(--ds-gray-a9);
+  }
+}

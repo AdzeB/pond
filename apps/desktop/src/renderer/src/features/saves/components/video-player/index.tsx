@@ -1,4 +1,4 @@
-import { Video } from "@pond/ui";
+import { Tooltip, Video } from "@pond/ui";
 import {
   type ReactEventHandler,
   type ReactNode,
@@ -269,41 +269,43 @@ export function VideoPlayer({
             render={renderToolbar}
           />
           <ChromePortal slot="bottom">
-            <Video.Controls
-              className={styles.controls}
-              role="toolbar"
-              aria-label="Playback"
-            >
-              <Video.Row className={styles.row}>
-                <PlayerButton.Playback />
-                <VolumeControl />
-                <Video.CurrentTime
-                  className={styles["current-time"]}
-                  aria-label="Elapsed time"
-                />
-                <div className={styles.timeline}>
-                  <Video.Scrubber
-                    renderPreview={(time) => (
-                      <TimelinePreview src={src} time={time} />
-                    )}
+            <Tooltip.Group>
+              <Video.Controls
+                className={styles.controls}
+                role="toolbar"
+                aria-label="Playback"
+              >
+                <Video.Row className={styles.row}>
+                  <PlayerButton.Playback />
+                  <VolumeControl />
+                  <Video.CurrentTime
+                    className={styles["current-time"]}
+                    aria-label="Elapsed time"
                   />
-                </div>
-                <Video.Duration
-                  className={styles.duration}
-                  aria-label="Duration"
-                />
-                <Video.SpeedSelect />
-                <PlayerButton.Loop
-                  range={loopRange}
-                  override={activeLoopOverride}
-                  onRangeChange={changeLoop}
-                  onOverrideChange={(enabled) =>
-                    setLoopOverride({ src, enabled })
-                  }
-                />
-                <PlayerButton.Fullscreen />
-              </Video.Row>
-            </Video.Controls>
+                  <div className={styles.timeline}>
+                    <Video.Scrubber
+                      renderPreview={(time) => (
+                        <TimelinePreview src={src} time={time} />
+                      )}
+                    />
+                  </div>
+                  <Video.Duration
+                    className={styles.duration}
+                    aria-label="Duration"
+                  />
+                  <Video.SpeedSelect />
+                  <PlayerButton.Loop
+                    range={loopRange}
+                    override={activeLoopOverride}
+                    onRangeChange={changeLoop}
+                    onOverrideChange={(enabled) =>
+                      setLoopOverride({ src, enabled })
+                    }
+                  />
+                  <PlayerButton.Fullscreen />
+                </Video.Row>
+              </Video.Controls>
+            </Tooltip.Group>
           </ChromePortal>
         </>
       ) : null}

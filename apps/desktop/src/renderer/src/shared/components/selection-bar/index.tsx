@@ -16,47 +16,49 @@ interface RootProps {
 function Root({ label, count, onClear, children }: RootProps) {
   const reduceMotion = useReducedMotion();
   return (
-    <div className={styles.dock}>
-      <AnimatePresence initial={false}>
-        {count > 0 ? (
-          <motion.div
-            key="selection"
-            role="toolbar"
-            aria-label={label}
-            className={styles.bar}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{
-              opacity: 0,
-              y: 8,
-              pointerEvents: "none",
-              transition: { duration: reduceMotion ? 0 : 0.12 },
-            }}
-            transition={reduceMotion ? { duration: 0 } : gentleSpring}
-          >
-            <span className={styles.count} aria-live="polite">
-              <span className={styles.number}>{count}</span> selected
-            </span>
-            <div className={styles.actions}>{children}</div>
-            <Tooltip
-              label="Clear Selection"
-              shortcut={<Keyboard.Cluster keys={["Esc"]} />}
-              side="top"
+    <Tooltip.Group>
+      <div className={styles.dock}>
+        <AnimatePresence initial={false}>
+          {count > 0 ? (
+            <motion.div
+              key="selection"
+              role="toolbar"
+              aria-label={label}
+              className={styles.bar}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{
+                opacity: 0,
+                y: 8,
+                pointerEvents: "none",
+                transition: { duration: reduceMotion ? 0 : 0.12 },
+              }}
+              transition={reduceMotion ? { duration: 0 } : gentleSpring}
             >
-              <Button
-                icon
-                size="sm"
-                variant="ghost"
-                aria-label="Clear Selection"
-                onClick={onClear}
+              <span className={styles.count} aria-live="polite">
+                <span className={styles.number}>{count}</span> selected
+              </span>
+              <div className={styles.actions}>{children}</div>
+              <Tooltip
+                label="Clear Selection"
+                shortcut={<Keyboard.Cluster keys={["Esc"]} />}
+                side="top"
               >
-                <IconXmark size={12} />
-              </Button>
-            </Tooltip>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-    </div>
+                <Button
+                  icon
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Clear Selection"
+                  onClick={onClear}
+                >
+                  <IconXmark size={12} />
+                </Button>
+              </Tooltip>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>
+    </Tooltip.Group>
   );
 }
 

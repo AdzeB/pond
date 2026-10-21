@@ -38,6 +38,10 @@ A container for Smart Folders, Saved Views, and other Groups. Its filters also a
 **Saved View**:
 A named set of filters with a saved layout and sort order.
 
+**Canvas**:
+A free-form board in the Library where you arrange Saves from any folder, link them with connectors, and add notes, text, shapes, and drawings. A Save on a Canvas is a reference, so one Save can sit on many Canvases.
+_Avoid_: board, whiteboard, moodboard (as the stored object)
+
 ### Sources
 
 **Source**:
