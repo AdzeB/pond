@@ -29,6 +29,7 @@ import {
   createYtdlpProgressReporter,
   YTDLP_PROGRESS_TEMPLATE,
 } from "./yt-dlp-progress";
+import { ensureYtDlp } from "./yt-dlp-updater";
 
 interface DownloadVideoArgs {
   url: string;
@@ -63,6 +64,7 @@ const VIDEO_WATCHDOG_MS = TASK_WATCHDOG_MS.fetch_video_ytdlp;
 export async function downloadVideo(
   args: DownloadVideoArgs,
 ): Promise<DownloadedVideos | null> {
+  await ensureYtDlp();
   const { ytdlp, ffmpeg } = binariesAvailable();
   if (!ytdlp) {
     log.debug("[pond yt-dlp] binary unavailable, skipping", args.url);

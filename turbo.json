@@ -2,7 +2,11 @@
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
   "globalDependencies": ["tsconfig.base.json", "pnpm-workspace.yaml"],
-  "globalPassThroughEnv": ["POND_DEV_RUNTIME_TOKEN"],
+  "globalPassThroughEnv": [
+    "GITHUB_STEP_SUMMARY",
+    "POND_DEV_RUNTIME_TOKEN",
+    "VIRUSTOTAL_API_KEY"
+  ],
   "tasks": {
     "transit": {
       "dependsOn": ["^transit"]

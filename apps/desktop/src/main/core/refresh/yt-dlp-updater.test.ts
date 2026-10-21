@@ -161,15 +161,32 @@ describe("yt-dlp update lifecycle", () => {
 
   it("updates, keeping the old binary as the rollback backup", async () => {
     await installV1();
-    await runUpdate(onlineDeps(), true);
+    await runUpdate(onlineDeps(), { force: true, install: true });
     expect(await text(active())).toBe("good v2");
     expect(await text(previous())).toBe("good v1");
     expect(await text(join(dir, ".yt-dlp-version"))).toBe("v2");
   });
 
+  it("leaves a missing binary alone when install is off", async () => {
+    await runUpdate(onlineDeps(), { force: true, install: false });
+    expect(existsSync(active())).toBe(false);
+
+    await runUpdate(onlineDeps(), { force: true, install: true });
+    expect(await text(active())).toBe("good v2");
+  });
+
+  it("still updates an installed binary when install is off", async () => {
+    await installV1();
+    await runUpdate(onlineDeps(), { force: true, install: false });
+    expect(await text(active())).toBe("good v2");
+  });
+
   it("recovers offline when the update dies after the active binary was rotated away", async () => {
     await installV1();
-    await runUpdate(onlineDeps(failingRename(2)), true);
+    await runUpdate(onlineDeps(failingRename(2)), {
+      force: true,
+      install: true,
+    });
     expect(existsSync(active())).toBe(false);
     expect(await text(previous())).toBe("good v1");
 
@@ -181,7 +198,10 @@ describe("yt-dlp update lifecycle", () => {
 
   it("leaves the active binary untouched when the update dies during rotation", async () => {
     await installV1();
-    await runUpdate(onlineDeps(failingRename(1)), true);
+    await runUpdate(onlineDeps(failingRename(1)), {
+      force: true,
+      install: true,
+    });
     await recoverFiles(offlineDeps());
     expect(await text(active())).toBe("good v1");
     expect(await text(join(dir, ".yt-dlp-version"))).toBe("v1");
@@ -189,7 +209,7 @@ describe("yt-dlp update lifecycle", () => {
 
   it("keeps a healthy promoted binary when the process dies after promotion", async () => {
     await installV1();
-    await runUpdate(onlineDeps(), true);
+    await runUpdate(onlineDeps(), { force: true, install: true });
     // Died after promotion, before the version file was written.
     await rm(join(dir, ".yt-dlp-version"), { force: true });
     await recoverFiles(offlineDeps());
@@ -199,7 +219,7 @@ describe("yt-dlp update lifecycle", () => {
 
   it("rolls back offline when the promoted binary is broken", async () => {
     await installV1();
-    await runUpdate(onlineDeps(), true);
+    await runUpdate(onlineDeps(), { force: true, install: true });
     await writeFile(active(), "corrupt");
     await recoverFiles(offlineDeps());
     expect(await text(active())).toBe("good v1");

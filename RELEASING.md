@@ -80,14 +80,30 @@ The Developer ID certificate expires on November 14, 2027. Create a new one befo
 
 ### Windows
 
-Windows code signing is optional. Add these repository secrets to sign the installer:
+Sign Windows releases. Antivirus engines such as Bitdefender quarantine unsigned apps and can delete the install. Without signing credentials, the `windows` job logs a warning and ships an unsigned installer. With them, it fails if signing fails, then checks that every `.exe`, `.dll`, and `.node` file carries a valid signature before the release is published.
+
+Sign with [Azure Artifact Signing](https://learn.microsoft.com/azure/artifact-signing/), formerly Trusted Signing. Create a signing account and a public trust certificate profile, then create an app registration with the Artifact Signing Certificate Profile Signer role on that account. Add these repository secrets:
 
 | Secret | Value |
 |------|-------|
-| `WIN_CSC_LINK` | Base64 of the code-signing certificate `.pfx`, or a link to it |
-| `WIN_CSC_KEY_PASSWORD` | Password for that certificate |
+| `AZURE_TENANT_ID` | Directory (tenant) ID of the app registration |
+| `AZURE_CLIENT_ID` | Application (client) ID of the app registration |
+| `AZURE_CLIENT_SECRET` | Client secret of the app registration |
 
-When `WIN_CSC_LINK` is not set, the `windows` job logs a warning and ships an unsigned installer. Windows SmartScreen may then warn on first run. Auto-update works either way.
+And these repository variables:
+
+| Variable | Value |
+|------|-------|
+| `AZURE_SIGNING_ENDPOINT` | Account endpoint for its region, such as `https://eus.codesigning.azure.net/` |
+| `AZURE_SIGNING_ACCOUNT` | Signing account name |
+| `AZURE_SIGNING_PROFILE` | Certificate profile name |
+| `AZURE_SIGNING_PUBLISHER` | Certificate subject common name, exactly as validated |
+
+`AZURE_SIGNING_PUBLISHER` is written into the update feed. electron-updater refuses updates signed by any other publisher, so don't change it after the first signed release.
+
+If you already hold a `.pfx` certificate, set `WIN_CSC_LINK` (Base64 of the `.pfx`, or a link to it) and `WIN_CSC_KEY_PASSWORD` instead.
+
+A signature gives a new release a known publisher, but reputation still builds per publisher. After publishing, the `virustotal` job scans the installer, `Pond.exe`, and `pond-native-host.exe` with [VirusTotal](https://www.virustotal.com) and lists any detections in its job summary. It needs a `VIRUSTOTAL_API_KEY` secret and never blocks a release. When an engine flags a file, submit it as a false positive to that vendor, such as [Bitdefender](https://www.bitdefender.com/consumer/support/answer/29358/) or [Microsoft](https://www.microsoft.com/wdsi/filesubmission). Engines that time out on the large installer can be rescanned from its report page.
 
 ## Homebrew
 
@@ -180,9 +196,9 @@ Run these before announcing a release:
 - [ ] `Casks/pond.rb` contains the release version and DMG checksums
 - [ ] `spctl -a -vv /Volumes/Pond/Pond.app` reports `Notarized Developer ID`
 - [ ] Fresh Mac: download arm64 DMG → open Pond → it launches without a Gatekeeper prompt
-- [ ] Fresh Windows 10/11 x64: run `Pond-X.Y.Z-x64.exe` → Pond installs without administrator rights and launches (SmartScreen may warn if the installer is unsigned)
+- [ ] Fresh Windows 10/11 x64: run `Pond-X.Y.Z-x64.exe` → Pond installs without administrator rights and launches, and the installer's Properties → Digital Signatures tab shows the publisher
 - [ ] Website Download buttons (Mac, Intel Mac, Windows) hit the new artifacts
-- [ ] Open Pond once so it registers the native host (a manifest file on macOS, `HKCU` registry keys on Windows)
+- [ ] Open Pond once so it registers the native host (a manifest file on macOS; on Windows the installer writes the `HKCU` keys and Pond writes the manifests they point to)
 - [ ] Install the extension from its store listing → click the Pond icon or right-click a page → save appears in Pond
 - [ ] Settings → **Check for Updates** → shows "You're on the latest version"
 - [ ] Windows: Settings → **Check for Updates** → shows "You're on the latest version"

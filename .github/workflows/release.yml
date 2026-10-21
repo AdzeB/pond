@@ -208,26 +208,70 @@ jobs:
       - name: Desktop end-to-end smoke
         run: pnpm --filter @pond/desktop smoke:desktop
 
-      # Windows code signing is optional. When WIN_CSC_LINK and
-      # WIN_CSC_KEY_PASSWORD are set, electron-builder signs the installer;
-      # otherwise it ships unsigned (Windows SmartScreen will warn).
-      - name: Report Windows signing mode
+      # Antivirus engines quarantine unsigned Windows apps. Azure Artifact
+      # Signing is preferred: set the AZURE_TENANT_ID, AZURE_CLIENT_ID, and
+      # AZURE_CLIENT_SECRET secrets plus the AZURE_SIGNING_ENDPOINT,
+      # AZURE_SIGNING_ACCOUNT, AZURE_SIGNING_PROFILE, and
+      # AZURE_SIGNING_PUBLISHER variables. A PFX certificate in WIN_CSC_LINK
+      # and WIN_CSC_KEY_PASSWORD also works. Without either, the installer
+      # ships unsigned with a warning.
+      - name: Package Windows app and upload to release
+        id: package
         shell: bash
         env:
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-        run: |
-          if [ -n "$WIN_CSC_LINK" ]; then
-            echo "Windows code signing: enabled"
-          else
-            echo "::warning::WIN_CSC_LINK is not set; the Windows installer will be unsigned."
-          fi
-
-      - name: Package Windows app and upload to release
-        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SIGNING_ENDPOINT: ${{ vars.AZURE_SIGNING_ENDPOINT }}
+          AZURE_SIGNING_ACCOUNT: ${{ vars.AZURE_SIGNING_ACCOUNT }}
+          AZURE_SIGNING_PROFILE: ${{ vars.AZURE_SIGNING_PROFILE }}
+          AZURE_SIGNING_PUBLISHER: ${{ vars.AZURE_SIGNING_PUBLISHER }}
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-        run: pnpm dist:win:publish
+        run: |
+          ARGS=()
+          SIGNED=true
+          if [ -n "$AZURE_CLIENT_SECRET" ]; then
+            for name in AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_SIGNING_ENDPOINT AZURE_SIGNING_ACCOUNT AZURE_SIGNING_PROFILE AZURE_SIGNING_PUBLISHER; do
+              if [ -z "${!name}" ]; then
+                echo "Missing Azure Artifact Signing setting: $name"
+                exit 1
+              fi
+            done
+            echo "Windows code signing: Azure Artifact Signing"
+            ARGS+=(
+              "--config.win.azureSignOptions.endpoint=$AZURE_SIGNING_ENDPOINT"
+              "--config.win.azureSignOptions.codeSigningAccountName=$AZURE_SIGNING_ACCOUNT"
+              "--config.win.azureSignOptions.certificateProfileName=$AZURE_SIGNING_PROFILE"
+              "--config.win.azureSignOptions.publisherName=$AZURE_SIGNING_PUBLISHER"
+            )
+          elif [ -n "$WIN_CSC_LINK" ] && [ -n "$WIN_CSC_KEY_PASSWORD" ]; then
+            echo "Windows code signing: certificate"
+          else
+            echo "::warning::No Windows signing credentials; the installer will be unsigned and antivirus may quarantine it."
+            SIGNED=false
+          fi
+          if [ "$SIGNED" = true ]; then
+            ARGS+=(--config.win.forceCodeSigning=true)
+          fi
+          echo "signed=$SIGNED" >> "$GITHUB_OUTPUT"
+          # `pnpm exec` skips cmd.exe, which would re-split a publisher name with spaces.
+          pnpm --filter @pond/desktop exec node ./scripts/build-native-host.mjs
+          pnpm --filter @pond/desktop exec electron-builder --win --x64 --config.npmRebuild=false --publish always "${ARGS[@]}"
+
+      - name: Verify Windows signatures
+        if: steps.package.outputs.signed == 'true'
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem apps/desktop/dist/*.exe) +
+            @(Get-ChildItem apps/desktop/dist/win-unpacked -Recurse -Include *.exe,*.dll,*.node)
+          $unsigned = $files | Where-Object { (Get-AuthenticodeSignature $_.FullName).Status -ne "Valid" }
+          if ($unsigned) {
+            $unsigned | ForEach-Object { Write-Output "Unsigned: $($_.FullName)" }
+            exit 1
+          }
+          Write-Output "Verified $($files.Count) signed files"
 
   publish:
     needs: [macos, windows]
@@ -258,6 +302,48 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest
+
+  # Scans the published Windows release with VirusTotal and reports detections
+  # in the job summary. It never blocks a release: submit a false positive to
+  # each vendor it lists. Skipped with a warning until VIRUSTOTAL_API_KEY is set.
+  virustotal:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Download and unpack the Windows installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release download "$GITHUB_REF_NAME" \
+            --pattern "Pond-${VERSION}-x64.exe" \
+            --dir virustotal
+          7z x -y -ovirustotal/unpacked "virustotal/Pond-${VERSION}-x64.exe" >/dev/null
+          NESTED='virustotal/unpacked/$PLUGINSDIR/app-64.7z'
+          if [ -f "$NESTED" ]; then
+            7z x -y -ovirustotal/unpacked "$NESTED" >/dev/null
+          fi
+
+      - name: Scan with VirusTotal
+        env:
+          VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          node scripts/virustotal-scan.mjs \
+            "virustotal/Pond-${VERSION}-x64.exe" \
+            virustotal/unpacked/Pond.exe \
+            virustotal/unpacked/resources/bin/pond-native-host.exe
 
   # Submits the published extension zips for store review. Each store is
   # skipped with a warning until its API credentials are set as secrets.

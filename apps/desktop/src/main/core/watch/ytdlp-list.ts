@@ -4,6 +4,7 @@ import { z } from "zod";
 import { sourceIdFromUrl } from "../pipeline/url";
 import { binariesAvailable } from "../refresh/binaries";
 import { runWithTimeout } from "../refresh/yt-dlp-process";
+import { ensureYtDlp } from "../refresh/yt-dlp-updater";
 import type { WatchEntry, WatchHarvestResult } from "./types";
 
 const LIST_TIMEOUT_MS = 60_000;
@@ -51,6 +52,7 @@ export async function listYtdlpWatch(
   kind?: WatchKind,
   signal?: AbortSignal,
 ): Promise<WatchHarvestResult> {
+  await ensureYtDlp();
   const { ytdlp } = binariesAvailable();
   if (!ytdlp) {
     log.warn("[pond watch:ytdlp] binary unavailable");

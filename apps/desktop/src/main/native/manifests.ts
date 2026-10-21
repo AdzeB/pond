@@ -137,6 +137,8 @@ interface NativeHostManifestDependencies {
   writeFile: (path: string, body: string) => void;
   warn: (...values: unknown[]) => void;
   userDataDirectory: () => string;
+  /** The NSIS installer writes the registry keys, so a packaged app never spawns reg.exe, which antivirus flags. */
+  installerRegistersKeys: () => boolean;
   runRegistry: (args: string[]) => Promise<void>;
 }
 
@@ -149,6 +151,7 @@ const defaultDependencies: NativeHostManifestDependencies = {
   writeFile: (path, body) => writeFileSync(path, body, { encoding: "utf8" }),
   warn: (...values) => log.warn(...values),
   userDataDirectory: () => app.getPath("userData"),
+  installerRegistersKeys: () => app.isPackaged,
   runRegistry: async (args) => {
     await execFileAsync("reg.exe", args, {
       windowsHide: true,
@@ -243,6 +246,7 @@ async function writeWindowsNativeHostManifest(
       continue;
     }
 
+    if (dependencies.installerRegistersKeys()) continue;
     await Promise.all(
       keys.map(async (key) => {
         try {

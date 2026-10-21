@@ -155,20 +155,28 @@ dmg:
 # Windows arm64 stays disabled until the native dependency set is verified on
 # an arm64 runner. The x64 build produces the installer and latest.yml used by
 # electron-updater.
+#
+# Release builds sign through Azure Artifact Signing; the release workflow passes
+# `azureSignOptions` and `forceCodeSigning` on the command line so local and
+# pull request builds stay unsigned. Antivirus engines quarantine unsigned
+# binaries, so every executable and native module is signed, not just Pond.exe.
 win:
   artifactName: ${productName}-${version}-${arch}.${ext}
   extraResources:
     - from: node_modules/ffmpeg-static/ffmpeg.exe
       to: bin/ffmpeg.exe
+  signExts:
+    - .dll
+    - .node
   target:
     - target: nsis
       arch:
         - x64
 
 # Per-user one-click install: no UAC prompt, and electron-updater can replace
-# the app silently. The installer is unsigned until a code-signing certificate
-# is configured. `pond://` is registered at runtime by
+# the app silently. `pond://` is registered at runtime by
 # `app.setAsDefaultProtocolClient`, which writes to HKCU in packaged builds.
+# The native messaging keys are written by `packaging/installer.nsh`.
 nsis:
   oneClick: true
   perMachine: false
