@@ -21,7 +21,6 @@ import { EnrichmentSweep } from "../features/enrichment/effects/enrichment-sweep
 import { CommandMenuHost } from "../features/library/components/command-menu";
 import { useHydrateFolders } from "../features/library/state/folders";
 import { syncPrimaryFromPath } from "../features/saves/lib/save-nav";
-import { InterfaceZoom } from "../features/settings/effects/interface-zoom";
 import { ThemeApplier } from "../features/settings/effects/theme-applier";
 import { UiSounds } from "../features/settings/effects/ui-sounds";
 import { SyncStatusBridge } from "../features/sources/effects/sync-status-bridge";
@@ -127,12 +126,7 @@ function AppContent() {
 }
 
 export function App() {
-  return (
-    <>
-      <InterfaceZoom />
-      <LibraryApp />
-    </>
-  );
+  return <LibraryApp />;
 }
 
 function LibraryApp() {

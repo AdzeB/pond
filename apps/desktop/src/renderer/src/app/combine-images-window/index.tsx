@@ -7,7 +7,6 @@ import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { MotionConfig } from "motion/react";
 import { useEffect, useState } from "react";
 import { CombineImages } from "@/features/saves/components/combine-images";
-import { InterfaceZoom } from "@/features/settings/effects/interface-zoom";
 import { ThemeApplier } from "@/features/settings/effects/theme-applier";
 import { ToastHost } from "@/shared/components/toast-host";
 import type { PondCombineApi } from "../../../../preload/combine-images";
@@ -56,7 +55,6 @@ export function CombineImagesWindow() {
       <HotkeysProvider>
         <Tooltip.Provider>
           <ThemeApplier />
-          <InterfaceZoom />
           <CombineImages
             key={load?.nonce ?? 0}
             ids={load?.ids ?? []}
