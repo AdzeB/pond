@@ -223,6 +223,7 @@ export const queryOperationAccess = {
   "settings.setImageDownload": "review",
   "settings.setOnboarded": "hidden",
   "settings.setPrefs": "review",
+  "settings.setSourceDownloadsCustom": "review",
   "settings.setVideoDownload": "review",
   "storage.applyGuardPrefs": "review",
   "storage.guardState": "read",

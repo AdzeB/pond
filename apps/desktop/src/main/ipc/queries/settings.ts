@@ -3,6 +3,7 @@ import {
   DEFAULT_VIDEO_DOWNLOAD,
   settings as settingsTable,
 } from "@pond/schema/db";
+import { EXTERNAL_SOURCE_IDS } from "@pond/schema/sources";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { FEEDBACK_EVENTS } from "../../../shared/feedback";
@@ -14,11 +15,11 @@ import {
 } from "../../core/feedback";
 import { globalShortcutStatus } from "../../core/global-shortcuts";
 import {
-  getImageDownloadPrefs,
+  getDownloadConfig,
   getPrefs,
-  getVideoDownloadPrefs,
   setImageDownloadPrefs,
   setPrefs,
+  setSourceDownloadsCustom,
   setVideoDownloadPrefs,
 } from "../../core/prefs";
 import { getGlobalDb } from "../../db";
@@ -26,8 +27,10 @@ import { getIngestToken, rotateIngestToken } from "../../keychain";
 import { syncShellChrome } from "../../window";
 import { type QueryHandlerMap, query } from "./params";
 
+const ExternalSourceParam = z.enum(EXTERNAL_SOURCE_IDS);
+
 const VideoDownloadPatchSchema = z.object({
-  enabled: z.boolean().optional().catch(undefined),
+  autoDownload: z.boolean().optional().catch(undefined),
   maxHeight: z.number().nullable().optional().catch(undefined),
   maxFps: z.number().nullable().optional().catch(undefined),
   videoCodec: z
@@ -46,6 +49,7 @@ const VideoDownloadPatchSchema = z.object({
   embedThumbnail: z.boolean().optional().catch(undefined),
   embedChapters: z.boolean().optional().catch(undefined),
   sponsorblockRemove: z.boolean().optional().catch(undefined),
+  source: ExternalSourceParam.optional(),
 });
 
 const ImageDownloadPatchSchema = z.object({
@@ -59,6 +63,7 @@ const ImageDownloadPatchSchema = z.object({
   progressive: z.boolean().optional().catch(undefined),
   preserveMetadata: z.boolean().optional().catch(undefined),
   maxFileSizeMb: z.number().nullable().optional().catch(undefined),
+  source: ExternalSourceParam.optional(),
 });
 
 const PrefsPatchParamsSchema = z.looseObject({
@@ -74,6 +79,16 @@ const NOTIFICATION_SETTINGS_UNAVAILABLE: OkFailure = {
   error: "Open notification settings from your system settings.",
 };
 
+async function downloadsResult() {
+  const config = await getDownloadConfig();
+  return {
+    videoDownload: config.videoDownload,
+    imageDownload: config.imageDownload,
+    videoDownloadSources: config.videoSources,
+    imageDownloadSources: config.imageSources,
+  };
+}
+
 export const settingsQueries = {
   async "settings.get"() {
     const db = await getGlobalDb();
@@ -81,10 +96,9 @@ export const settingsQueries = {
       .select()
       .from(settingsTable)
       .where(eq(settingsTable.id, "singleton"));
-    const videoDownload = await getVideoDownloadPrefs();
-    const imageDownload = await getImageDownloadPrefs();
+    const downloads = await downloadsResult();
     if (rows[0]) {
-      return { ...rows[0], videoDownload, imageDownload };
+      return { ...rows[0], ...downloads };
     }
     await db
       .insert(settingsTable)
@@ -97,8 +111,7 @@ export const settingsQueries = {
       .run();
     return {
       id: "singleton",
-      videoDownload,
-      imageDownload,
+      ...downloads,
       libraryRoot: null,
       updatedAt: new Date(),
     };
@@ -106,17 +119,25 @@ export const settingsQueries = {
 
   "settings.setVideoDownload": query(
     VideoDownloadPatchSchema,
-    async (params) => {
-      const next = await setVideoDownloadPrefs(params);
-      return { ok: true, videoDownload: next };
+    async ({ source, ...patch }) => {
+      await setVideoDownloadPrefs(patch, source);
+      return { ok: true, ...(await downloadsResult()) };
     },
   ),
 
   "settings.setImageDownload": query(
     ImageDownloadPatchSchema,
-    async (params) => {
-      const next = await setImageDownloadPrefs(params);
-      return { ok: true, imageDownload: next };
+    async ({ source, ...patch }) => {
+      await setImageDownloadPrefs(patch, source);
+      return { ok: true, ...(await downloadsResult()) };
+    },
+  ),
+
+  "settings.setSourceDownloadsCustom": query(
+    z.object({ source: ExternalSourceParam, custom: z.boolean() }),
+    async ({ source, custom }) => {
+      await setSourceDownloadsCustom(source, custom);
+      return { ok: true, ...(await downloadsResult()) };
     },
   ),
 
