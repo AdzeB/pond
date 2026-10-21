@@ -6,9 +6,7 @@
   "documentNamespace": "https://spdx.org/spdxdocs/-pond-repo-1.4.0-430ce1bd-64a0-4bc0-8f32-d4ff8a7abc1a",
   "creationInfo": {
     "created": "2026-10-21T14:40:19Z",
-    "creators": [
-      "Tool: pnpm"
-    ]
+    "creators": ["Tool: pnpm"]
   },
   "packages": [
     {
