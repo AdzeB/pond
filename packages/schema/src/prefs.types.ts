@@ -1,5 +1,6 @@
 import type { Source } from "./db";
 import type { ListKind } from "./list-kinds";
+import type { ExternalSource } from "./sources/registry";
 
 export type VideoCodec = "h264" | "hevc" | "av1" | "vp9" | "any";
 export type AudioCodec = "aac" | "opus" | "any";
@@ -7,7 +8,7 @@ export type VideoContainer = "auto" | "mp4" | "mkv" | "webm" | "mov";
 export type SubtitleMode = "off" | "download" | "embed";
 
 export interface VideoDownloadSettings {
-  enabled: boolean;
+  autoDownload: boolean;
   maxHeight: number | null;
   maxFps: number | null;
   videoCodec: VideoCodec;
@@ -23,7 +24,7 @@ export interface VideoDownloadSettings {
 }
 
 export const DEFAULT_VIDEO_DOWNLOAD: VideoDownloadSettings = {
-  enabled: true,
+  autoDownload: false,
   maxHeight: 1080,
   maxFps: null,
   videoCodec: "h264",
@@ -58,6 +59,16 @@ export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadSettings = {
   progressive: false,
   preserveMetadata: false,
   maxFileSizeMb: 10,
+};
+
+export type SourceOverrides<T> = Partial<Record<ExternalSource, Partial<T>>>;
+
+export type StoredVideoDownload = VideoDownloadSettings & {
+  sources?: SourceOverrides<VideoDownloadSettings>;
+};
+
+export type StoredImageDownload = ImageDownloadSettings & {
+  sources?: SourceOverrides<ImageDownloadSettings>;
 };
 
 /** A named list on a Source that an Account can import on its own, such as a Pinterest board. */
