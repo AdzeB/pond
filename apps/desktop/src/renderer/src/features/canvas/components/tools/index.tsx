@@ -217,7 +217,7 @@ export function Tools({
                   if (node) buttons.current.set(mode, node);
                   else buttons.current.delete(mode);
                 }}
-                render={<Button icon size="md" variant="text" />}
+                render={<Button icon size="sm" variant="text" />}
                 className={styles.mode}
                 data-pressed={tool === mode || undefined}
                 aria-label={label}
@@ -230,7 +230,7 @@ export function Tools({
           ))}
           <AddSaves onCanvas={onCanvas} onAdd={onAddSaves}>
             <Toolbar.Button
-              render={<Button icon size="md" variant="text" />}
+              render={<Button icon size="sm" variant="text" />}
               className={styles.mode}
             >
               <IconImages />
