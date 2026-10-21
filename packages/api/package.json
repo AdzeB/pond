@@ -1,24 +1,62 @@
 {
-  "name": "@pond/api",
+  "name": "pond-api",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
-  "description": "Environment-independent client for Pond's authenticated local API.",
+  "description": "Typed client for Pond's Local API on your Mac.",
   "license": "MIT",
+  "author": {
+    "name": "Raphael Salaja",
+    "url": "https://github.com/raphaelsalaja"
+  },
+  "homepage": "https://github.com/raphaelsalaja/pond/blob/main/docs/api.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raphaelsalaja/pond.git",
+    "directory": "packages/api"
+  },
+  "keywords": [
+    "pond",
+    "raycast",
+    "local-first",
+    "bookmarks"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "exports": {
     ".": "./src/index.ts"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
+    "build": "tsdown",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build",
+    "pack:check": "node scripts/smoke-pack.mjs"
   },
   "dependencies": {
-    "@pond/schema": "workspace:*"
+    "zod": "catalog:"
   },
   "devDependencies": {
+    "@pond/schema": "workspace:*",
+    "tsdown": "^0.23.1",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
   }
 }

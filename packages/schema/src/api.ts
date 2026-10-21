@@ -357,6 +357,8 @@ export const ApiOperationRunSchema = ApiOperationRequestSchema.extend({
 
 export type ApiAppInfo = z.infer<typeof ApiAppInfoSchema>;
 export type ApiCursor = z.infer<typeof ApiCursorSchema>;
+/** What clients send. `query` defaults to matching every Save. */
+export type ApiLibraryQueryInput = z.input<typeof ApiLibraryQueryRequestSchema>;
 export type ApiLibraryQueryRequest = z.infer<
   typeof ApiLibraryQueryRequestSchema
 >;

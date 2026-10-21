@@ -6,7 +6,7 @@ Pond runs an HTTP API on your Mac while the app is open. Raycast, the `pond` CLI
 http://127.0.0.1:41610/api/v2
 ```
 
-The TypeScript client lives in [`packages/api`](../packages/api) as `@pond/api`. Every endpoint below has a method on `PondApi`, and each response is validated against the schemas in [`packages/schema/src/api.ts`](../packages/schema/src/api.ts).
+The TypeScript client lives in [`packages/api`](../packages/api) and is published as `pond-api`. Every endpoint below has a method on `PondApi`, and each response is validated against the schemas in [`packages/schema/src/api.ts`](../packages/schema/src/api.ts).
 
 ## Authentication
 
@@ -243,4 +243,12 @@ Operations are the same actions the Assistant and MCP server use, like creating 
 
 ## Publishing the client
 
-`@pond/api` is private to this repository. Someone else owns the `pond` scope on npm, so the client can't be published under that name. If it ships publicly, it needs an unscoped name such as `pond-api`.
+The client is published to npm as [`pond-api`](https://www.npmjs.com/package/pond-api). It bundles the schemas from `@pond/schema` and depends only on `zod`.
+
+To release a version, bump `version` in `packages/api/package.json`, merge it, and push a matching tag:
+
+```sh
+git tag pond-api@0.2.0 && git push origin pond-api@0.2.0
+```
+
+The `Publish pond-api` workflow tests the package, installs the packed tarball in an empty project, and publishes it with provenance through npm trusted publishing. Run `pnpm --filter pond-api pack:check` to try the tarball locally.

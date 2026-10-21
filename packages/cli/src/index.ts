@@ -1,8 +1,8 @@
 import { readFileSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PondApiError } from "@pond/api";
 import { Command, CommanderError } from "commander";
+import { PondApiError } from "pond-api";
 import { z } from "zod";
 import { registerCommands } from "./commands";
 

@@ -1,5 +1,5 @@
-import type { JsonObject } from "@pond/api";
 import type { Command } from "commander";
+import type { JsonObject } from "pond-api";
 import { z } from "zod";
 import { runOperation } from "../operations";
 import {

@@ -1,11 +1,11 @@
+import { getPreferenceValues } from "@raycast/api";
 import {
   type ApiCursor,
   type ApiLibrary,
   type ApiSave,
   PondApi,
   PondApiError,
-} from "@pond/api";
-import { getPreferenceValues } from "@raycast/api";
+} from "pond-api";
 import { z } from "zod";
 
 interface PondPreferences {

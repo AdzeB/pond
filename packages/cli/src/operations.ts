@@ -1,5 +1,5 @@
 import { createInterface } from "node:readline/promises";
-import type { JsonObject, JsonValue, PondApi } from "@pond/api";
+import type { JsonObject, JsonValue, PondApi } from "pond-api";
 import { z } from "zod";
 
 export interface OperationOptions {

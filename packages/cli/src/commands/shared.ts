@@ -1,11 +1,11 @@
 import { createInterface } from "node:readline";
+import type { Command } from "commander";
 import {
   type ApiSave,
   type JsonObject,
   type JsonValue,
   PondApi,
-} from "@pond/api";
-import type { Command } from "commander";
+} from "pond-api";
 import { z } from "zod";
 import { resolvedConfig } from "../config";
 import { parseArguments, runOperation } from "../operations";

@@ -33,7 +33,7 @@ export type {
   ApiFolder,
   ApiLibrary,
   ApiLibraryInfo,
-  ApiLibraryQueryRequest,
+  ApiLibraryQueryInput,
   ApiQueryPage,
   ApiSave,
   ApiSaveState,
@@ -56,7 +56,7 @@ export type { JsonObject, JsonValue } from "@pond/schema/json";
 import type {
   ApiEditFoldersRequest,
   ApiEditTagsRequest,
-  ApiLibraryQueryRequest,
+  ApiLibraryQueryInput,
   ApiNoteRequest,
   ApiOperationRunRequest,
   ApiRatingRequest,
@@ -70,7 +70,7 @@ import type {
 type ApiRequestBody =
   | ApiEditFoldersRequest
   | ApiEditTagsRequest
-  | ApiLibraryQueryRequest
+  | ApiLibraryQueryInput
   | ApiNoteRequest
   | ApiOperationRunRequest
   | ApiRatingRequest
@@ -308,7 +308,7 @@ export class PondApi {
     return this.post("/library/switch", ApiSwitchResultSchema, { path });
   }
 
-  query(input: ApiLibraryQueryRequest) {
+  query(input: ApiLibraryQueryInput) {
     return this.post("/library/query", ApiQueryPageSchema, input);
   }
 

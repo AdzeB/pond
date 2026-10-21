@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "paths": { "@pond/schema/*": ["./schema/src/*"] }
+  },
+  "include": ["api/src/**/*.ts"],
+  "exclude": ["**/*.test.ts"]
+}
