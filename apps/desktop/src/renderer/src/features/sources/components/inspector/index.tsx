@@ -76,11 +76,11 @@ import styles from "./styles.module.css";
 
 type SourceDetailGroup = "import" | "fetching" | "end";
 
-const GROUP_LABELS: Record<SourceDetailGroup, string | undefined> = {
+const GROUP_LABELS = {
   import: "Import",
   fetching: "Fetching",
   end: undefined,
-};
+} satisfies Record<SourceDetailGroup, string | undefined>;
 
 export interface SourceDetailPageDef {
   id: SourceDetailsPage;

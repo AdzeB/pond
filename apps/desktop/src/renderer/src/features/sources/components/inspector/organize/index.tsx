@@ -88,7 +88,7 @@ export function SourceOrganize({
           <Select.Root
             value={folderValue}
             onValueChange={(next) => {
-              if (typeof next !== "string") return;
+              if (!next) return;
               void save({ ...draft, folderId: next === NONE ? null : next });
             }}
           >

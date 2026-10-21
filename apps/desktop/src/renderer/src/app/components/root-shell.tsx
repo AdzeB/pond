@@ -19,7 +19,10 @@ import { ViewerPreload } from "@/features/saves/effects/viewer-preload";
 import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { SourceFlowHost } from "@/features/sources/components/flow";
 import { SourceDetailSidebar } from "@/features/sources/components/inspector";
-import { parseSourceDetailPath } from "@/features/sources/state/source-detail";
+import {
+  parseSourceDetailPath,
+  SourceDetailsPageSchema,
+} from "@/features/sources/state/source-detail";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { settingsHref } from "@/shared/lib/open-settings";
 
@@ -37,7 +40,8 @@ export function RootShell() {
     select: (state) => state.location.pathname,
   });
   const detailPage = useRouterState({
-    select: (state) => state.location.search.page,
+    select: (state) =>
+      SourceDetailsPageSchema.safeParse(state.location.search.page).data,
   });
   const sourceDetail = parseSourceDetailPath(pathname, detailPage);
   useEffect(() => {

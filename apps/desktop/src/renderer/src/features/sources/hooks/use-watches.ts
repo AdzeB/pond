@@ -2,8 +2,8 @@ import { SOURCES, type Source, type WatchKind } from "@pond/schema/db";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import {
+  SOURCE_FETCH_PREF_FIELDS,
   type SourceFetchPrefs,
-  SourceFetchPrefsShape,
 } from "@/features/sources/lib/fetch-prefs";
 import {
   type SyncAccountStatus,
@@ -87,7 +87,7 @@ const WatchesReplySchema = z
               lastSyncedAt: z.string().nullable().catch(null),
               lastError: z.string().nullable().catch(null),
               knownCount: z.number().catch(0),
-              ...SourceFetchPrefsShape,
+              ...SOURCE_FETCH_PREF_FIELDS,
             })
             .catch({ lastSyncedAt: null, lastError: null, knownCount: 0 }),
           syncing: z.boolean().catch(false),

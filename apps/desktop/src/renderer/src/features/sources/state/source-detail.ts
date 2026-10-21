@@ -1,25 +1,11 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import { z } from "zod";
 import { getAppRouter } from "@/shared/lib/app-router";
 
 export type SourceDetailsKind = "account" | "watch" | "folder";
 
-export type SourceDetailsPage =
-  | "overview"
-  | "general"
-  | "filters"
-  | "organize"
-  | "schedule"
-  | "activity"
-  | "connection";
-
-const SOURCE_DETAILS_KINDS: readonly string[] = [
-  "account",
-  "watch",
-  "folder",
-] satisfies SourceDetailsKind[];
-
-const SOURCE_DETAILS_PAGES: readonly string[] = [
+export const SourceDetailsPageSchema = z.enum([
   "overview",
   "general",
   "filters",
@@ -27,16 +13,18 @@ const SOURCE_DETAILS_PAGES: readonly string[] = [
   "schedule",
   "activity",
   "connection",
-] satisfies SourceDetailsPage[];
+]);
+
+export type SourceDetailsPage = z.infer<typeof SourceDetailsPageSchema>;
+
+const SOURCE_DETAILS_KINDS: readonly string[] = [
+  "account",
+  "watch",
+  "folder",
+] satisfies SourceDetailsKind[];
 
 export function isSourceDetailsKind(value: string): value is SourceDetailsKind {
   return SOURCE_DETAILS_KINDS.includes(value);
-}
-
-export function isSourceDetailsPage(
-  value: unknown,
-): value is SourceDetailsPage {
-  return typeof value === "string" && SOURCE_DETAILS_PAGES.includes(value);
 }
 
 export function sourceDetailHref(
@@ -60,7 +48,7 @@ export interface SourceDetailTarget {
 
 export function parseSourceDetailPath(
   pathname: string,
-  page?: unknown,
+  page?: SourceDetailsPage,
 ): SourceDetailTarget | null {
   if (!isSourceDetailPath(pathname)) return null;
   const [kind, id] = pathname.slice("/sources/".length).split("/");
@@ -68,7 +56,7 @@ export function parseSourceDetailPath(
   return {
     kind,
     id: decodeURIComponent(id),
-    page: isSourceDetailsPage(page) ? page : undefined,
+    page,
   };
 }
 

@@ -10,8 +10,8 @@ import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 import { z } from "zod";
 import {
+  SOURCE_FETCH_PREF_FIELDS,
   type SourceFetchPrefs,
-  SourceFetchPrefsShape,
 } from "@/features/sources/lib/fetch-prefs";
 import {
   type SyncAccountStatus,
@@ -70,7 +70,7 @@ const AccountsReplySchema = z
               syncLikes: z.boolean().optional().catch(undefined),
               importScope: ImportScopeSchema,
               importPending: z.boolean().optional().catch(undefined),
-              ...SourceFetchPrefsShape,
+              ...SOURCE_FETCH_PREF_FIELDS,
             })
             .catch({ lastSyncedAt: null, lastError: null, knownCount: 0 }),
           connected: z.boolean().catch(false),

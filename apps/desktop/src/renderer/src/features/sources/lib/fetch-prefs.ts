@@ -7,7 +7,7 @@ export interface SourceFetchPrefs {
   incoming?: IncomingSaveRule;
 }
 
-export const SourceFetchPrefsShape = {
+export const SOURCE_FETCH_PREF_FIELDS = {
   paused: z.boolean().optional().catch(undefined),
   intervalHours: z.number().optional().catch(undefined),
   incoming: z

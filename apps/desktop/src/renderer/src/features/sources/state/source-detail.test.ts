@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseSourceDetailPath, sourceDetailHref } from "./source-detail";
+import {
+  parseSourceDetailPath,
+  SourceDetailsPageSchema,
+  sourceDetailHref,
+} from "./source-detail";
 
 describe("source detail paths", () => {
   it("round-trips a folder path through the URL", () => {
@@ -19,9 +23,7 @@ describe("source detail paths", () => {
     expect(
       parseSourceDetailPath("/sources/account/acc-1", "filters")?.page,
     ).toBe("filters");
-    expect(
-      parseSourceDetailPath("/sources/account/acc-1", "nope")?.page,
-    ).toBeUndefined();
+    expect(SourceDetailsPageSchema.safeParse("nope").success).toBe(false);
   });
 
   it("ignores the list page and unknown kinds", () => {

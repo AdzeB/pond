@@ -3,11 +3,11 @@ import { z } from "zod";
 import { SourceDetail } from "@/features/sources/components/inspector";
 import {
   isSourceDetailsKind,
-  isSourceDetailsPage,
+  SourceDetailsPageSchema,
 } from "@/features/sources/state/source-detail";
 
 const SourceDetailSearchSchema = z.object({
-  page: z.string().optional().catch(undefined),
+  page: SourceDetailsPageSchema.optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/_library/sources_/$kind/$id")({
@@ -22,12 +22,5 @@ function SourceDetailRoute() {
   const { kind, id } = Route.useParams();
   const { page } = Route.useSearch();
   if (!isSourceDetailsKind(kind)) return null;
-  return (
-    <SourceDetail
-      key={`${kind}:${id}`}
-      kind={kind}
-      id={id}
-      page={isSourceDetailsPage(page) ? page : undefined}
-    />
-  );
+  return <SourceDetail key={`${kind}:${id}`} kind={kind} id={id} page={page} />;
 }
