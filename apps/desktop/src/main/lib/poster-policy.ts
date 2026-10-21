@@ -1,5 +1,5 @@
 import type { SaveFile, Source } from "@pond/schema/db";
-import type { RawJson } from "@pond/schema/raw";
+import { type RawJson, walkCaptureMedia } from "@pond/schema/raw";
 import { isVideoFile } from "@shared/media-index";
 
 export { posterFilename, videoFilename } from "@shared/save-file-names";
@@ -70,4 +70,33 @@ export function youtubeThumbnailUrl(
     }
   }
   return null;
+}
+
+const IMAGE_EXTENSIONS = /\.(jpe?g|png|webp|avif|gif)$/i;
+
+function isImageUrl(url: string | null | undefined): url is string {
+  if (!url) return false;
+  try {
+    return IMAGE_EXTENSIONS.test(new URL(url).pathname);
+  } catch {
+    return false;
+  }
+}
+
+export function remotePosterUrl(
+  rawJson: RawJson | null | undefined,
+  mediaUrl: string | null | undefined,
+): string | null {
+  const videos = walkCaptureMedia(rawJson?.capture).filter(
+    (m) => m.type === "video",
+  );
+  if (videos.length === 0) return null;
+  for (const m of videos) {
+    if (m.posterUrl) return m.posterUrl;
+  }
+  if (rawJson?.ytdlp?.thumbnail) return rawJson.ytdlp.thumbnail;
+  for (const m of videos) {
+    if (isImageUrl(m.url)) return m.url;
+  }
+  return isImageUrl(mediaUrl) ? mediaUrl : null;
 }
