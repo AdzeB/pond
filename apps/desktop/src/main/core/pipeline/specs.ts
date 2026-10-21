@@ -155,7 +155,9 @@ export const CAPTURE_EXPECTATIONS = {
   local: { required: [], recommended: [] },
 } satisfies Record<Source, CaptureExpectation>;
 
-export function resolveYtDlpTarget(save: Save): string | null {
+export function resolveYtDlpTarget(
+  save: Pick<Save, "rawJson" | "source" | "url">,
+): string | null {
   const upstreamUrl = save.rawJson?.capture?.upstream?.url;
   if (upstreamUrl) return upstreamUrl;
   if (save.source === "pinterest") return null;
