@@ -5,12 +5,17 @@ import { EditableText } from "../editable-text";
 import { Handles } from "../handles";
 import styles from "./styles.module.css";
 
-export function TextItem({ id, data, selected }: NodeProps<TextNode>) {
+export function TextItem({
+  id,
+  data,
+  selected,
+  draggable,
+}: NodeProps<TextNode>) {
   const board = useBoard();
   return (
     <div className={styles.text} data-selected={selected || undefined}>
       <NodeResizer
-        isVisible={selected && board.editingId !== id}
+        isVisible={selected && draggable && board.editingId !== id}
         minWidth={80}
         minHeight={32}
         onResizeStart={board.record}

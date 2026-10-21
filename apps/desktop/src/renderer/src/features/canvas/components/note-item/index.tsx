@@ -7,7 +7,12 @@ import { EditableText } from "../editable-text";
 import { Handles } from "../handles";
 import styles from "./styles.module.css";
 
-export function NoteItem({ id, data, selected }: NodeProps<NoteNode>) {
+export function NoteItem({
+  id,
+  data,
+  selected,
+  draggable,
+}: NodeProps<NoteNode>) {
   const board = useBoard();
   return (
     <div
@@ -16,7 +21,7 @@ export function NoteItem({ id, data, selected }: NodeProps<NoteNode>) {
       style={cssVars({ "--note-fill": NOTE_FILL[data.color] })}
     >
       <NodeResizer
-        isVisible={selected && board.editingId !== id}
+        isVisible={selected && draggable && board.editingId !== id}
         minWidth={120}
         minHeight={80}
         onResizeStart={board.record}

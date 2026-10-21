@@ -14,7 +14,12 @@ function polygonOf(outline: CanvasOutline): string | null {
   return null;
 }
 
-export function FigureItem({ id, data, selected }: NodeProps<FigureNode>) {
+export function FigureItem({
+  id,
+  data,
+  selected,
+  draggable,
+}: NodeProps<FigureNode>) {
   const board = useBoard();
   const polygon = polygonOf(data.outline);
   return (
@@ -38,7 +43,7 @@ export function FigureItem({ id, data, selected }: NodeProps<FigureNode>) {
         </svg>
       ) : null}
       <NodeResizer
-        isVisible={selected && board.editingId !== id}
+        isVisible={selected && draggable && board.editingId !== id}
         minWidth={48}
         minHeight={48}
         onResizeStart={board.record}

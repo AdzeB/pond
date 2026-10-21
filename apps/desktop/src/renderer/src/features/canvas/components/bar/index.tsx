@@ -1,7 +1,15 @@
-import { Button, cssVars, Keyboard, Tooltip } from "@pond/ui";
+import {
+  Button,
+  cssVars,
+  Keyboard,
+  Menu,
+  type MenuItemSpec,
+  Tooltip,
+} from "@pond/ui";
 import { CANVAS_COLORS, type CanvasColor } from "@shared/canvas-contracts";
 import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef, ReactElement } from "react";
+import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
 import { CANVAS_COLOR_LABELS, INK } from "../../lib/colors";
 import styles from "./styles.module.css";
@@ -92,4 +100,22 @@ function Action({ label, shortcut, pressed, onClick, children }: ActionProps) {
   );
 }
 
-export const Bar = { Root, Group, Colors, Action };
+interface BarMenuProps {
+  label: string;
+  buildItems: () => MenuItemSpec[];
+  children: ReactElement;
+}
+
+function BarMenu({ label, buildItems, children }: BarMenuProps) {
+  return (
+    <SpecMenu align="center" buildItems={buildItems}>
+      <Tooltip label={label} side="top">
+        <Menu.Trigger icon size="xs" variant="ghost" aria-label={label}>
+          {children}
+        </Menu.Trigger>
+      </Tooltip>
+    </SpecMenu>
+  );
+}
+
+export const Bar = { Root, Group, Colors, Action, Menu: BarMenu };

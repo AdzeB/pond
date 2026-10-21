@@ -1,11 +1,12 @@
-import type {
-  Canvas,
-  CanvasColor,
-  CanvasConnector,
-  CanvasContent,
-  CanvasItem,
-  CanvasOutline,
-  CanvasSide,
+import {
+  type Canvas,
+  CanvasClipSchema,
+  type CanvasColor,
+  type CanvasConnector,
+  type CanvasContent,
+  type CanvasItem,
+  type CanvasOutline,
+  type CanvasSide,
 } from "@shared/canvas-contracts";
 import {
   addEdge,
@@ -37,30 +38,47 @@ import {
   selection,
 } from "@/features/saves/navigation";
 import { ensureSaves, pool } from "@/features/saves/pool";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { isEditableTarget } from "@/shared/lib/editable-target";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
 import { claimUndo } from "@/shared/lib/undo-owner";
 import {
+  arrangeItems,
+  boardItems,
+  type MenuTarget,
+} from "../../lib/board-menu";
+import { type CanvasCommand, commandForKey } from "../../lib/commands";
+import {
+  alignFrames,
   type CanvasNode,
   type CanvasSnapshot,
   CONNECTOR_STYLE,
   type ConnectorEdge,
   type ConnectorStyle,
+  clipOf,
+  clipText,
   contentOf,
   createHistory,
+  distributeFrames,
   drawingFrom,
   duplicateOf,
   figureAt,
+  frameOf,
   GRID,
+  isLocked,
   newId,
   noteAt,
+  pasteOf,
   placeSaves,
+  reorder,
   type StrokePoint,
   snapshotOf,
   textAt,
+  tidyFrames,
   toEdge,
   toNode,
+  withLock,
 } from "../../lib/document";
 import { canvases } from "../../state/canvases";
 import { ConnectorEdge as ConnectorEdgeView } from "../connector-edge";
@@ -89,6 +107,17 @@ const EDGE_TYPES: EdgeTypes = { connector: ConnectorEdgeView };
 const SNAP_GRID: [number, number] = [GRID, GRID];
 const SAVE_DELAY_MS = 400;
 const PEN_SIZE = 4;
+const CLIP_TYPE = "application/x-pond-canvas";
+
+function parseClip(raw: string): CanvasSnapshot | null {
+  if (!raw) return null;
+  try {
+    const parsed = CanvasClipSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
 
 function withColor(node: CanvasNode, color: CanvasColor): CanvasNode {
   if (!node.selected) return node;
@@ -161,6 +190,8 @@ export function Board({ canvas }: BoardProps) {
     null,
   );
   const ownsSelection = useRef(false);
+  const pointer = useRef<XYPosition | null>(null);
+  const menuKind = useRef<MenuTarget["kind"]>("pane");
 
   const current = useCallback(
     () => snapshotOf(latest.current.nodes, latest.current.edges),
@@ -522,12 +553,172 @@ export function Board({ canvas }: BoardProps) {
     ],
   );
 
-  const duplicate = () => {
-    const picked = new Set(
+  const pickedIds = () =>
+    new Set(
       latest.current.nodes.flatMap((node) => (node.selected ? [node.id] : [])),
     );
-    const copy = duplicateOf(current(), picked);
+  const movable = () =>
+    latest.current.nodes.filter((node) => node.selected && !isLocked(node));
+
+  const duplicate = () => {
+    const copy = duplicateOf(current(), pickedIds());
     insert(copy.items, { connectors: copy.connectors });
+  };
+
+  const place = (positions: ReadonlyMap<string, XYPosition>) => {
+    const moves = latest.current.nodes.some((node) => {
+      const next = positions.get(node.id);
+      return next && (next.x !== node.position.x || next.y !== node.position.y);
+    });
+    if (!moves) return;
+    record();
+    setNodes((existing) =>
+      existing.map((node) => {
+        const next = positions.get(node.id);
+        return next ? { ...node, position: next } : node;
+      }),
+    );
+  };
+
+  const nudge = (x: number, y: number): boolean => {
+    const targets = movable();
+    if (!targets.length) return false;
+    place(
+      new Map(
+        targets.map((node) => [
+          node.id,
+          { x: node.position.x + x, y: node.position.y + y },
+        ]),
+      ),
+    );
+    return true;
+  };
+
+  const restack = (move: Parameters<typeof reorder>[2]) => {
+    const ids = pickedIds();
+    const next = reorder(latest.current.nodes, ids, move);
+    if (next.every((node, index) => node === latest.current.nodes[index]))
+      return;
+    record();
+    setNodes((existing) => reorder(existing, ids, move));
+  };
+
+  const toggleLock = () => {
+    const picked = latest.current.nodes.filter((node) => node.selected);
+    if (!picked.length) return;
+    const lock = picked.some((node) => !isLocked(node));
+    record();
+    setNodes((existing) =>
+      existing.map((node) => (node.selected ? withLock(node, lock) : node)),
+    );
+  };
+
+  const writeClip = (data: DataTransfer): boolean => {
+    const ids = pickedIds();
+    if (!ids.size) return false;
+    const clip = clipOf(current(), ids);
+    data.setData(CLIP_TYPE, JSON.stringify(clip));
+    data.setData("text/plain", clipText(clip));
+    return true;
+  };
+
+  const pasteFrom = (data: DataTransfer): boolean => {
+    const at = pointer.current
+      ? flow.screenToFlowPosition(pointer.current)
+      : viewCenter();
+    const clip = parseClip(data.getData(CLIP_TYPE));
+    if (clip) {
+      const onBoard = new Set(
+        latest.current.nodes.flatMap((node) =>
+          node.type === "save" ? [node.data.saveId] : [],
+        ),
+      );
+      const copy = pasteOf(clip, at, onBoard);
+      if (copy.items.length)
+        insert(copy.items, { connectors: copy.connectors });
+      else
+        addSaves(
+          clip.items.flatMap((item) =>
+            item.kind === "save" ? [item.saveId] : [],
+          ),
+        );
+      return true;
+    }
+    const text = data.getData("text/plain").trim();
+    if (!text) return false;
+    insert([textAt(at, text)]);
+    return true;
+  };
+
+  const run = (command: CanvasCommand) => {
+    switch (command.type) {
+      case "select-all":
+        setNodes((existing) =>
+          existing.map((node) => ({ ...node, selected: true })),
+        );
+        return;
+      case "copy":
+      case "cut":
+        /** Menu clicks carry user activation, which lets `execCommand` raise a real clipboard event on the board. */
+        wrapper.current?.focus();
+        document.execCommand(command.type);
+        return;
+      case "duplicate":
+        duplicate();
+        return;
+      case "delete":
+        void flow.deleteElements({
+          nodes: latest.current.nodes.filter((node) => node.selected),
+          edges: latest.current.edges.filter((edge) => edge.selected),
+        });
+        return;
+      case "layer":
+        restack(command.move);
+        return;
+      case "align": {
+        const frames = movable().map(frameOf);
+        if (frames.length > 1) place(alignFrames(frames, command.edge));
+        return;
+      }
+      case "distribute":
+        place(distributeFrames(movable().map(frameOf), command.axis));
+        return;
+      case "tidy": {
+        const frames = movable().map(frameOf);
+        if (frames.length > 1) place(tidyFrames(frames));
+        return;
+      }
+      case "lock":
+        toggleLock();
+        return;
+      case "zoom": {
+        const picked = latest.current.nodes.filter((node) => node.selected);
+        if (command.to === "actual") void flow.zoomTo(1, { duration: 200 });
+        else if (command.to === "selection" && picked.length)
+          void flow.fitView({ nodes: picked, duration: 200, padding: 0.2 });
+        else if (command.to === "fit")
+          void flow.fitView({ duration: 200, padding: 0.2 });
+        return;
+      }
+      case "nudge":
+        nudge(command.x, command.y);
+        return;
+    }
+  };
+
+  const menuItems = () => {
+    if (menuKind.current !== "nodes")
+      return boardItems({ kind: menuKind.current }, run);
+    const picked = latest.current.nodes.filter((node) => node.selected);
+    return boardItems(
+      {
+        kind: "nodes",
+        movable: picked.filter((node) => !isLocked(node)).length,
+        locked: picked.length > 0 && picked.every(isLocked),
+        duplicable: picked.some((node) => node.type !== "save"),
+      },
+      run,
+    );
   };
 
   const openable =
@@ -540,186 +731,249 @@ export function Board({ canvas }: BoardProps) {
     [saveIdsKey],
   );
 
+  const arrangeable = selected.filter((node) => !isLocked(node)).length;
+
   return (
     <BoardContext.Provider value={actions}>
-      <div
-        ref={wrapper}
-        className={styles.board}
-        role="application"
-        aria-label={canvas.name}
-        aria-roledescription="canvas"
-        data-tool={tool}
-        data-connecting={connecting || undefined}
-        tabIndex={-1}
-        onKeyDown={(event) => {
-          if (isEditableTarget(event.target)) return;
-          if (event.metaKey || event.ctrlKey || event.altKey) {
-            const key = event.key.toLowerCase();
-            if (key === "a" && !event.altKey) {
-              event.preventDefault();
-              setNodes((existing) =>
-                existing.map((node) => ({ ...node, selected: true })),
-              );
-            } else if (key === "d" && !event.altKey) {
-              event.preventDefault();
-              duplicate();
-            }
-            return;
-          }
-          if (event.key === "Enter" && selected.length === 1 && only) {
+      <SpecContextMenu buildItems={menuItems}>
+        <div
+          ref={wrapper}
+          className={styles.board}
+          role="application"
+          aria-label={canvas.name}
+          aria-roledescription="canvas"
+          data-tool={tool}
+          data-connecting={connecting || undefined}
+          tabIndex={-1}
+          onPointerMove={(event) => {
+            pointer.current = { x: event.clientX, y: event.clientY };
+          }}
+          onPointerLeave={() => {
+            pointer.current = null;
+          }}
+          onCopy={(event) => {
+            if (isEditableTarget(event.target)) return;
+            if (writeClip(event.clipboardData)) event.preventDefault();
+          }}
+          onCut={(event) => {
+            if (isEditableTarget(event.target)) return;
+            if (!writeClip(event.clipboardData)) return;
             event.preventDefault();
-            if (openable) openSave(openable);
-            else if (hasText(only)) actions.startEditing(only.id);
-            return;
-          }
-          if (event.key === "Enter" && connectorBarId) {
-            event.preventDefault();
-            actions.startEditing(connectorBarId);
-            return;
-          }
-          if (event.shiftKey && event.code === "Digit1") {
-            event.preventDefault();
-            void flow.fitView({ duration: 200, padding: 0.2 });
-            return;
-          }
-          if (event.key === "Escape") {
-            setTool("select");
-            return;
-          }
-          const next = event.shiftKey ? undefined : toolForKey(event.key);
-          if (next) {
-            event.preventDefault();
-            setTool(next);
-          }
-        }}
-        onDragOver={(event) => {
-          if (!isLibrarySaveDrag(event.dataTransfer)) return;
-          event.preventDefault();
-          event.stopPropagation();
-          event.dataTransfer.dropEffect = "copy";
-        }}
-        onDrop={(event) => {
-          if (!isLibrarySaveDrag(event.dataTransfer)) return;
-          event.preventDefault();
-          event.stopPropagation();
-          addSaves(
-            saveDropIds(event.dataTransfer),
-            flow.screenToFlowPosition({ x: event.clientX, y: event.clientY }),
-          );
-        }}
-      >
-        <ReactFlow<CanvasNode, ConnectorEdge>
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={NODE_TYPES}
-          edgeTypes={EDGE_TYPES}
-          defaultViewport={canvas.viewport}
-          minZoom={0.05}
-          maxZoom={8}
-          connectionMode={ConnectionMode.Loose}
-          connectionRadius={40}
-          snapToGrid
-          snapGrid={SNAP_GRID}
-          deleteKeyCode={["Backspace", "Delete"]}
-          multiSelectionKeyCode={["Meta", "Shift"]}
-          selectionMode={SelectionMode.Partial}
-          selectionOnDrag={tool === "select"}
-          panOnDrag={
-            tool === "hand" ? true : tool === "select" ? [1, 2] : false
-          }
-          panOnScroll
-          elementsSelectable={tool !== "pen" && tool !== "hand"}
-          nodesDraggable={tool === "select"}
-          nodesConnectable={tool === "select"}
-          proOptions={{ hideAttribution: true }}
-          isValidConnection={(connection) =>
-            connection.source !== connection.target
-          }
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onConnectStart={() => setConnecting(true)}
-          onConnectEnd={onConnectEnd}
-          onSelectionChange={onSelectionChange}
-          onNodeDragStart={() => {
-            record();
-            setDragging(true);
-          }}
-          onSelectionDragStart={() => {
-            record();
-            setDragging(true);
-          }}
-          onNodeDragStop={() => setDragging(false)}
-          onSelectionDragStop={() => setDragging(false)}
-          onBeforeDelete={async () => {
-            record();
-            return true;
-          }}
-          onMoveEnd={(_, next) => {
-            viewport.current = next;
-            flush();
-          }}
-          onNodeDoubleClick={(_, node) => {
-            if (tool !== "select") return;
-            if (node.type === "save") {
-              if (pool.get(node.data.saveId)) openSave(node.data.saveId);
-            } else if (hasText(node)) actions.startEditing(node.id);
-          }}
-          onEdgeDoubleClick={(_, edge) => {
-            if (tool === "select") actions.startEditing(edge.id);
-          }}
-          onPaneClick={(event) => {
-            if (tool !== "note" && tool !== "text" && tool !== "figure") return;
-            const point = flow.screenToFlowPosition({
-              x: event.clientX,
-              y: event.clientY,
+            void flow.deleteElements({
+              nodes: latest.current.nodes.filter((node) => node.selected),
             });
-            const item =
-              tool === "note"
-                ? noteAt(point, color)
-                : tool === "figure"
-                  ? figureAt(point, outline, color)
-                  : textAt(point);
-            insert([item], { edit: true });
-            setTool("select");
+          }}
+          onPaste={(event) => {
+            if (isEditableTarget(event.target)) return;
+            if (!pasteFrom(event.clipboardData)) return;
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onKeyDownCapture={(event) => {
+            if (isEditableTarget(event.target)) return;
+            const command = commandForKey(event);
+            if (command?.type !== "nudge") return;
+            /** React Flow moves focused nodes on arrow keys too, so the board takes the key first. */
+            if (!nudge(command.x, command.y)) return;
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onKeyDown={(event) => {
+            if (isEditableTarget(event.target)) return;
+            const command = commandForKey(event);
+            if (command && command.type !== "copy" && command.type !== "cut") {
+              if (command.type === "nudge") return;
+              event.preventDefault();
+              run(command);
+              return;
+            }
+            if (event.metaKey || event.ctrlKey || event.altKey) return;
+            if (event.key === "Enter" && selected.length === 1 && only) {
+              event.preventDefault();
+              if (openable) openSave(openable);
+              else if (hasText(only) && !isLocked(only))
+                actions.startEditing(only.id);
+              return;
+            }
+            if (event.key === "Enter" && connectorBarId) {
+              event.preventDefault();
+              actions.startEditing(connectorBarId);
+              return;
+            }
+            if (event.key === "Escape") {
+              setTool("select");
+              return;
+            }
+            const next = event.shiftKey ? undefined : toolForKey(event.key);
+            if (next) {
+              event.preventDefault();
+              setTool(next);
+            }
+          }}
+          onDragOver={(event) => {
+            if (!isLibrarySaveDrag(event.dataTransfer)) return;
+            event.preventDefault();
+            event.stopPropagation();
+            event.dataTransfer.dropEffect = "copy";
+          }}
+          onDrop={(event) => {
+            if (!isLibrarySaveDrag(event.dataTransfer)) return;
+            event.preventDefault();
+            event.stopPropagation();
+            addSaves(
+              saveDropIds(event.dataTransfer),
+              flow.screenToFlowPosition({ x: event.clientX, y: event.clientY }),
+            );
           }}
         >
-          <Background
-            variant={BackgroundVariant.Dots}
-            gap={GRID}
-            size={1.5}
-            className={styles.dots}
-          />
-          {tool === "pen" ? (
-            <DrawLayer color={color} size={PEN_SIZE} onStroke={onStroke} />
-          ) : null}
-          <SelectionBar
-            nodes={tool === "select" ? selected : []}
-            hidden={dragging}
-            canOpen={openable !== null}
-            onColor={recolor}
-            onOutline={changeOutline}
-            onOpen={() => {
-              if (openable) openSave(openable);
+          <ReactFlow<CanvasNode, ConnectorEdge>
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={NODE_TYPES}
+            edgeTypes={EDGE_TYPES}
+            defaultViewport={canvas.viewport}
+            minZoom={0.05}
+            maxZoom={8}
+            connectionMode={ConnectionMode.Loose}
+            connectionRadius={40}
+            snapToGrid
+            snapGrid={SNAP_GRID}
+            deleteKeyCode={["Backspace", "Delete"]}
+            multiSelectionKeyCode={["Meta", "Shift"]}
+            selectionMode={SelectionMode.Partial}
+            selectionOnDrag={tool === "select"}
+            panOnDrag={tool === "hand" ? true : tool === "select" ? [1] : false}
+            panOnScroll
+            elevateNodesOnSelect={false}
+            elementsSelectable={tool !== "pen" && tool !== "hand"}
+            nodesDraggable={tool === "select"}
+            nodesConnectable={tool === "select"}
+            proOptions={{ hideAttribution: true }}
+            isValidConnection={(connection) =>
+              connection.source !== connection.target
+            }
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onConnectStart={() => setConnecting(true)}
+            onConnectEnd={onConnectEnd}
+            onSelectionChange={onSelectionChange}
+            onNodeDragStart={() => {
+              record();
+              setDragging(true);
             }}
-            onDuplicate={duplicate}
-            onDelete={() => void flow.deleteElements({ nodes: selected })}
+            onSelectionDragStart={() => {
+              record();
+              setDragging(true);
+            }}
+            onNodeDragStop={() => setDragging(false)}
+            onSelectionDragStop={() => setDragging(false)}
+            onBeforeDelete={async () => {
+              record();
+              return true;
+            }}
+            onMoveEnd={(_, next) => {
+              viewport.current = next;
+              flush();
+            }}
+            onNodeDoubleClick={(_, node) => {
+              if (tool !== "select") return;
+              if (node.type === "save") {
+                if (pool.get(node.data.saveId)) openSave(node.data.saveId);
+              } else if (hasText(node) && !isLocked(node))
+                actions.startEditing(node.id);
+            }}
+            onNodeContextMenu={(_, node) => {
+              menuKind.current = "nodes";
+              if (node.selected) return;
+              setNodes((existing) =>
+                existing.map((entry) => ({
+                  ...entry,
+                  selected: entry.id === node.id,
+                })),
+              );
+              setEdges((existing) =>
+                existing.map((edge) => ({ ...edge, selected: false })),
+              );
+            }}
+            onSelectionContextMenu={() => {
+              menuKind.current = "nodes";
+            }}
+            onEdgeContextMenu={(_, edge) => {
+              menuKind.current = "edge";
+              setNodes((existing) =>
+                existing.map((node) => ({ ...node, selected: false })),
+              );
+              setEdges((existing) =>
+                existing.map((entry) => ({
+                  ...entry,
+                  selected: entry.id === edge.id,
+                })),
+              );
+            }}
+            onPaneContextMenu={() => {
+              menuKind.current = "pane";
+            }}
+            onEdgeDoubleClick={(_, edge) => {
+              if (tool === "select") actions.startEditing(edge.id);
+            }}
+            onPaneClick={(event) => {
+              if (tool !== "note" && tool !== "text" && tool !== "figure")
+                return;
+              const point = flow.screenToFlowPosition({
+                x: event.clientX,
+                y: event.clientY,
+              });
+              const item =
+                tool === "note"
+                  ? noteAt(point, color)
+                  : tool === "figure"
+                    ? figureAt(point, outline, color)
+                    : textAt(point);
+              insert([item], { edit: true });
+              setTool("select");
+            }}
+          >
+            <Background
+              variant={BackgroundVariant.Dots}
+              gap={GRID}
+              size={1.5}
+              className={styles.dots}
+            />
+            {tool === "pen" ? (
+              <DrawLayer color={color} size={PEN_SIZE} onStroke={onStroke} />
+            ) : null}
+            <SelectionBar
+              nodes={tool === "select" ? selected : []}
+              hidden={dragging}
+              canOpen={openable !== null}
+              arrange={
+                arrangeable > 1 ? () => arrangeItems(arrangeable, run) : null
+              }
+              onColor={recolor}
+              onOutline={changeOutline}
+              onOpen={() => {
+                if (openable) openSave(openable);
+              }}
+              onDuplicate={duplicate}
+              onDelete={() => void flow.deleteElements({ nodes: selected })}
+            />
+          </ReactFlow>
+          <Tools
+            tool={tool}
+            color={color}
+            outline={outline}
+            showColors={showColors}
+            showOutlines={tool === "figure"}
+            onCanvas={onCanvas}
+            onTool={setTool}
+            onColor={setColor}
+            onOutline={setOutline}
+            onAddSaves={(saveIds) => addSaves(saveIds)}
           />
-        </ReactFlow>
-        <Tools
-          tool={tool}
-          color={color}
-          outline={outline}
-          showColors={showColors}
-          showOutlines={tool === "figure"}
-          onCanvas={onCanvas}
-          onTool={setTool}
-          onColor={setColor}
-          onOutline={setOutline}
-          onAddSaves={(saveIds) => addSaves(saveIds)}
-        />
-        <Zoom />
-      </div>
+          <Zoom />
+        </div>
+      </SpecContextMenu>
     </BoardContext.Provider>
   );
 }

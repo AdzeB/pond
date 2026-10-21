@@ -8,7 +8,12 @@ import { useBoard } from "../board/context";
 import { Handles } from "../handles";
 import styles from "./styles.module.css";
 
-export function SaveItem({ data, selected, width }: NodeProps<SaveNode>) {
+export function SaveItem({
+  data,
+  selected,
+  draggable,
+  width,
+}: NodeProps<SaveNode>) {
   const board = useBoard();
   const save = useSave(data.saveId);
   const missing = !save && board.savesReady;
@@ -22,7 +27,7 @@ export function SaveItem({ data, selected, width }: NodeProps<SaveNode>) {
       data-trashed={save?.deletedAt ? true : undefined}
     >
       <NodeResizer
-        isVisible={selected}
+        isVisible={selected && draggable}
         minWidth={140}
         minHeight={120}
         onResizeStart={board.record}

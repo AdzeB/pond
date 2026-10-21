@@ -1,4 +1,10 @@
-import { IconArrowUpRight, IconDuplicate, IconTrash } from "@pond/icons";
+import {
+  IconAlign2Left,
+  IconArrowUpRight,
+  IconDuplicate,
+  IconTrash,
+} from "@pond/icons";
+import type { MenuItemSpec } from "@pond/ui";
 import type { CanvasColor, CanvasOutline } from "@shared/canvas-contracts";
 import { NodeToolbar, Position } from "@xyflow/react";
 import type { CanvasNode } from "../../lib/document";
@@ -9,6 +15,7 @@ interface SelectionBarProps {
   nodes: readonly CanvasNode[];
   hidden: boolean;
   canOpen: boolean;
+  arrange: (() => MenuItemSpec[]) | null;
   onColor(color: CanvasColor): void;
   onOutline(outline: CanvasOutline): void;
   onOpen(): void;
@@ -26,6 +33,7 @@ export function SelectionBar({
   nodes,
   hidden,
   canOpen,
+  arrange,
   onColor,
   onOutline,
   onOpen,
@@ -72,6 +80,11 @@ export function SelectionBar({
             <Bar.Action label="Open Save" shortcut={["↵"]} onClick={onOpen}>
               <IconArrowUpRight />
             </Bar.Action>
+          ) : null}
+          {arrange ? (
+            <Bar.Menu label="Arrange" buildItems={arrange}>
+              <IconAlign2Left />
+            </Bar.Menu>
           ) : null}
           {copyable ? (
             <Bar.Action

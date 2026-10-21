@@ -44,6 +44,7 @@ const frame = {
   y: CoordinateSchema,
   width: LengthSchema,
   height: LengthSchema,
+  locked: z.boolean().optional(),
 };
 
 export const CanvasItemSchema = z.discriminatedUnion("kind", [
@@ -109,6 +110,12 @@ const contentFields = {
   items: z.array(CanvasItemSchema).max(5_000),
   connectors: z.array(CanvasConnectorSchema).max(10_000),
 };
+
+/** Canvas items on the system clipboard, so a copy pastes into any Canvas. */
+export const CanvasClipSchema = z.object({
+  items: contentFields.items,
+  connectors: contentFields.connectors,
+});
 
 function checkReferences(
   content: { items: CanvasItem[]; connectors: CanvasConnector[] },
