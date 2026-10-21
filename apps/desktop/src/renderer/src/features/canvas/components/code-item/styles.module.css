@@ -64,3 +64,8 @@
     color: var(--token-dark);
   }
 }
+
+/* A code block's own theme re-scopes the palette tokens, so only the app-level dark rule needs undoing. */
+.code[data-theme="light"] .token {
+  color: var(--token-light);
+}

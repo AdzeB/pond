@@ -10,18 +10,41 @@ import {
   IconDuplicate,
   IconFlipHorizontal2,
   IconFlipVertical2,
+  IconLineCurved,
+  IconLineElbow,
+  IconLineStraight,
+  IconTextAlignBottom,
+  IconTextAlignCenter,
+  IconTextAlignLeft,
+  IconTextAlignMiddle,
+  IconTextAlignRight,
+  IconTextAlignTop,
   IconTrash,
 } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import {
   CANVAS_ALIGNS,
+  CANVAS_BORDERS,
   CANVAS_CAPS,
+  CANVAS_FILLS,
   CANVAS_FONTS,
+  CANVAS_LINES,
   CANVAS_TEXT_SIZES,
+  CANVAS_THEMES,
+  CANVAS_VALIGNS,
+  CANVAS_WEIGHTS,
+  type CanvasAlign,
+  type CanvasBorder,
   type CanvasCap,
+  type CanvasFill,
+  type CanvasLine,
   type CanvasOutline,
+  type CanvasSide,
+  type CanvasTheme,
+  type CanvasValign,
+  type CanvasWeight,
 } from "@shared/canvas-contracts";
-import type { ReactNode } from "react";
+import type { ComponentType, ReactElement, ReactNode } from "react";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
 import { type CanvasCommand, glyphsFor } from "./commands";
 import type { AlignEdge, LayerMove } from "./document";
@@ -32,6 +55,7 @@ import {
   FONT_LABELS,
   TEXT_SIZE_LABELS,
   type TextStyle,
+  VALIGN_LABELS,
 } from "./text-style";
 
 export type MenuTarget =
@@ -50,6 +74,7 @@ export type MenuTarget =
       canSort: boolean;
       canCrop: boolean;
       cropped: boolean;
+      canQuick: boolean;
     };
 
 type Run = (command: CanvasCommand) => void;
@@ -80,6 +105,13 @@ const LAYERS: ReadonlyArray<{ move: LayerMove; label: string }> = [
   { move: "forward", label: "Bring Forward" },
   { move: "backward", label: "Send Backward" },
   { move: "back", label: "Send to Back" },
+];
+
+const QUICK_SIDES: ReadonlyArray<{ side: CanvasSide; label: string }> = [
+  { side: "top", label: "Above" },
+  { side: "right", label: "Right" },
+  { side: "bottom", label: "Below" },
+  { side: "left", label: "Left" },
 ];
 
 function item(
@@ -147,6 +179,17 @@ export function boardItems(target: MenuTarget, run: Run): MenuItemSpec[] {
           item("Duplicate", { type: "duplicate" }, run, {
             icon: <IconDuplicate />,
           }),
+        ]
+      : []),
+    ...(target.canQuick
+      ? [
+          {
+            type: "submenu" as const,
+            label: "Add Connected",
+            items: QUICK_SIDES.map(({ side, label }) =>
+              item(label, { type: "quick", side }, run),
+            ),
+          },
         ]
       : []),
     { type: "separator" },
@@ -254,40 +297,192 @@ export function outlineItems(
   );
 }
 
-export function textItems(
-  current: TextStyle,
+export function sizeItems(
+  current: TextStyle["textSize"] | null,
   pick: (style: TextStyle) => void,
+): MenuItemSpec[] {
+  return CANVAS_TEXT_SIZES.map((textSize) =>
+    choice(TEXT_SIZE_LABELS[textSize], textSize, current, () =>
+      pick({ textSize }),
+    ),
+  );
+}
+
+export function fontItems(
+  current: TextStyle["font"] | null,
+  pick: (style: TextStyle) => void,
+): MenuItemSpec[] {
+  return CANVAS_FONTS.map((font) =>
+    choice(FONT_LABELS[font], font, current, () => pick({ font })),
+  );
+}
+
+const ALIGN_ICONS = {
+  left: <IconTextAlignLeft />,
+  center: <IconTextAlignCenter />,
+  right: <IconTextAlignRight />,
+} satisfies Record<CanvasAlign, ReactElement>;
+
+const VALIGN_ICONS = {
+  top: <IconTextAlignTop />,
+  middle: <IconTextAlignMiddle />,
+  bottom: <IconTextAlignBottom />,
+} satisfies Record<CanvasValign, ReactElement>;
+
+export function alignIcon(align: CanvasAlign | null): ReactElement {
+  return ALIGN_ICONS[align ?? "left"];
+}
+
+/** Vertical alignment only applies where the text box is taller than its text. */
+export function alignItems(
+  current: { align: CanvasAlign | null; valign: CanvasValign | null },
+  pick: (style: TextStyle) => void,
+  vertical: boolean,
+): MenuItemSpec[] {
+  const horizontal = CANVAS_ALIGNS.map((align) =>
+    choice(
+      ALIGN_LABELS[align],
+      align,
+      current.align,
+      () => pick({ align }),
+      ALIGN_ICONS[align],
+    ),
+  );
+  if (!vertical) return horizontal;
+  return [
+    ...horizontal,
+    { type: "separator" },
+    ...CANVAS_VALIGNS.map((valign) =>
+      choice(
+        VALIGN_LABELS[valign],
+        valign,
+        current.valign,
+        () => pick({ valign }),
+        VALIGN_ICONS[valign],
+      ),
+    ),
+  ];
+}
+
+const FILL_LABELS = {
+  solid: "Fill",
+  transparent: "Transparent",
+  none: "No Fill",
+} satisfies Record<CanvasFill, string>;
+
+const BORDER_LABELS = {
+  solid: "Solid",
+  dashed: "Dashed",
+  none: "No Border",
+} satisfies Record<CanvasBorder, string>;
+
+export interface FigureLook {
+  fill?: CanvasFill;
+  border?: CanvasBorder;
+}
+
+export function figureStyleItems(
+  current: { fill: CanvasFill | null; border: CanvasBorder | null },
+  pick: (look: FigureLook) => void,
 ): MenuItemSpec[] {
   return [
     {
       type: "group",
-      label: "Size",
-      items: CANVAS_TEXT_SIZES.map((size) =>
-        choice(TEXT_SIZE_LABELS[size], size, current.textSize ?? null, () =>
-          pick({ textSize: size }),
-        ),
+      label: "Fill",
+      items: CANVAS_FILLS.map((fill) =>
+        choice(FILL_LABELS[fill], fill, current.fill, () => pick({ fill })),
       ),
     },
     { type: "separator" },
     {
       type: "group",
-      label: "Font",
-      items: CANVAS_FONTS.map((font) =>
-        choice(FONT_LABELS[font], font, current.font ?? null, () =>
-          pick({ font }),
+      label: "Border",
+      items: CANVAS_BORDERS.map((border) =>
+        choice(BORDER_LABELS[border], border, current.border, () =>
+          pick({ border }),
         ),
       ),
+    },
+  ];
+}
+
+const WEIGHT_LABELS = {
+  thin: "Thin",
+  thick: "Thick",
+} satisfies Record<CanvasWeight, string>;
+
+export function weightItems(
+  current: CanvasWeight | null,
+  pick: (weight: CanvasWeight) => void,
+): MenuItemSpec[] {
+  return CANVAS_WEIGHTS.map((weight) =>
+    choice(WEIGHT_LABELS[weight], weight, current, pick),
+  );
+}
+
+export function connectorStrokeItems(
+  current: { weight: CanvasWeight; dashed: boolean },
+  pick: (style: { weight?: CanvasWeight; dashed?: boolean }) => void,
+): MenuItemSpec[] {
+  return [
+    {
+      type: "group",
+      label: "Weight",
+      items: weightItems(current.weight, (weight) => pick({ weight })),
     },
     { type: "separator" },
     {
       type: "group",
-      label: "Align",
-      items: CANVAS_ALIGNS.map((align) =>
-        choice(ALIGN_LABELS[align], align, current.align ?? null, () =>
-          pick({ align }),
-        ),
-      ),
+      label: "Style",
+      items: [
+        choice("Solid", false, current.dashed, () => pick({ dashed: false })),
+        choice("Dashed", true, current.dashed, () => pick({ dashed: true })),
+      ],
     },
+  ];
+}
+
+export const LINE_ICONS = {
+  curved: IconLineCurved,
+  elbow: IconLineElbow,
+  straight: IconLineStraight,
+} satisfies Record<CanvasLine, ComponentType>;
+
+const LINE_LABELS = {
+  curved: "Curved",
+  elbow: "Elbow",
+  straight: "Straight",
+} satisfies Record<CanvasLine, string>;
+
+export function lineItems(
+  current: CanvasLine,
+  pick: (line: CanvasLine) => void,
+): MenuItemSpec[] {
+  return CANVAS_LINES.map((line) => {
+    const Icon = LINE_ICONS[line];
+    return choice(LINE_LABELS[line], line, current, pick, <Icon />);
+  });
+}
+
+const THEME_LABELS = {
+  light: "Light",
+  dark: "Dark",
+} satisfies Record<CanvasTheme, string>;
+
+export function themeItems(
+  current: CanvasTheme | null,
+  pick: (theme: CanvasTheme | undefined) => void,
+): MenuItemSpec[] {
+  return [
+    choice<CanvasTheme | null>("Match App", null, current, () =>
+      pick(undefined),
+    ),
+    { type: "separator" },
+    ...CANVAS_THEMES.map((theme) =>
+      choice<CanvasTheme | null>(THEME_LABELS[theme], theme, current, () =>
+        pick(theme),
+      ),
+    ),
   ];
 }
 

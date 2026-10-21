@@ -2,6 +2,7 @@ import { cssVars } from "@pond/ui";
 import { type NodeProps, NodeResizer } from "@xyflow/react";
 import { NOTE_FILL } from "../../lib/colors";
 import type { NoteNode } from "../../lib/document";
+import { MIN_SIZE } from "../../lib/transform";
 import { useBoard } from "../board/context";
 import { EditableText } from "../editable-text";
 import { Handles } from "../handles";
@@ -17,9 +18,11 @@ export function NoteItem({
   return (
     <div className={styles.bounds}>
       <NodeResizer
-        isVisible={selected && draggable && board.editingId !== id}
-        minWidth={120}
-        minHeight={80}
+        isVisible={
+          selected && draggable && board.editingId !== id && !data.rotation
+        }
+        minWidth={MIN_SIZE.note.width}
+        minHeight={MIN_SIZE.note.height}
         onResizeStart={board.record}
       />
       <Handles onCreate={(side) => board.quickCreate(id, side)} />

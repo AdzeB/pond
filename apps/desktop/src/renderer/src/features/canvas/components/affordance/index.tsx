@@ -1,104 +1,151 @@
 import { useReactFlow, useStore, ViewportPortal } from "@xyflow/react";
-import { useRef } from "react";
-import type { Bounds } from "../../lib/document";
+import { type PointerEvent, useRef } from "react";
 import { turnOf } from "../../lib/edit";
+import {
+  type Box,
+  CORNERS,
+  type Corner,
+  cornerAt,
+  cursorFor,
+  resizeTurned,
+  type Size,
+} from "../../lib/transform";
 import styles from "./styles.module.css";
 
-const CORNERS = ["nw", "ne", "se", "sw"] as const;
-
 interface AffordanceProps {
-  frame: Bounds;
+  frame: Box;
   rotation: number | undefined;
+  min: Size;
+  onStart(): void;
   onRotate(rotation: number | undefined): void;
-  onRotateStart(): void;
+  onResize(frame: Box): void;
 }
 
-function cornerOf(frame: Bounds, corner: (typeof CORNERS)[number]) {
-  switch (corner) {
-    case "nw":
-      return { x: frame.x, y: frame.y, ox: -1, oy: -1 };
-    case "ne":
-      return { x: frame.x + frame.width, y: frame.y, ox: 1, oy: -1 };
-    case "se":
-      return {
-        x: frame.x + frame.width,
-        y: frame.y + frame.height,
-        ox: 1,
-        oy: 1,
-      };
-    case "sw":
-      return { x: frame.x, y: frame.y + frame.height, ox: -1, oy: 1 };
-  }
-}
+type Grab =
+  | { kind: "turn"; angle: number; rotation: number }
+  | { kind: "size"; corner: Corner; frame: Box };
 
-/** Rotation zones sit just outside each corner, past the resize handles. */
+/** Rotation zones sit past each corner; a turned item also gets corner handles that turn with it. */
 export function Affordance({
   frame,
   rotation,
+  min,
+  onStart,
   onRotate,
-  onRotateStart,
+  onResize,
 }: AffordanceProps) {
   const flow = useReactFlow();
   const zoom = useStore((state) => state.transform[2]);
-  const grab = useRef<{ angle: number; rotation: number } | null>(null);
+  const grab = useRef<Grab | null>(null);
   const started = useRef(false);
+  const angle = rotation ?? 0;
   const center = {
     x: frame.x + frame.width / 2,
     y: frame.y + frame.height / 2,
   };
-  const pad = 14 / zoom;
-  const angleAt = (clientX: number, clientY: number) => {
-    const point = flow.screenToFlowPosition(
-      { x: clientX, y: clientY },
+  const pointAt = (event: PointerEvent) =>
+    flow.screenToFlowPosition(
+      { x: event.clientX, y: event.clientY },
       { snapToGrid: false },
     );
+  const angleAt = (event: PointerEvent) => {
+    const point = pointAt(event);
     return (Math.atan2(point.y - center.y, point.x - center.x) * 180) / Math.PI;
   };
+  const begin = (event: PointerEvent<HTMLElement>, next: Grab) => {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    grab.current = next;
+    started.current = false;
+  };
+  const move = (event: PointerEvent) => {
+    const current = grab.current;
+    if (!current) return;
+    if (!started.current) {
+      started.current = true;
+      onStart();
+    }
+    if (current.kind === "turn") {
+      const turned = current.rotation + angleAt(event) - current.angle;
+      onRotate(turnOf(turned, event.shiftKey ? 15 : 1));
+      return;
+    }
+    onResize(
+      resizeTurned(
+        current.frame,
+        angle,
+        current.corner,
+        pointAt(event),
+        min,
+        event.shiftKey,
+      ),
+    );
+  };
+  const end = () => {
+    grab.current = null;
+  };
+  const pad = 14 / zoom;
+  const outward = (corner: Corner) =>
+    cornerAt(
+      {
+        x: frame.x - pad,
+        y: frame.y - pad,
+        width: frame.width + pad * 2,
+        height: frame.height + pad * 2,
+      },
+      angle,
+      corner,
+    );
   return (
     <ViewportPortal>
       {CORNERS.map((corner) => {
-        const point = cornerOf(frame, corner);
+        const point = outward(corner);
         return (
           <button
-            key={corner}
+            key={`turn-${corner}`}
             type="button"
             className={styles.turn}
             aria-label="Rotate"
             style={{
-              transform: `translate(${point.x + point.ox * pad}px, ${point.y + point.oy * pad}px) translate(-50%, -50%) scale(${1 / zoom})`,
+              transform: `translate(${point.x}px, ${point.y}px) translate(-50%, -50%) scale(${1 / zoom})`,
             }}
-            onPointerDown={(event) => {
-              if (event.button !== 0) return;
-              event.stopPropagation();
-              event.currentTarget.setPointerCapture(event.pointerId);
-              grab.current = {
-                angle: angleAt(event.clientX, event.clientY),
-                rotation: rotation ?? 0,
-              };
-              started.current = false;
-            }}
-            onPointerMove={(event) => {
-              const start = grab.current;
-              if (!start) return;
-              if (!started.current) {
-                started.current = true;
-                onRotateStart();
-              }
-              const angle =
-                start.rotation +
-                angleAt(event.clientX, event.clientY) -
-                start.angle;
-              onRotate(turnOf(angle, event.shiftKey ? 15 : 1));
-            }}
-            onPointerUp={() => {
-              grab.current = null;
-            }}
-            onLostPointerCapture={() => {
-              grab.current = null;
-            }}
+            onPointerDown={(event) =>
+              begin(event, {
+                kind: "turn",
+                angle: angleAt(event),
+                rotation: angle,
+              })
+            }
+            onPointerMove={move}
+            onPointerUp={end}
+            onLostPointerCapture={end}
           />
         );
       })}
+      {angle
+        ? CORNERS.map((corner) => {
+            const point = cornerAt(frame, angle, corner);
+            return (
+              <button
+                key={`size-${corner}`}
+                type="button"
+                className={styles.size}
+                aria-label="Resize"
+                style={{
+                  cursor: cursorFor(corner, angle),
+                  transform: `translate(${point.x}px, ${point.y}px) translate(-50%, -50%) scale(${1 / zoom}) rotate(${angle}deg)`,
+                }}
+                onPointerDown={(event) =>
+                  begin(event, { kind: "size", corner, frame })
+                }
+                onPointerMove={move}
+                onPointerUp={end}
+                onLostPointerCapture={end}
+              />
+            );
+          })
+        : null}
     </ViewportPortal>
   );
 }

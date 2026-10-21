@@ -2,6 +2,7 @@ import { cssVars } from "@pond/ui";
 import { type NodeProps, NodeResizer } from "@xyflow/react";
 import { FIGURE_EDGE, NOTE_FILL } from "../../lib/colors";
 import type { TopicNode } from "../../lib/document";
+import { MIN_SIZE } from "../../lib/transform";
 import { useBoard } from "../board/context";
 import { EditableText } from "../editable-text";
 import { Handles } from "../handles";
@@ -17,9 +18,11 @@ export function TopicItem({
   return (
     <div className={styles.bounds}>
       <NodeResizer
-        isVisible={selected && draggable && board.editingId !== id}
-        minWidth={96}
-        minHeight={40}
+        isVisible={
+          selected && draggable && board.editingId !== id && !data.rotation
+        }
+        minWidth={MIN_SIZE.topic.width}
+        minHeight={MIN_SIZE.topic.height}
         onResizeStart={board.record}
       />
       <Handles onCreate={(side) => board.quickCreate(id, side)} />

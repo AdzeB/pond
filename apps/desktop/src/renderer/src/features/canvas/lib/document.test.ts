@@ -32,6 +32,7 @@ import {
   tidyFrames,
   toEdge,
   toNode,
+  withBox,
   withCap,
   withGroup,
   withLock,
@@ -171,6 +172,29 @@ describe("canvas document", () => {
       ],
     });
     expect(drawingFrom([], "blue", 4)).toBeNull();
+  });
+
+  it("rescales stroke points when a drawing is resized", () => {
+    const drawing = drawingFrom(
+      [
+        [100, 200, 0.5],
+        [140, 260, 0.5],
+      ],
+      "blue",
+      4,
+    );
+    if (!drawing) throw new Error("expected a drawing");
+    const resized = withBox(toNode(drawing), {
+      x: 0,
+      y: 0,
+      width: 96,
+      height: 34,
+    });
+    expect(resized).toMatchObject({ position: { x: 0, y: 0 }, width: 96 });
+    expect(resized.type === "drawing" && resized.data.points).toEqual([
+      [8, 2, 0.5],
+      [88, 32, 0.5],
+    ]);
   });
 
   it("duplicates everything but Saves, with the connectors between copies", () => {

@@ -1,5 +1,6 @@
 import { type NodeProps, NodeResizer } from "@xyflow/react";
 import type { TextNode } from "../../lib/document";
+import { MIN_SIZE } from "../../lib/transform";
 import { useBoard } from "../board/context";
 import { EditableText } from "../editable-text";
 import { Handles } from "../handles";
@@ -15,9 +16,11 @@ export function TextItem({
   return (
     <div className={styles.bounds}>
       <NodeResizer
-        isVisible={selected && draggable && board.editingId !== id}
-        minWidth={80}
-        minHeight={32}
+        isVisible={
+          selected && draggable && board.editingId !== id && !data.rotation
+        }
+        minWidth={MIN_SIZE.text.width}
+        minHeight={MIN_SIZE.text.height}
         onResizeStart={board.record}
       />
       <Handles onCreate={(side) => board.quickCreate(id, side)} />

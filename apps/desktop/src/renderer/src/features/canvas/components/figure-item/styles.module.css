@@ -104,3 +104,11 @@
 .figure[data-flip-x][data-flip-y] .outline {
   transform: scale(-1);
 }
+
+.figure[data-border="dashed"] {
+  border-style: dashed;
+
+  & .outline path {
+    stroke-dasharray: 6 4;
+  }
+}

@@ -36,7 +36,7 @@ const CANVAS_OUTLINES = [
 const CanvasOutlineSchema = z.enum(CANVAS_OUTLINES);
 export type CanvasOutline = z.infer<typeof CanvasOutlineSchema>;
 
-const CANVAS_LINES = ["curved", "elbow", "straight"] as const;
+export const CANVAS_LINES = ["curved", "elbow", "straight"] as const;
 const CanvasLineSchema = z.enum(CANVAS_LINES);
 export type CanvasLine = z.infer<typeof CanvasLineSchema>;
 
@@ -69,6 +69,21 @@ export type CanvasFont = (typeof CANVAS_FONTS)[number];
 
 export const CANVAS_ALIGNS = ["left", "center", "right"] as const;
 export type CanvasAlign = (typeof CANVAS_ALIGNS)[number];
+
+export const CANVAS_VALIGNS = ["top", "middle", "bottom"] as const;
+export type CanvasValign = (typeof CANVAS_VALIGNS)[number];
+
+export const CANVAS_FILLS = ["solid", "transparent", "none"] as const;
+export type CanvasFill = (typeof CANVAS_FILLS)[number];
+
+export const CANVAS_BORDERS = ["solid", "dashed", "none"] as const;
+export type CanvasBorder = (typeof CANVAS_BORDERS)[number];
+
+export const CANVAS_WEIGHTS = ["thin", "thick"] as const;
+export type CanvasWeight = (typeof CANVAS_WEIGHTS)[number];
+
+export const CANVAS_THEMES = ["light", "dark"] as const;
+export type CanvasTheme = (typeof CANVAS_THEMES)[number];
 
 export const CanvasCropSchema = z
   .object({
@@ -109,6 +124,9 @@ const textStyle = {
   textSize: z.enum(CANVAS_TEXT_SIZES).optional(),
   font: z.enum(CANVAS_FONTS).optional(),
   align: z.enum(CANVAS_ALIGNS).optional(),
+  valign: z.enum(CANVAS_VALIGNS).optional(),
+  bold: z.boolean().optional(),
+  strike: z.boolean().optional(),
 };
 
 export const CanvasItemSchema = z.discriminatedUnion("kind", [
@@ -139,6 +157,8 @@ export const CanvasItemSchema = z.discriminatedUnion("kind", [
     color: CanvasColorSchema,
     flipX: z.boolean().optional(),
     flipY: z.boolean().optional(),
+    fill: z.enum(CANVAS_FILLS).optional(),
+    border: z.enum(CANVAS_BORDERS).optional(),
     ...textStyle,
   }),
   z.object({
@@ -162,6 +182,7 @@ export const CanvasItemSchema = z.discriminatedUnion("kind", [
     kind: z.literal("code"),
     text: TextSchema,
     language: z.string().max(40),
+    theme: z.enum(CANVAS_THEMES).optional(),
   }),
   /** A mind-map topic; its branches are the connectors leaving its right side. */
   z.object({
@@ -202,6 +223,7 @@ export const CanvasConnectorSchema = z.object({
   start: CanvasCapSchema.optional(),
   end: CanvasCapSchema.optional(),
   dashed: z.boolean().default(false),
+  weight: z.enum(CANVAS_WEIGHTS).optional(),
   color: CanvasColorSchema.default("gray"),
   label: TextSchema.default(""),
 });

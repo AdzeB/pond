@@ -1,3 +1,4 @@
+import type { CanvasSide } from "@shared/canvas-contracts";
 import { type AlignEdge, type Axis, GRID, type LayerMove } from "./document";
 
 export type CanvasCommand =
@@ -27,7 +28,8 @@ export type CanvasCommand =
   | { type: "convert-notes" }
   | { type: "sort-notes" }
   | { type: "crop" }
-  | { type: "reset-crop" };
+  | { type: "reset-crop" }
+  | { type: "quick"; side: CanvasSide };
 
 export type KeyChord = Pick<
   KeyboardEvent,
@@ -104,6 +106,22 @@ const BINDINGS: ReadonlyArray<readonly [Chord, CanvasCommand]> = [
   [
     { alt: true, shift: true, code: "KeyR", glyph: "R" },
     { type: "rotate", delta: -15 },
+  ],
+  [
+    { alt: true, code: "ArrowUp", glyph: "↑" },
+    { type: "quick", side: "top" },
+  ],
+  [
+    { alt: true, code: "ArrowRight", glyph: "→" },
+    { type: "quick", side: "right" },
+  ],
+  [
+    { alt: true, code: "ArrowDown", glyph: "↓" },
+    { type: "quick", side: "bottom" },
+  ],
+  [
+    { alt: true, code: "ArrowLeft", glyph: "←" },
+    { type: "quick", side: "left" },
   ],
   [
     { shift: true, code: "Digit1", glyph: "1" },

@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import type { CodeNode } from "../../lib/document";
 import { useHighlight } from "../../lib/highlight";
 import { languageLabel } from "../../lib/text-style";
+import { MIN_SIZE } from "../../lib/transform";
 import { useBoard } from "../board/context";
 import { Handles } from "../handles";
 import styles from "./styles.module.css";
@@ -29,15 +30,16 @@ export function CodeItem({
   return (
     <div className={styles.bounds}>
       <NodeResizer
-        isVisible={selected && draggable && !editing}
-        minWidth={160}
-        minHeight={72}
+        isVisible={selected && draggable && !editing && !data.rotation}
+        minWidth={MIN_SIZE.code.width}
+        minHeight={MIN_SIZE.code.height}
         onResizeStart={board.record}
       />
       <Handles />
       <div
         className={styles.code}
         data-selected={selected || undefined}
+        data-theme={data.theme}
         style={
           data.rotation
             ? { transform: `rotate(${data.rotation}deg)` }

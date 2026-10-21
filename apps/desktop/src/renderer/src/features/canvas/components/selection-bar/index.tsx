@@ -14,10 +14,43 @@ import type { CanvasNode } from "../../lib/document";
 import { AddSaves } from "../add-saves";
 import { Bar } from "../bar";
 
-export interface SelectionMenu {
-  label: string;
-  icon: ReactElement;
-  buildItems: () => MenuItemSpec[];
+export type SelectionControl =
+  | {
+      kind: "menu";
+      label: string;
+      icon: ReactElement;
+      buildItems: () => MenuItemSpec[];
+    }
+  | {
+      kind: "action";
+      label: string;
+      icon: ReactElement;
+      shortcut?: string[];
+      pressed?: boolean;
+      onClick(): void;
+    };
+
+interface ControlProps {
+  control: SelectionControl;
+}
+
+function Control({ control }: ControlProps) {
+  if (control.kind === "menu")
+    return (
+      <Bar.Menu label={control.label} buildItems={control.buildItems}>
+        {control.icon}
+      </Bar.Menu>
+    );
+  return (
+    <Bar.Action
+      label={control.label}
+      shortcut={control.shortcut}
+      pressed={control.pressed}
+      onClick={control.onClick}
+    >
+      {control.icon}
+    </Bar.Action>
+  );
 }
 
 interface SelectionBarProps {
@@ -27,7 +60,12 @@ interface SelectionBarProps {
   canCrop: boolean;
   onCanvas: ReadonlySet<string>;
   arrange: (() => MenuItemSpec[]) | null;
-  menus: readonly SelectionMenu[];
+  /** Item kind controls that come before the color row, like Shape. */
+  lead: readonly SelectionControl[];
+  /** Style controls after the color row, like Font and Bold. */
+  style: readonly SelectionControl[];
+  /** Selection actions before Duplicate, like Group and Lock. */
+  extras: readonly SelectionControl[];
   onColor(color: CanvasColor): void;
   onOpen(): void;
   onCrop(): void;
@@ -49,7 +87,9 @@ export function SelectionBar({
   canCrop,
   onCanvas,
   arrange,
-  menus,
+  lead,
+  style,
+  extras,
   onColor,
   onOpen,
   onCrop,
@@ -71,21 +111,22 @@ export function SelectionBar({
       offset={28}
     >
       <Bar.Root hidden={hidden}>
-        {menus.length ? (
-          <Bar.Group aria-label="Style">
-            {menus.map((menu) => (
-              <Bar.Menu
-                key={menu.label}
-                label={menu.label}
-                buildItems={menu.buildItems}
-              >
-                {menu.icon}
-              </Bar.Menu>
+        {lead.length ? (
+          <Bar.Group aria-label="Kind">
+            {lead.map((control) => (
+              <Control key={control.label} control={control} />
             ))}
           </Bar.Group>
         ) : null}
         {colors.length ? (
           <Bar.Colors value={shared(colors)} onChange={onColor} />
+        ) : null}
+        {style.length ? (
+          <Bar.Group aria-label="Style">
+            {style.map((control) => (
+              <Control key={control.label} control={control} />
+            ))}
+          </Bar.Group>
         ) : null}
         <Bar.Group aria-label="Actions">
           {canOpen ? (
@@ -114,6 +155,9 @@ export function SelectionBar({
               <IconAlign2Left />
             </Bar.Menu>
           ) : null}
+          {extras.map((control) => (
+            <Control key={control.label} control={control} />
+          ))}
           {copyable ? (
             <Bar.Action
               label="Duplicate"

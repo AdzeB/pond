@@ -103,13 +103,36 @@
     background: var(--ds-gray-1);
     border-radius: var(--ds-radius-xs);
   }
+
+  &[data-bold] {
+    font-weight: var(--ds-weight-xxl);
+  }
+
+  &[data-strike] {
+    text-decoration: line-through;
+  }
 }
 
 .body[data-variant="figure"],
 .body[data-variant="topic"] {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
+}
+
+.body[data-valign] {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+
+  &[data-valign="middle"] {
+    justify-content: center;
+  }
+
+  &[data-valign="bottom"] {
+    justify-content: flex-end;
+  }
 }
 
 .field[data-variant="figure"],

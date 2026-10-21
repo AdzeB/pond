@@ -1,6 +1,24 @@
-import { IconCode2, IconFigures, IconTable, IconTypography } from "@pond/icons";
+import {
+  IconBroom,
+  IconCode2,
+  IconContrast,
+  IconFigures,
+  IconGroup,
+  IconLineWeight,
+  IconLock,
+  IconLockOpen,
+  IconRename,
+  IconSection,
+  IconTable,
+  IconTextA,
+  IconTextBold,
+  IconTextStrikethrough,
+  IconTypography,
+  IconUngroup,
+} from "@pond/icons";
 import {
   type Canvas,
+  type CanvasAlign,
   CanvasClipSchema,
   type CanvasColor,
   type CanvasConnector,
@@ -8,6 +26,9 @@ import {
   type CanvasItem,
   type CanvasOutline,
   type CanvasSide,
+  type CanvasTheme,
+  type CanvasValign,
+  type CanvasWeight,
 } from "@shared/canvas-contracts";
 import {
   addEdge,
@@ -52,16 +73,27 @@ import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
 import { claimUndo } from "@/shared/lib/undo-owner";
 import {
+  alignIcon,
+  alignItems,
   arrangeItems,
   boardItems,
+  type FigureLook,
+  figureStyleItems,
+  fontItems,
   languageItems,
   type MenuTarget,
   outlineItems,
+  sizeItems,
   type TableChange,
   tableItems,
-  textItems,
+  themeItems,
+  weightItems,
 } from "../../lib/board-menu";
-import { type CanvasCommand, commandForKey } from "../../lib/commands";
+import {
+  type CanvasCommand,
+  commandForKey,
+  glyphsFor,
+} from "../../lib/commands";
 import {
   alignFrames,
   branchOf,
@@ -99,6 +131,7 @@ import {
   toItem,
   toNode,
   topicAt,
+  withBox,
   withData,
   withGroup,
   withLock,
@@ -116,6 +149,14 @@ import {
 import { renderBoard } from "../../lib/export";
 import { OUTLINES } from "../../lib/outlines";
 import type { TextStyle } from "../../lib/text-style";
+import {
+  type Box,
+  type Corner,
+  groupScale,
+  MIN_SIZE,
+  type Size,
+  scaleBox,
+} from "../../lib/transform";
 import { canvases } from "../../state/canvases";
 import { Affordance } from "../affordance";
 import { CodeItem } from "../code-item";
@@ -128,7 +169,7 @@ import { NoteItem } from "../note-item";
 import { PlaceLayer } from "../place-layer";
 import { SaveItem } from "../save-item";
 import { SectionItem } from "../section-item";
-import { SelectionBar, type SelectionMenu } from "../selection-bar";
+import { SelectionBar, type SelectionControl } from "../selection-bar";
 import { SelectionFrame } from "../selection-frame";
 import { TableItem } from "../table-item";
 import { TextItem } from "../text-item";
@@ -163,6 +204,7 @@ const EDGE_TYPES: EdgeTypes = { connector: ConnectorEdgeView };
 const DEFAULT_LANGUAGE = "typescript";
 const SAVE_DELAY_MS = 400;
 const PEN_SIZE = 4;
+const HIGHLIGHT_SIZE = 28;
 const CLIP_TYPE = "application/x-pond-canvas";
 
 function parseClip(raw: string): CanvasSnapshot | null {
@@ -195,6 +237,16 @@ function isStyled(node: CanvasNode): node is StyledNode {
   );
 }
 
+function canQuickCreate(node: CanvasNode): boolean {
+  return (
+    !isLocked(node) &&
+    (node.type === "note" ||
+      node.type === "figure" ||
+      node.type === "text" ||
+      node.type === "topic")
+  );
+}
+
 function withText(node: CanvasNode, text: string): CanvasNode {
   switch (node.type) {
     case "note":
@@ -212,6 +264,23 @@ function withText(node: CanvasNode, text: string): CanvasNode {
 
 function hasText(node: CanvasNode): boolean {
   return node.type !== "save" && node.type !== "drawing";
+}
+
+function inkSize(
+  ink: "pen" | "highlight" | undefined,
+  weight: CanvasWeight,
+): number {
+  const base = ink === "highlight" ? HIGHLIGHT_SIZE : PEN_SIZE;
+  return weight === "thick" ? base * 2 : base;
+}
+
+/** Notes read from the top; figures and topics center their text. */
+function defaultValign(node: StyledNode): CanvasValign {
+  return node.type === "note" ? "top" : "middle";
+}
+
+function defaultAlign(node: StyledNode): CanvasAlign {
+  return node.type === "figure" || node.type === "topic" ? "center" : "left";
 }
 
 function sharedValue<Value>(values: readonly Value[]): Value | null {
@@ -283,6 +352,11 @@ export function Board({ canvas }: BoardProps) {
   const ownsSelection = useRef(false);
   const pointer = useRef<XYPosition | null>(null);
   const menuKind = useRef<MenuTarget["kind"]>("pane");
+  const groupResize = useRef<{
+    corner: Corner;
+    bounds: Box;
+    members: { id: string; box: Box; min: Size }[];
+  } | null>(null);
 
   const current = useCallback(
     () => snapshotOf(latest.current.nodes, latest.current.edges),
@@ -593,6 +667,41 @@ export function Board({ canvas }: BoardProps) {
     setNodes((existing) =>
       existing.map((node) =>
         node.selected && isStyled(node) ? withData(node, style) : node,
+      ),
+    );
+  };
+
+  const restyleFigures = (patch: FigureLook) => {
+    const data: FigureLook = {};
+    if (patch.fill) data.fill = patch.fill === "solid" ? undefined : patch.fill;
+    if (patch.border)
+      data.border = patch.border === "solid" ? undefined : patch.border;
+    record();
+    setNodes((existing) =>
+      existing.map((node) =>
+        node.selected && node.type === "figure" ? withData(node, data) : node,
+      ),
+    );
+  };
+
+  const changeTheme = (theme: CanvasTheme | undefined) => {
+    record();
+    setNodes((existing) =>
+      existing.map((node) =>
+        node.selected && node.type === "code"
+          ? withData(node, { theme })
+          : node,
+      ),
+    );
+  };
+
+  const changeInkWeight = (weight: CanvasWeight) => {
+    record();
+    setNodes((existing) =>
+      existing.map((node) =>
+        node.selected && node.type === "drawing"
+          ? withData(node, { size: inkSize(node.data.ink, weight) })
+          : node,
       ),
     );
   };
@@ -1199,7 +1308,55 @@ export function Board({ canvas }: BoardProps) {
         );
         return;
       }
+      case "quick": {
+        const picked = latest.current.nodes.filter((node) => node.selected);
+        const [single] = picked;
+        if (picked.length === 1 && single)
+          actions.quickCreate(single.id, command.side);
+        return;
+      }
     }
+  };
+
+  const startGroupResize = (corner: Corner) => {
+    const members = latest.current.nodes
+      .filter((node) => node.selected)
+      .map((node) => ({
+        id: node.id,
+        box: frameOf(node),
+        min: MIN_SIZE[node.type],
+      }));
+    const left = Math.min(...members.map(({ box }) => box.x));
+    const top = Math.min(...members.map(({ box }) => box.y));
+    const right = Math.max(...members.map(({ box }) => box.x + box.width));
+    const bottom = Math.max(...members.map(({ box }) => box.y + box.height));
+    record();
+    groupResize.current = {
+      corner,
+      bounds: { x: left, y: top, width: right - left, height: bottom - top },
+      members,
+    };
+  };
+
+  const resizeGroup = (point: XYPosition, keepAspect: boolean) => {
+    const resize = groupResize.current;
+    if (!resize) return;
+    const scale = groupScale(
+      resize.bounds,
+      resize.corner,
+      point,
+      resize.members.map(({ box, min }) => ({ ...box, min })),
+      keepAspect,
+    );
+    const boxes = new Map(
+      resize.members.map(({ id, box }) => [id, scaleBox(box, scale)]),
+    );
+    setNodes((existing) =>
+      existing.map((node) => {
+        const box = boxes.get(node.id);
+        return box ? withBox(node, box) : node;
+      }),
+    );
   };
 
   const startDrag = (dragged: readonly CanvasNode[]) => {
@@ -1239,6 +1396,8 @@ export function Board({ canvas }: BoardProps) {
             .length > 1,
         canCrop: picked.some((node) => node.type === "save"),
         cropped: picked.some((node) => node.type === "save" && node.data.crop),
+        canQuick:
+          picked.length === 1 && picked.some((node) => canQuickCreate(node)),
       },
       run,
     );
@@ -1257,55 +1416,196 @@ export function Board({ canvas }: BoardProps) {
 
   const arrangeable = selected.filter((node) => !isLocked(node)).length;
 
-  const menus: SelectionMenu[] = [];
-  const outlines = selected.flatMap((node) =>
-    node.type === "figure" ? [node.data.outline] : [],
-  );
-  if (outlines.length) {
-    const outlineNow = sharedValue(outlines);
+  const lead: SelectionControl[] = [];
+  const style: SelectionControl[] = [];
+  const extras: SelectionControl[] = [];
+  const figures = selected.filter((node) => node.type === "figure");
+  if (figures.length) {
+    const outlineNow = sharedValue(figures.map((node) => node.data.outline));
     const OutlineIcon =
       OUTLINES.find((entry) => entry.outline === outlineNow)?.Icon ??
       IconFigures;
-    menus.push({
+    lead.push({
+      kind: "menu",
       label: "Shape",
       icon: <OutlineIcon />,
       buildItems: () => outlineItems(outlineNow, changeOutline),
     });
-  }
-  const styled = selected.filter(isStyled);
-  if (styled.length)
-    menus.push({
-      label: "Text",
-      icon: <IconTypography />,
+    style.push({
+      kind: "menu",
+      label: "Style",
+      icon: <IconLineWeight />,
       buildItems: () =>
-        textItems(
+        figureStyleItems(
           {
-            textSize:
-              sharedValue(
-                styled.map((node) => node.data.textSize ?? "medium"),
-              ) ?? undefined,
-            font:
-              sharedValue(styled.map((node) => node.data.font ?? "simple")) ??
-              undefined,
+            fill: sharedValue(figures.map((node) => node.data.fill ?? "solid")),
+            border: sharedValue(
+              figures.map((node) => node.data.border ?? "solid"),
+            ),
           },
-          restyleText,
+          restyleFigures,
         ),
     });
+  }
+  const codes = selected.filter((node) => node.type === "code");
+  if (codes.length) {
+    const language = sharedValue(codes.map((node) => node.data.language));
+    lead.push(
+      {
+        kind: "menu",
+        label: "Language",
+        icon: <IconCode2 />,
+        buildItems: () => languageItems(language, changeLanguage),
+      },
+      {
+        kind: "menu",
+        label: "Theme",
+        icon: <IconContrast />,
+        buildItems: () =>
+          themeItems(
+            sharedValue(codes.map((node) => node.data.theme ?? null)),
+            changeTheme,
+          ),
+      },
+    );
+  }
   if (selected.length === 1 && only?.type === "table")
-    menus.push({
+    lead.push({
+      kind: "menu",
       label: "Table",
       icon: <IconTable />,
       buildItems: () => tableItems((change) => changeTable(only.id, change)),
     });
-  const languages = selected.flatMap((node) =>
-    node.type === "code" ? [node.data.language] : [],
-  );
-  if (languages.length)
-    menus.push({
-      label: "Language",
-      icon: <IconCode2 />,
-      buildItems: () => languageItems(sharedValue(languages), changeLanguage),
+  const inks = selected.filter((node) => node.type === "drawing");
+  if (inks.length)
+    style.push({
+      kind: "menu",
+      label: "Stroke",
+      icon: <IconLineWeight />,
+      buildItems: () =>
+        weightItems(
+          sharedValue(
+            inks.map((node) =>
+              node.data.size > inkSize(node.data.ink, "thin")
+                ? "thick"
+                : "thin",
+            ),
+          ),
+          changeInkWeight,
+        ),
     });
+  const styled = selected.filter(isStyled);
+  if (styled.length) {
+    const bold = styled.every((node) => node.data.bold);
+    const strike = styled.every((node) => node.data.strike);
+    const align = sharedValue(
+      styled.map((node) => node.data.align ?? defaultAlign(node)),
+    );
+    style.push(
+      {
+        kind: "menu",
+        label: "Font",
+        icon: <IconTypography />,
+        buildItems: () =>
+          fontItems(
+            sharedValue(styled.map((node) => node.data.font ?? "simple")),
+            restyleText,
+          ),
+      },
+      {
+        kind: "menu",
+        label: "Size",
+        icon: <IconTextA />,
+        buildItems: () =>
+          sizeItems(
+            sharedValue(styled.map((node) => node.data.textSize ?? "medium")),
+            restyleText,
+          ),
+      },
+      {
+        kind: "action",
+        label: "Bold",
+        icon: <IconTextBold />,
+        pressed: bold,
+        onClick: () => restyleText({ bold: bold ? undefined : true }),
+      },
+      {
+        kind: "action",
+        label: "Strikethrough",
+        icon: <IconTextStrikethrough />,
+        pressed: strike,
+        onClick: () => restyleText({ strike: strike ? undefined : true }),
+      },
+      {
+        kind: "menu",
+        label: "Align",
+        icon: alignIcon(align),
+        buildItems: () =>
+          alignItems(
+            {
+              align,
+              valign: sharedValue(
+                styled.map((node) => node.data.valign ?? defaultValign(node)),
+              ),
+            },
+            restyleText,
+            styled.every(
+              (node) => node.type === "note" || node.type === "figure",
+            ),
+          ),
+      },
+    );
+  }
+  if (selected.length === 1 && only?.type === "section" && !isLocked(only))
+    extras.push({
+      kind: "action",
+      label: "Rename",
+      icon: <IconRename />,
+      onClick: () => actions.startEditing(only.id),
+    });
+  if (arrangeable > 1)
+    extras.push(
+      {
+        kind: "action",
+        label: "Tidy Up",
+        icon: <IconBroom />,
+        shortcut: glyphsFor({ type: "tidy" }),
+        onClick: () => run({ type: "tidy" }),
+      },
+      {
+        kind: "action",
+        label: "Wrap in Section",
+        icon: <IconSection />,
+        onClick: () => run({ type: "wrap" }),
+      },
+    );
+  if (selected.some((node) => node.data.group))
+    extras.push({
+      kind: "action",
+      label: "Ungroup",
+      icon: <IconUngroup />,
+      shortcut: glyphsFor({ type: "ungroup" }),
+      onClick: () => run({ type: "ungroup" }),
+    });
+  else if (selected.length > 1)
+    extras.push({
+      kind: "action",
+      label: "Group",
+      icon: <IconGroup />,
+      shortcut: glyphsFor({ type: "group" }),
+      onClick: () => run({ type: "group" }),
+    });
+  if (selected.length) {
+    const locked = selected.every(isLocked);
+    extras.push({
+      kind: "action",
+      label: locked ? "Unlock" : "Lock",
+      icon: locked ? <IconLock /> : <IconLockOpen />,
+      shortcut: glyphsFor({ type: "lock" }),
+      pressed: locked,
+      onClick: () => run({ type: "lock" }),
+    });
+  }
 
   const placeAt = (point: XYPosition): CanvasItem | null => {
     switch (tool) {
@@ -1579,7 +1879,7 @@ export function Board({ canvas }: BoardProps) {
                 color={color}
                 size={
                   penMode === "highlight"
-                    ? 28
+                    ? HIGHLIGHT_SIZE
                     : penMode === "erase"
                       ? 18
                       : PEN_SIZE
@@ -1601,7 +1901,8 @@ export function Board({ canvas }: BoardProps) {
               <Affordance
                 frame={frameOf(only)}
                 rotation={only.data.rotation}
-                onRotateStart={record}
+                min={MIN_SIZE[only.type]}
+                onStart={record}
                 onRotate={(rotation) => {
                   const id = only.id;
                   setNodes((existing) =>
@@ -1610,10 +1911,23 @@ export function Board({ canvas }: BoardProps) {
                     ),
                   );
                 }}
+                onResize={(box) => {
+                  const id = only.id;
+                  setNodes((existing) =>
+                    existing.map((node) =>
+                      node.id === id ? withBox(node, box) : node,
+                    ),
+                  );
+                }}
               />
             ) : null}
             {tool === "select" && selected.length > 1 ? (
-              <SelectionFrame frame={flow.getNodesBounds(selected)} />
+              <SelectionFrame
+                frame={flow.getNodesBounds(selected)}
+                resizable={!dragging && !selected.some(isLocked)}
+                onResizeStart={startGroupResize}
+                onResize={resizeGroup}
+              />
             ) : null}
             <Guides guides={guides} />
             <SelectionBar
@@ -1625,7 +1939,9 @@ export function Board({ canvas }: BoardProps) {
               arrange={
                 arrangeable > 1 ? () => arrangeItems(arrangeable, run) : null
               }
-              menus={menus}
+              lead={lead}
+              style={style}
+              extras={extras}
               onColor={recolor}
               onOpen={() => {
                 if (openable) openSave(openable);

@@ -66,6 +66,16 @@ describe("canvas commands", () => {
     ).toBe(null);
   });
 
+  it("adds a connected copy with ⌥ and an arrow", () => {
+    expect(
+      commandForKey({
+        ...press("ArrowRight", { altKey: true }),
+        key: "ArrowRight",
+      }),
+    ).toEqual({ type: "quick", side: "right" });
+    expect(glyphsFor({ type: "quick", side: "top" })).toEqual(["⌥", "↑"]);
+  });
+
   it("spells shortcuts in Mac modifier order", () => {
     expect(glyphsFor({ type: "distribute", axis: "vertical" })).toEqual([
       "⌃",

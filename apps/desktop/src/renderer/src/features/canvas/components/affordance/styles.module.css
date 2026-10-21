@@ -12,3 +12,22 @@
   background: transparent;
   border: 0;
 }
+
+.size {
+  position: absolute;
+  z-index: 7;
+  box-sizing: border-box;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  pointer-events: all;
+  background: var(--ds-gray-1);
+  border: 1.5px solid var(--ds-accent-9);
+  border-radius: 2px;
+
+  &::before {
+    position: absolute;
+    inset: -6px;
+    content: "";
+  }
+}

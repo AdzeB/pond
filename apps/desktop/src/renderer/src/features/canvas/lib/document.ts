@@ -121,6 +121,32 @@ export function withData<Entry extends CanvasNode>(
   return { ...node, data: { ...node.data, ...patch } };
 }
 
+/** Drawing points live in the drawing's own frame, so a new size rescales them. */
+export function withBox(
+  node: CanvasNode,
+  box: Pick<Bounds, "x" | "y" | "width" | "height">,
+): CanvasNode {
+  const { width, height } = frameOf(node);
+  const frame = {
+    position: { x: box.x, y: box.y },
+    width: box.width,
+    height: box.height,
+  };
+  if (node.type !== "drawing") return { ...node, ...frame };
+  const scaleX = box.width / width;
+  const scaleY = box.height / height;
+  return {
+    ...node,
+    ...frame,
+    data: {
+      ...node.data,
+      points: node.data.points.map(
+        ([x, y, pressure]): StrokePoint => [x * scaleX, y * scaleY, pressure],
+      ),
+    },
+  };
+}
+
 export function withGroup<Entry extends CanvasNode>(
   node: Entry,
   group: string | null,

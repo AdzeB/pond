@@ -7,6 +7,7 @@ import { CardThumb } from "@/features/saves";
 import { useSave } from "@/features/saves/pool";
 import type { SaveNode } from "../../lib/document";
 import { cropOf } from "../../lib/edit";
+import { MIN_SIZE } from "../../lib/transform";
 import { useBoard } from "../board/context";
 import { Handles } from "../handles";
 import styles from "./styles.module.css";
@@ -45,9 +46,9 @@ export function SaveItem({
   return (
     <div className={styles.bounds}>
       <NodeResizer
-        isVisible={selected && draggable && !cropping}
-        minWidth={140}
-        minHeight={120}
+        isVisible={selected && draggable && !cropping && !data.rotation}
+        minWidth={MIN_SIZE.save.width}
+        minHeight={MIN_SIZE.save.height}
         onResizeStart={board.record}
       />
       <Handles />

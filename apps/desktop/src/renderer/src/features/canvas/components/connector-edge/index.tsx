@@ -204,6 +204,7 @@ export function ConnectorEdge({
         path={path}
         style={{
           stroke: ink,
+          strokeWidth: style.weight === "thick" ? 3 : undefined,
           strokeDasharray: style.dashed ? "6 5" : undefined,
         }}
         markerStart={caps.start === "none" ? undefined : `url(#${id}-start)`}

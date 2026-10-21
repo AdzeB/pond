@@ -24,6 +24,17 @@ interface EditableTextProps {
   rich?: boolean;
 }
 
+function looksOf(style: TextStyle | undefined) {
+  return {
+    "data-size": style?.textSize,
+    "data-font": style?.font,
+    "data-align": style?.align,
+    "data-valign": style?.valign,
+    "data-bold": style?.bold || undefined,
+    "data-strike": style?.strike || undefined,
+  };
+}
+
 export function EditableText({
   id,
   text,
@@ -61,9 +72,7 @@ export function EditableText({
         ref={field}
         className={cn(styles.field, "nodrag", "nowheel", "nopan")}
         data-variant={variant}
-        data-size={style?.textSize}
-        data-font={style?.font}
-        data-align={style?.align}
+        {...looksOf(style)}
         aria-label={label}
         placeholder={placeholder}
         value={text}
@@ -93,9 +102,7 @@ export function EditableText({
     <div
       className={styles.body}
       data-variant={variant}
-      data-size={style?.textSize}
-      data-font={style?.font}
-      data-align={style?.align}
+      {...looksOf(style)}
       data-rich={rich && isRichNote(text) ? true : undefined}
       data-empty={text ? undefined : true}
       {...(rich && isRichNote(text)
@@ -170,9 +177,7 @@ function RichNote({
         aria-multiline="true"
         aria-label={label}
         data-variant={variant}
-        data-size={style?.textSize}
-        data-font={style?.font}
-        data-align={style?.align}
+        {...looksOf(style)}
         contentEditable
         suppressContentEditableWarning
         onInput={(event) =>

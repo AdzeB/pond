@@ -2,6 +2,7 @@ import type {
   CanvasAlign,
   CanvasFont,
   CanvasTextSize,
+  CanvasValign,
 } from "@shared/canvas-contracts";
 
 export const TEXT_SIZE_LABELS = {
@@ -24,10 +25,19 @@ export const ALIGN_LABELS = {
   right: "Right",
 } satisfies Record<CanvasAlign, string>;
 
+export const VALIGN_LABELS = {
+  top: "Top",
+  middle: "Middle",
+  bottom: "Bottom",
+} satisfies Record<CanvasValign, string>;
+
 export interface TextStyle {
   textSize?: CanvasTextSize;
   font?: CanvasFont;
   align?: CanvasAlign;
+  valign?: CanvasValign;
+  bold?: boolean;
+  strike?: boolean;
 }
 
 export const CODE_LANGUAGES = [

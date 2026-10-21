@@ -4,6 +4,7 @@ import { clsx as cn } from "clsx";
 import { useEffect, useRef } from "react";
 import { FIGURE_EDGE, NOTE_FILL } from "../../lib/colors";
 import type { TableNode } from "../../lib/document";
+import { MIN_SIZE } from "../../lib/transform";
 import { useBoard } from "../board/context";
 import { Handles } from "../handles";
 import styles from "./styles.module.css";
@@ -55,9 +56,9 @@ export function TableItem({
   return (
     <div className={styles.bounds}>
       <NodeResizer
-        isVisible={selected && draggable && !editing}
-        minWidth={96}
-        minHeight={48}
+        isVisible={selected && draggable && !editing && !data.rotation}
+        minWidth={MIN_SIZE.table.width}
+        minHeight={MIN_SIZE.table.height}
         onResizeStart={board.record}
       />
       <Handles />
