@@ -5,6 +5,50 @@ import { expect, it } from "vitest";
 import type { SectionConfig } from "@/features/settings/lib/engine-types";
 import { SettingsSectionView } from ".";
 
+it("dims a row and disables its control while its disabled predicate holds", async () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const config: SectionConfig = {
+    useBinding: () => ({
+      values: { master: false, child: true },
+      patch: () => {},
+      loaded: true,
+    }),
+    groups: [
+      {
+        items: [
+          { control: "switch", key: "master", title: "Master" },
+          {
+            control: "switch",
+            key: "child",
+            title: "Child",
+            disabled: (values) => values.master !== true,
+          },
+        ],
+      },
+    ],
+  };
+
+  try {
+    await act(async () => {
+      root.render(<SettingsSectionView config={config} sectionId="test" />);
+    });
+
+    const master = host.querySelector("#setting-test-master");
+    const child = host.querySelector("#setting-test-child");
+
+    expect(master?.hasAttribute("data-disabled")).toBe(false);
+    expect(child?.getAttribute("data-disabled")).toBe("true");
+    expect(
+      child?.querySelector("[role='switch']")?.hasAttribute("data-disabled"),
+    ).toBe(true);
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+  }
+});
+
 it("renders standalone custom surfaces beside row lists instead of nesting them", async () => {
   const host = document.createElement("div");
   document.body.append(host);
