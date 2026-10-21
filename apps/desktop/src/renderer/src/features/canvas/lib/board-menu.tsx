@@ -44,6 +44,7 @@ export type MenuTarget =
       locked: boolean;
       grouped: boolean;
       duplicable: boolean;
+      canRotate: boolean;
       canFlip: boolean;
       canConvert: boolean;
       canSort: boolean;
@@ -169,7 +170,7 @@ export function boardItems(target: MenuTarget, run: Run): MenuItemSpec[] {
     ...(target.grouped ? [item("Ungroup", { type: "ungroup" }, run)] : []),
     item("Wrap in Section", { type: "wrap" }, run),
     item(target.locked ? "Unlock" : "Lock", { type: "lock" }, run),
-    ...(target.movable
+    ...(target.canRotate
       ? [
           item("Rotate Clockwise", { type: "rotate", delta: 15 }, run),
           item("Rotate Counterclockwise", { type: "rotate", delta: -15 }, run),

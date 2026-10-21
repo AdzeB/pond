@@ -1,0 +1,8 @@
+.frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  pointer-events: none;
+  outline: var(--frame-line) solid var(--ds-accent-9);
+}

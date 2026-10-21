@@ -22,7 +22,7 @@ export function TopicItem({
         minHeight={40}
         onResizeStart={board.record}
       />
-      <Handles />
+      <Handles onCreate={(side) => board.quickCreate(id, side)} />
       <div
         className={styles.topic}
         data-selected={selected || undefined}

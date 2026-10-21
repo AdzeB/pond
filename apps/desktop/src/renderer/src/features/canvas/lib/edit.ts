@@ -107,16 +107,21 @@ export function itemForRect(
   }
 }
 
+/** The copy sits most of its own size away, so the connector between them stays readable. */
+function spacing(size: number): number {
+  return Math.max(GAP, Math.round(size * 0.8));
+}
+
 function beside(item: CanvasItem, side: CanvasSide): XYPosition {
   switch (side) {
     case "left":
-      return { x: item.x - item.width - GAP, y: item.y };
+      return { x: item.x - item.width - spacing(item.width), y: item.y };
     case "right":
-      return { x: item.x + item.width + GAP, y: item.y };
+      return { x: item.x + item.width + spacing(item.width), y: item.y };
     case "top":
-      return { x: item.x, y: item.y - item.height - GAP };
+      return { x: item.x, y: item.y - item.height - spacing(item.height) };
     case "bottom":
-      return { x: item.x, y: item.y + item.height + GAP };
+      return { x: item.x, y: item.y + item.height + spacing(item.height) };
   }
 }
 
@@ -160,9 +165,8 @@ export function turned(
   return next === 0 ? undefined : next;
 }
 
-/** The pointer angle, snapped to 15 degrees, where straight up is upright. */
-export function snappedTurn(angle: number): number | undefined {
-  return turned(0, Math.round(angle / 15) * 15);
+export function turnOf(angle: number, step: number): number | undefined {
+  return turned(0, Math.round(angle / step) * step);
 }
 
 export function flipped(

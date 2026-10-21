@@ -11,7 +11,7 @@ import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef, ReactElement } from "react";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
-import { CANVAS_COLOR_LABELS, INK } from "../../lib/colors";
+import { CANVAS_COLOR_LABELS, SWATCH } from "../../lib/colors";
 import styles from "./styles.module.css";
 
 interface RootProps extends ComponentPropsWithoutRef<"div"> {
@@ -57,7 +57,7 @@ function Colors({ value, onChange }: ColorsProps) {
           >
             <span
               className={styles.swatch}
-              style={cssVars({ "--swatch": INK[swatch] })}
+              style={cssVars({ "--swatch": SWATCH[swatch] })}
             />
           </Button>
         </Tooltip>

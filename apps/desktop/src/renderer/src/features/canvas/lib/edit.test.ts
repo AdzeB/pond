@@ -7,8 +7,8 @@ import {
   noteFromText,
   notesSorted,
   quickPair,
-  snappedTurn,
   turned,
+  turnOf,
 } from "./edit";
 import { richNote } from "./rich-text";
 
@@ -40,7 +40,7 @@ describe("canvas editing", () => {
     const pair = quickPair(note, "right");
     expect(pair?.item).toMatchObject({
       kind: "note",
-      x: 148,
+      x: 180,
       y: 0,
       text: "",
       color: "yellow",
@@ -55,8 +55,9 @@ describe("canvas editing", () => {
   it("drops rotation once an item is upright again", () => {
     expect(turned(345, 15)).toBeUndefined();
     expect(turned(undefined, -15)).toBe(345);
-    expect(snappedTurn(20)).toBe(15);
-    expect(snappedTurn(7)).toBeUndefined();
+    expect(turnOf(20, 15)).toBe(15);
+    expect(turnOf(7, 15)).toBeUndefined();
+    expect(turnOf(-33.4, 1)).toBe(327);
   });
 
   it("turns text into a note without moving it", () => {

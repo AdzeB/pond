@@ -65,8 +65,22 @@
     max-width: none;
   }
 
-  & :global(.react-flow__edge.selected .react-flow__edge-path) {
-    stroke-width: 2;
+  &[data-multiple] {
+    --canvas-selection: 1px solid var(--ds-accent-7);
+  }
+
+  &[data-multiple] :global(.react-flow__node.selected .react-flow__handle),
+  &[data-multiple] :global(.react-flow__resize-control) {
+    visibility: hidden;
+  }
+
+  & :global(.react-flow__nodesselection-rect) {
+    background: transparent;
+    border: 0;
+  }
+
+  & :global(.react-flow__node:has(textarea, [contenteditable="true"])) {
+    --canvas-selection: 1px solid var(--ds-accent-7);
   }
 
   & :global(.react-flow__resize-control.line) {

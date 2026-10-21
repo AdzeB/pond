@@ -22,7 +22,7 @@ import {
 } from "@shared/canvas-contracts";
 import { useLayoutEffect, useRef } from "react";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
-import { CANVAS_COLOR_LABELS, INK } from "../../lib/colors";
+import { CANVAS_COLOR_LABELS, SWATCH } from "../../lib/colors";
 import { OUTLINES } from "../../lib/outlines";
 import { AddSaves } from "../add-saves";
 import styles from "./styles.module.css";
@@ -333,7 +333,7 @@ export function Tools({
                 >
                   <span
                     className={styles.swatch}
-                    style={cssVars({ "--swatch": INK[swatch] })}
+                    style={cssVars({ "--swatch": SWATCH[swatch] })}
                   />
                 </Button>
               </Tooltip>

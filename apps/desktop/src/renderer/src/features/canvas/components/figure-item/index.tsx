@@ -24,7 +24,7 @@ export function FigureItem({
         minHeight={48}
         onResizeStart={board.record}
       />
-      <Handles />
+      <Handles onCreate={(side) => board.quickCreate(id, side)} />
       <div
         className={styles.figure}
         data-outline={data.outline}

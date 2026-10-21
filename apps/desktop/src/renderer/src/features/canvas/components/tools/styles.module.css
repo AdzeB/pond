@@ -117,8 +117,8 @@
 
   [data-pressed] > & {
     box-shadow:
-      inset 0 0 0 2px var(--swatch),
-      inset 0 0 0 4px var(--ds-gray-1);
+      inset 0 0 0 1px var(--ds-gray-1),
+      0 0 0 1.5px var(--ds-accent-9);
   }
 }
 

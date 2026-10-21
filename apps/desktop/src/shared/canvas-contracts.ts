@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const CANVAS_COLORS = [
+  "white",
   "gray",
   "yellow",
   "orange",

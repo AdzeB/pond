@@ -67,6 +67,7 @@
 
   &[data-selected] {
     outline: var(--canvas-selection);
+    outline-offset: -1.5px;
   }
 }
 

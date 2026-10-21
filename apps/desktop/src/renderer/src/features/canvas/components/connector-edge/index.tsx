@@ -6,6 +6,8 @@ import {
   getBezierPath,
   getSmoothStepPath,
   getStraightPath,
+  useStore,
+  type XYPosition,
 } from "@xyflow/react";
 import { clsx as cn } from "clsx";
 import { INK } from "../../lib/colors";
@@ -136,6 +138,31 @@ function Cap({ id, cap, ink }: CapProps) {
   );
 }
 
+interface EndsProps {
+  source: XYPosition;
+  target: XYPosition;
+}
+
+/** Drag either end to reconnect; React Flow's own anchors sit on top and take the pointer. */
+function Ends({ source, target }: EndsProps) {
+  const zoom = useStore((state) => state.transform[2]);
+  const end = (point: XYPosition) => (
+    <circle
+      className={styles.end}
+      cx={point.x}
+      cy={point.y}
+      r={6 / zoom}
+      strokeWidth={2 / zoom}
+    />
+  );
+  return (
+    <>
+      {end(source)}
+      {end(target)}
+    </>
+  );
+}
+
 export function ConnectorEdge({
   id,
   data,
@@ -172,7 +199,6 @@ export function ConnectorEdge({
         <Cap id={`${id}-start`} cap={caps.start} ink={ink} />
         <Cap id={`${id}-end`} cap={caps.end} ink={ink} />
       </defs>
-      {selected ? <path className={styles.halo} d={path} /> : null}
       <BaseEdge
         id={id}
         path={path}
@@ -183,6 +209,12 @@ export function ConnectorEdge({
         markerStart={caps.start === "none" ? undefined : `url(#${id}-start)`}
         markerEnd={caps.end === "none" ? undefined : `url(#${id}-end)`}
       />
+      {selected ? (
+        <Ends
+          source={{ x: sourceX, y: sourceY }}
+          target={{ x: targetX, y: targetY }}
+        />
+      ) : null}
       <EdgeLabelRenderer>
         {style.label || editing ? (
           <div

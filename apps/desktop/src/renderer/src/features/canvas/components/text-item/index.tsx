@@ -20,7 +20,7 @@ export function TextItem({
         minHeight={32}
         onResizeStart={board.record}
       />
-      <Handles />
+      <Handles onCreate={(side) => board.quickCreate(id, side)} />
       <div
         className={styles.text}
         data-selected={selected || undefined}

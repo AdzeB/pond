@@ -22,7 +22,7 @@ export function NoteItem({
         minHeight={80}
         onResizeStart={board.record}
       />
-      <Handles />
+      <Handles onCreate={(side) => board.quickCreate(id, side)} />
       <div
         className={styles.note}
         data-selected={selected || undefined}

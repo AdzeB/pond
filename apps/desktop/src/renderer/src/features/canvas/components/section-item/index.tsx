@@ -29,7 +29,6 @@ export function SectionItem({
             "--section-fill": NOTE_FILL[data.color],
             "--section-edge": FIGURE_EDGE[data.color],
           }),
-          transform: data.rotation ? `rotate(${data.rotation}deg)` : undefined,
         }}
       >
         <div className={styles.title}>

@@ -5,13 +5,10 @@
   stroke-linejoin: round;
 }
 
-.halo {
+.end {
   pointer-events: none;
-  fill: none;
-  stroke: var(--ds-accent-a5);
-  stroke-width: 6px;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  fill: var(--ds-gray-1);
+  stroke: var(--ds-accent-9);
 }
 
 /* Clicks fall through to the line underneath, so the label selects and double-click edits like the line does. */

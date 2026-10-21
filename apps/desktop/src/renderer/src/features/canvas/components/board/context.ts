@@ -1,4 +1,4 @@
-import type { CanvasCrop } from "@shared/canvas-contracts";
+import type { CanvasCrop, CanvasSide } from "@shared/canvas-contracts";
 import { createContext, useContext } from "react";
 import type { ConnectorStyle } from "../../lib/document";
 
@@ -17,6 +17,7 @@ export interface BoardActions {
   /** Ignored unless `id` is still the item being edited, so a late blur can't end the next edit. */
   finishEditing(id: string): void;
   branch(id: string, kind: "child" | "sibling"): void;
+  quickCreate(id: string, side: CanvasSide): void;
   restyle(patch: Partial<ConnectorStyle>): void;
   deleteConnectors(): void;
 }

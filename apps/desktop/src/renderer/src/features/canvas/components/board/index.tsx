@@ -25,6 +25,7 @@ import {
   type OnSelectionChangeParams,
   ReactFlow,
   type Rect,
+  reconnectEdge,
   SelectionMode,
   useReactFlow,
   type Viewport,
@@ -128,6 +129,7 @@ import { PlaceLayer } from "../place-layer";
 import { SaveItem } from "../save-item";
 import { SectionItem } from "../section-item";
 import { SelectionBar, type SelectionMenu } from "../selection-bar";
+import { SelectionFrame } from "../selection-frame";
 import { TableItem } from "../table-item";
 import { TextItem } from "../text-item";
 import {
@@ -478,6 +480,18 @@ export function Board({ canvas }: BoardProps) {
     },
     [record],
   );
+  const onReconnect = useCallback(
+    (previous: ConnectorEdge, connection: Connection) => {
+      if (connection.source === connection.target) return;
+      record();
+      setEdges((existing) =>
+        reconnectEdge(previous, connection, existing, {
+          shouldReplaceId: false,
+        }),
+      );
+    },
+    [record],
+  );
 
   /** React Flow only connects on a handle; dropping anywhere on another item should link to its nearest side. */
   const onConnectEnd = useCallback<OnConnectEnd>(
@@ -650,8 +664,39 @@ export function Board({ canvas }: BoardProps) {
       ? (selectedEdges.at(-1)?.id ?? null)
       : null;
 
-  const actions = useMemo<BoardActions>(
-    () => ({
+  const actions = useMemo<BoardActions>(() => {
+    const branch: BoardActions["branch"] = (id, kind) => {
+      finishEditing(id);
+      const result = branchOf(current(), id, kind);
+      if (!result) return;
+      record();
+      const positions = new Map(
+        result.snapshot.items.map((item) => [
+          item.id,
+          { x: item.x, y: item.y },
+        ]),
+      );
+      const knownNodes = new Set(latest.current.nodes.map((node) => node.id));
+      const knownEdges = new Set(latest.current.edges.map((edge) => edge.id));
+      setNodes((existing) => [
+        ...existing.map((node) => ({
+          ...node,
+          selected: false,
+          position: positions.get(node.id) ?? node.position,
+        })),
+        ...result.snapshot.items
+          .filter((item) => !knownNodes.has(item.id))
+          .map((item) => ({ ...toNode(item), selected: true })),
+      ]);
+      setEdges((existing) => [
+        ...existing.map((edge) => ({ ...edge, selected: false })),
+        ...result.snapshot.connectors
+          .filter((connector) => !knownEdges.has(connector.id))
+          .map(toEdge),
+      ]);
+      beginEdit(result.created, null);
+    };
+    return {
       editingId,
       savesReady,
       connectorBarId,
@@ -712,36 +757,17 @@ export function Board({ canvas }: BoardProps) {
       },
       startEditing: (id) => beginEdit(id, current()),
       finishEditing,
-      branch: (id, kind) => {
-        finishEditing(id);
-        const result = branchOf(current(), id, kind);
-        if (!result) return;
-        record();
-        const positions = new Map(
-          result.snapshot.items.map((item) => [
-            item.id,
-            { x: item.x, y: item.y },
-          ]),
-        );
-        const knownNodes = new Set(latest.current.nodes.map((node) => node.id));
-        const knownEdges = new Set(latest.current.edges.map((edge) => edge.id));
-        setNodes((existing) => [
-          ...existing.map((node) => ({
-            ...node,
-            selected: false,
-            position: positions.get(node.id) ?? node.position,
-          })),
-          ...result.snapshot.items
-            .filter((item) => !knownNodes.has(item.id))
-            .map((item) => ({ ...toNode(item), selected: true })),
-        ]);
-        setEdges((existing) => [
-          ...existing.map((edge) => ({ ...edge, selected: false })),
-          ...result.snapshot.connectors
-            .filter((connector) => !knownEdges.has(connector.id))
-            .map(toEdge),
-        ]);
-        beginEdit(result.created, null);
+      branch,
+      quickCreate: (id, side) => {
+        const node = latest.current.nodes.find((entry) => entry.id === id);
+        if (!node || isLocked(node)) return;
+        if (node.type === "topic" && side === "right") {
+          branch(id, "child");
+          return;
+        }
+        const pair = quickPair(toItem(node), side);
+        if (!pair) return;
+        insert([pair.item], { connectors: [pair.connector], edit: true });
       },
       restyle: (patch: Partial<ConnectorStyle>) => {
         record();
@@ -760,20 +786,20 @@ export function Board({ canvas }: BoardProps) {
         void flow.deleteElements({
           edges: latest.current.edges.filter((edge) => edge.selected),
         }),
-    }),
-    [
-      beginEdit,
-      connectorBarId,
-      croppingId,
-      current,
-      dragging,
-      editingId,
-      finishEditing,
-      flow,
-      record,
-      savesReady,
-    ],
-  );
+    };
+  }, [
+    beginEdit,
+    connectorBarId,
+    croppingId,
+    current,
+    dragging,
+    editingId,
+    finishEditing,
+    flow,
+    insert,
+    record,
+    savesReady,
+  ]);
 
   const pickedIds = () =>
     new Set(
@@ -1075,7 +1101,7 @@ export function Board({ canvas }: BoardProps) {
         nudge(command.x, command.y);
         return;
       case "rotate": {
-        const targets = movable();
+        const targets = movable().filter((node) => node.type !== "section");
         if (!targets.length) return;
         record();
         const ids = new Set(targets.map((node) => node.id));
@@ -1199,6 +1225,9 @@ export function Board({ canvas }: BoardProps) {
         movable: picked.filter((node) => !isLocked(node)).length,
         locked: picked.length > 0 && picked.every(isLocked),
         duplicable: picked.some((node) => node.type !== "save"),
+        canRotate: picked.some(
+          (node) => node.type !== "section" && !isLocked(node),
+        ),
         canFlip: picked.some(
           (node) => node.type === "figure" && !isLocked(node),
         ),
@@ -1338,6 +1367,7 @@ export function Board({ canvas }: BoardProps) {
           aria-roledescription="canvas"
           data-tool={tool}
           data-connecting={connecting || undefined}
+          data-multiple={selected.length > 1 || undefined}
           data-exporting={exporting || undefined}
           tabIndex={-1}
           onPointerMove={(event) => {
@@ -1476,6 +1506,8 @@ export function Board({ canvas }: BoardProps) {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onReconnect={onReconnect}
+            connectOnClick={false}
             onConnectStart={() => setConnecting(true)}
             onConnectEnd={onConnectEnd}
             onSelectionChange={onSelectionChange}
@@ -1564,29 +1596,11 @@ export function Board({ canvas }: BoardProps) {
             !croppingId &&
             selected.length === 1 &&
             only &&
+            only.type !== "section" &&
             !isLocked(only) ? (
               <Affordance
                 frame={frameOf(only)}
-                sides={
-                  only.type === "note" ||
-                  only.type === "figure" ||
-                  only.type === "text" ||
-                  only.type === "topic"
-                    ? ["top", "right", "bottom", "left"]
-                    : []
-                }
-                onCreate={(side) => {
-                  if (only.type === "topic" && side === "right") {
-                    actions.branch(only.id, "child");
-                    return;
-                  }
-                  const pair = quickPair(toItem(only), side);
-                  if (!pair) return;
-                  insert([pair.item], {
-                    connectors: [pair.connector],
-                    edit: true,
-                  });
-                }}
+                rotation={only.data.rotation}
                 onRotateStart={record}
                 onRotate={(rotation) => {
                   const id = only.id;
@@ -1597,6 +1611,9 @@ export function Board({ canvas }: BoardProps) {
                   );
                 }}
               />
+            ) : null}
+            {tool === "select" && selected.length > 1 ? (
+              <SelectionFrame frame={flow.getNodesBounds(selected)} />
             ) : null}
             <Guides guides={guides} />
             <SelectionBar
