@@ -300,3 +300,32 @@ describe("expanded library formats", () => {
     expect(deriveTypeLabel(save.files[0] ?? null, save)).toBe(label);
   });
 });
+
+describe("pickCardUnit poster-only video", () => {
+  it("shows the poster when the video file is not downloaded", () => {
+    const save = makeSave({
+      id: "poster-only",
+      source: "youtube",
+      mediaType: "video",
+      files: [file("poster", "poster.jpg", "image/jpeg")],
+    });
+    const unit = pickCardUnit(save);
+    expect(unit?.key).toBe("poster.jpg");
+    expect(unit?.isVideo).toBe(false);
+  });
+
+  it("keeps a media thumbnail ahead of the poster", () => {
+    const save = makeSave({
+      id: "poster-thumb",
+      source: "youtube",
+      mediaType: "video",
+      files: [
+        file("poster", "poster.jpg", "image/jpeg"),
+        file("thumbnail", "poster.jpg_thumbnail.webp", "image/webp"),
+      ],
+    });
+    expect(pickCardUnit(save, { theme: "light" })?.key).toBe(
+      "poster.jpg_thumbnail.webp",
+    );
+  });
+});
