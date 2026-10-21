@@ -11,6 +11,15 @@ export type CanvasCommand =
   | { type: "distribute"; axis: Axis }
   | { type: "tidy" }
   | { type: "lock" }
+  | { type: "group" }
+  | { type: "ungroup" }
+  | { type: "wrap" }
+  | {
+      type: "export";
+      format: "png" | "pdf";
+      /** Without a scope, export takes the selection, or the whole board when nothing is selected. */
+      scope?: "board" | "selection";
+    }
   | { type: "zoom"; to: "fit" | "actual" | "selection" }
   | { type: "nudge"; x: number; y: number };
 
@@ -76,6 +85,12 @@ const BINDINGS: ReadonlyArray<readonly [Chord, CanvasCommand]> = [
   ],
   [{ control: true, alt: true, code: "KeyT", glyph: "T" }, { type: "tidy" }],
   [{ mod: true, shift: true, code: "KeyL", glyph: "L" }, { type: "lock" }],
+  [{ mod: true, code: "KeyG", glyph: "G" }, { type: "group" }],
+  [{ mod: true, shift: true, code: "KeyG", glyph: "G" }, { type: "ungroup" }],
+  [
+    { mod: true, shift: true, code: "KeyE", glyph: "E" },
+    { type: "export", format: "png" },
+  ],
   [
     { shift: true, code: "Digit1", glyph: "1" },
     { type: "zoom", to: "fit" },

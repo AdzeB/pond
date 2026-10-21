@@ -11,18 +11,34 @@ import {
   IconTrash,
 } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
+import {
+  CANVAS_CAPS,
+  CANVAS_FONTS,
+  CANVAS_TEXT_SIZES,
+  type CanvasCap,
+  type CanvasOutline,
+} from "@shared/canvas-contracts";
 import type { ReactNode } from "react";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
 import { type CanvasCommand, glyphsFor } from "./commands";
 import type { AlignEdge, LayerMove } from "./document";
+import { OUTLINES } from "./outlines";
+import {
+  CODE_LANGUAGES,
+  FONT_LABELS,
+  TEXT_SIZE_LABELS,
+  type TextStyle,
+} from "./text-style";
 
 export type MenuTarget =
   | { kind: "pane" }
   | { kind: "edge" }
   | {
       kind: "nodes";
+      count: number;
       movable: number;
       locked: boolean;
+      grouped: boolean;
       duplicable: boolean;
     };
 
@@ -100,6 +116,8 @@ export function boardItems(target: MenuTarget, run: Run): MenuItemSpec[] {
       { type: "separator" },
       item("Zoom to Fit", { type: "zoom", to: "fit" }, run),
       item("Zoom to 100%", { type: "zoom", to: "actual" }, run),
+      { type: "separator" },
+      ...exportItems("board", run),
     ];
   }
   if (target.kind === "edge") {
@@ -136,7 +154,14 @@ export function boardItems(target: MenuTarget, run: Run): MenuItemSpec[] {
           },
         ]
       : []),
+    ...(target.count > 1
+      ? [item("Group Selection", { type: "group" }, run)]
+      : []),
+    ...(target.grouped ? [item("Ungroup", { type: "ungroup" }, run)] : []),
+    item("Wrap in Section", { type: "wrap" }, run),
     item(target.locked ? "Unlock" : "Lock", { type: "lock" }, run),
+    { type: "separator" },
+    ...exportItems("selection", run),
     { type: "separator" },
     item("Delete", { type: "delete" }, run, {
       icon: <IconTrash />,
@@ -145,4 +170,119 @@ export function boardItems(target: MenuTarget, run: Run): MenuItemSpec[] {
       disabled: target.locked,
     }),
   ];
+}
+
+function exportItems(scope: "board" | "selection", run: Run): MenuItemSpec[] {
+  const noun = scope === "board" ? "Board" : "Selection";
+  const glyphs = glyphsFor({ type: "export", format: "png" });
+  return [
+    item(
+      `Export ${noun} as PNG`,
+      { type: "export", format: "png", scope },
+      run,
+      {
+        shortcut: glyphs ? platformGlyphs(glyphs) : undefined,
+      },
+    ),
+    item(
+      `Export ${noun} as PDF`,
+      { type: "export", format: "pdf", scope },
+      run,
+    ),
+  ];
+}
+
+function choice<Value>(
+  label: string,
+  value: Value,
+  current: Value | null,
+  pick: (value: Value) => void,
+  icon?: ReactNode,
+): MenuItemSpec {
+  return {
+    type: "checkbox",
+    label,
+    icon,
+    indicator: "check",
+    checked: current === value,
+    onCheckedChange: () => pick(value),
+  };
+}
+
+export function outlineItems(
+  current: CanvasOutline | null,
+  pick: (outline: CanvasOutline) => void,
+): MenuItemSpec[] {
+  return OUTLINES.map(({ outline, label, Icon }) =>
+    choice(label, outline, current, pick, <Icon />),
+  );
+}
+
+export function textItems(
+  current: TextStyle,
+  pick: (style: TextStyle) => void,
+): MenuItemSpec[] {
+  return [
+    {
+      type: "group",
+      label: "Size",
+      items: CANVAS_TEXT_SIZES.map((size) =>
+        choice(TEXT_SIZE_LABELS[size], size, current.textSize ?? null, () =>
+          pick({ textSize: size }),
+        ),
+      ),
+    },
+    { type: "separator" },
+    {
+      type: "group",
+      label: "Font",
+      items: CANVAS_FONTS.map((font) =>
+        choice(FONT_LABELS[font], font, current.font ?? null, () =>
+          pick({ font }),
+        ),
+      ),
+    },
+  ];
+}
+
+export type TableChange =
+  | "add-row"
+  | "add-column"
+  | "remove-row"
+  | "remove-column";
+
+export function tableItems(
+  change: (change: TableChange) => void,
+): MenuItemSpec[] {
+  return [
+    { label: "Add Row", onClick: () => change("add-row") },
+    { label: "Add Column", onClick: () => change("add-column") },
+    { type: "separator" },
+    { label: "Delete Last Row", onClick: () => change("remove-row") },
+    { label: "Delete Last Column", onClick: () => change("remove-column") },
+  ];
+}
+
+export function languageItems(
+  current: string | null,
+  pick: (language: string) => void,
+): MenuItemSpec[] {
+  return CODE_LANGUAGES.map(({ id, label }) =>
+    choice<string>(label, id, current, pick),
+  );
+}
+
+const CAP_LABELS = {
+  none: "None",
+  arrow: "Arrow",
+  triangle: "Triangle",
+  circle: "Circle",
+  diamond: "Diamond",
+} satisfies Record<CanvasCap, string>;
+
+export function capItems(
+  current: CanvasCap,
+  pick: (cap: CanvasCap) => void,
+): MenuItemSpec[] {
+  return CANVAS_CAPS.map((cap) => choice(CAP_LABELS[cap], cap, current, pick));
 }

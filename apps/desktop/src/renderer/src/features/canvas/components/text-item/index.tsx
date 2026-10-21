@@ -28,6 +28,7 @@ export function TextItem({
         placeholder="Type something"
         hint="Double-click to type"
         variant="text"
+        style={data}
       />
     </div>
   );

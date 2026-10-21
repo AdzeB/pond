@@ -1,58 +1,108 @@
 .body,
 .field {
+  --text-base: var(--ds-text-lg);
+
   box-sizing: border-box;
   width: 100%;
   height: 100%;
   margin: 0;
   overflow: hidden;
   font: inherit;
+  font-size: calc(var(--text-base) * var(--text-scale, 1));
   line-height: 1.4;
   color: var(--ds-gray-12);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 
+  &[data-size="small"] {
+    --text-scale: 0.8;
+  }
+
+  &[data-size="large"] {
+    --text-scale: 1.5;
+  }
+
+  &[data-size="extra-large"] {
+    --text-scale: 2;
+  }
+
+  &[data-size="huge"] {
+    --text-scale: 3;
+  }
+
+  &[data-font="bookish"] {
+    font-family: ui-serif, "New York", Georgia, serif;
+  }
+
+  &[data-font="technical"] {
+    font-family: var(--ds-font-mono);
+  }
+
   &[data-variant="note"] {
     padding: 20px;
-    font-size: var(--ds-text-lg);
   }
 
   &[data-variant="text"] {
+    --text-base: var(--ds-text-xl);
+
     padding: 6px 8px;
-    font-size: var(--ds-text-xl);
     font-weight: var(--ds-weight-lg);
   }
 
   &[data-variant="figure"] {
     padding: var(--figure-inset, 16px);
-    font-size: var(--ds-text-lg);
     text-align: center;
   }
 
+  &[data-variant="topic"] {
+    padding: 0 16px;
+    text-align: center;
+  }
+
+  &[data-variant="section"] {
+    --text-base: var(--ds-text-md);
+
+    width: auto;
+    min-width: 4ch;
+    max-width: 100%;
+    height: auto;
+    padding: 2px 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: var(--ds-weight-lg);
+    white-space: nowrap;
+  }
+
   &[data-variant="label"] {
+    --text-base: var(--ds-text-sm);
+
     width: auto;
     min-width: 2ch;
     max-width: 240px;
     height: auto;
     padding: 2px 6px;
-    font-size: var(--ds-text-sm);
     text-align: center;
     background: var(--ds-gray-1);
     border-radius: var(--ds-radius-xs);
   }
 }
 
-.body[data-variant="figure"] {
+.body[data-variant="figure"],
+.body[data-variant="topic"] {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .field[data-variant="figure"],
+.field[data-variant="topic"],
+.field[data-variant="section"],
 .field[data-variant="label"] {
   field-sizing: content;
 }
 
-.field[data-variant="figure"] {
+.field[data-variant="figure"],
+.field[data-variant="topic"] {
   height: auto;
   max-height: 100%;
 }

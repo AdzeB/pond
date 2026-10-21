@@ -23,6 +23,12 @@ const CANVAS_OUTLINES = [
   "ellipse",
   "diamond",
   "triangle",
+  "hexagon",
+  "parallelogram",
+  "trapezoid",
+  "star",
+  "cylinder",
+  "speech",
 ] as const;
 const CanvasOutlineSchema = z.enum(CANVAS_OUTLINES);
 export type CanvasOutline = z.infer<typeof CanvasOutlineSchema>;
@@ -30,6 +36,28 @@ export type CanvasOutline = z.infer<typeof CanvasOutlineSchema>;
 const CANVAS_LINES = ["curved", "elbow", "straight"] as const;
 const CanvasLineSchema = z.enum(CANVAS_LINES);
 export type CanvasLine = z.infer<typeof CanvasLineSchema>;
+
+export const CANVAS_CAPS = [
+  "none",
+  "arrow",
+  "triangle",
+  "circle",
+  "diamond",
+] as const;
+const CanvasCapSchema = z.enum(CANVAS_CAPS);
+export type CanvasCap = z.infer<typeof CanvasCapSchema>;
+
+export const CANVAS_TEXT_SIZES = [
+  "small",
+  "medium",
+  "large",
+  "extra-large",
+  "huge",
+] as const;
+export type CanvasTextSize = (typeof CANVAS_TEXT_SIZES)[number];
+
+export const CANVAS_FONTS = ["simple", "bookish", "technical"] as const;
+export type CanvasFont = (typeof CANVAS_FONTS)[number];
 
 /** Canvas IDs name files inside the Library, so they never contain path separators. */
 export const CanvasIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
@@ -45,6 +73,13 @@ const frame = {
   width: LengthSchema,
   height: LengthSchema,
   locked: z.boolean().optional(),
+  /** Items sharing a group ID select and move together. */
+  group: CanvasIdSchema.optional(),
+};
+
+const textStyle = {
+  textSize: z.enum(CANVAS_TEXT_SIZES).optional(),
+  font: z.enum(CANVAS_FONTS).optional(),
 };
 
 export const CanvasItemSchema = z.discriminatedUnion("kind", [
@@ -58,14 +93,51 @@ export const CanvasItemSchema = z.discriminatedUnion("kind", [
     kind: z.literal("note"),
     text: TextSchema,
     color: CanvasColorSchema,
+    ...textStyle,
   }),
-  z.object({ ...frame, kind: z.literal("text"), text: TextSchema }),
+  z.object({
+    ...frame,
+    kind: z.literal("text"),
+    text: TextSchema,
+    ...textStyle,
+  }),
   z.object({
     ...frame,
     kind: z.literal("figure"),
     outline: CanvasOutlineSchema,
     text: TextSchema,
     color: CanvasColorSchema,
+    ...textStyle,
+  }),
+  z.object({
+    ...frame,
+    kind: z.literal("section"),
+    title: z.string().max(200),
+    color: CanvasColorSchema,
+  }),
+  z.object({
+    ...frame,
+    kind: z.literal("table"),
+    rows: z
+      .array(z.array(z.string().max(2_000)).min(1).max(30))
+      .min(1)
+      .max(100),
+    color: CanvasColorSchema,
+    ...textStyle,
+  }),
+  z.object({
+    ...frame,
+    kind: z.literal("code"),
+    text: TextSchema,
+    language: z.string().max(40),
+  }),
+  /** A mind-map topic; its branches are the connectors leaving its right side. */
+  z.object({
+    ...frame,
+    kind: z.literal("topic"),
+    text: TextSchema,
+    color: CanvasColorSchema,
+    ...textStyle,
   }),
   z.object({
     ...frame,
@@ -92,6 +164,9 @@ export const CanvasConnectorSchema = z.object({
   line: CanvasLineSchema.default("curved"),
   startArrow: z.boolean().default(false),
   endArrow: z.boolean().default(true),
+  /** Caps win over the arrow flags, which stay written so older builds still draw arrows. */
+  start: CanvasCapSchema.optional(),
+  end: CanvasCapSchema.optional(),
   dashed: z.boolean().default(false),
   color: CanvasColorSchema.default("gray"),
   label: TextSchema.default(""),
@@ -173,6 +248,14 @@ export interface CanvasQueryInputs {
   "canvases.update": { id: string; content: CanvasContent };
   "canvases.addSaves": { id: string; saveIds: string[] };
   "canvases.delete": { id: string };
+  "canvases.capture": { x: number; y: number; width: number; height: number };
+  "canvases.export": {
+    name: string;
+    format: "png" | "pdf";
+    png: Uint8Array;
+    width: number;
+    height: number;
+  };
 }
 
 export interface CanvasQueryResults {
@@ -183,4 +266,8 @@ export interface CanvasQueryResults {
   "canvases.update": { ok: true; updatedAt: number };
   "canvases.addSaves": Canvas;
   "canvases.delete": { ok: true };
+  "canvases.capture": Uint8Array;
+  "canvases.export":
+    | { ok: true; path: string }
+    | { ok: false; reason: "cancelled" };
 }

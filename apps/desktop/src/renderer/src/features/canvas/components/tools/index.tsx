@@ -1,10 +1,14 @@
 import {
+  IconCode2,
   IconCursor,
   IconFigures,
   IconHand,
   IconHighlighter,
   IconImages,
+  IconMindMap,
   IconNoteEdit,
+  IconSection,
+  IconTable,
   IconText,
 } from "@pond/icons";
 import { Button, cssVars, Keyboard, Toolbar, Tooltip } from "@pond/ui";
@@ -20,9 +24,38 @@ import { OUTLINES } from "../../lib/outlines";
 import { AddSaves } from "../add-saves";
 import styles from "./styles.module.css";
 
-export type CanvasTool = "select" | "hand" | "note" | "figure" | "text" | "pen";
+export type CanvasTool =
+  | "select"
+  | "hand"
+  | "note"
+  | "figure"
+  | "text"
+  | "pen"
+  | "section"
+  | "table"
+  | "code"
+  | "topic";
 
-export function toolForKey(key: string): CanvasTool | undefined {
+function shiftedTool(key: string): CanvasTool | undefined {
+  switch (key.toLowerCase()) {
+    case "s":
+      return "section";
+    case "t":
+      return "table";
+    case "c":
+      return "code";
+    case "m":
+      return "topic";
+    default:
+      return undefined;
+  }
+}
+
+export function toolForKey(
+  key: string,
+  shift: boolean,
+): CanvasTool | undefined {
+  if (shift) return shiftedTool(key);
   switch (key.toLowerCase()) {
     case "v":
       return "select";
@@ -41,18 +74,37 @@ export function toolForKey(key: string): CanvasTool | undefined {
   }
 }
 
+/** Tools whose items take a color from the palette. */
+export const COLORED_TOOLS: ReadonlySet<CanvasTool> = new Set([
+  "note",
+  "pen",
+  "figure",
+  "section",
+  "table",
+  "topic",
+]);
+
 const MODES: ReadonlyArray<{
   tool: CanvasTool;
   label: string;
-  shortcut: string;
+  shortcut: readonly string[];
   Icon: typeof IconCursor;
 }> = [
-  { tool: "select", label: "Select", shortcut: "V", Icon: IconCursor },
-  { tool: "hand", label: "Hand", shortcut: "H", Icon: IconHand },
-  { tool: "pen", label: "Marker", shortcut: "M", Icon: IconHighlighter },
-  { tool: "note", label: "Sticky Note", shortcut: "S", Icon: IconNoteEdit },
-  { tool: "figure", label: "Shape", shortcut: "R", Icon: IconFigures },
-  { tool: "text", label: "Text", shortcut: "T", Icon: IconText },
+  { tool: "select", label: "Select", shortcut: ["V"], Icon: IconCursor },
+  { tool: "hand", label: "Hand", shortcut: ["H"], Icon: IconHand },
+  { tool: "pen", label: "Marker", shortcut: ["M"], Icon: IconHighlighter },
+  { tool: "note", label: "Sticky Note", shortcut: ["S"], Icon: IconNoteEdit },
+  { tool: "figure", label: "Shape", shortcut: ["R"], Icon: IconFigures },
+  { tool: "text", label: "Text", shortcut: ["T"], Icon: IconText },
+  {
+    tool: "section",
+    label: "Section",
+    shortcut: ["⇧", "S"],
+    Icon: IconSection,
+  },
+  { tool: "table", label: "Table", shortcut: ["⇧", "T"], Icon: IconTable },
+  { tool: "code", label: "Code Block", shortcut: ["⇧", "C"], Icon: IconCode2 },
+  { tool: "topic", label: "Mind Map", shortcut: ["⇧", "M"], Icon: IconMindMap },
 ];
 
 function place(mark: HTMLElement, button: HTMLElement, animate: boolean) {
@@ -128,7 +180,7 @@ export function Tools({
             <Tooltip
               key={mode}
               label={label}
-              shortcut={<Keyboard.Cluster keys={platformGlyphs([shortcut])} />}
+              shortcut={<Keyboard.Cluster keys={platformGlyphs(shortcut)} />}
               side="top"
             >
               <Toolbar.Button

@@ -1,13 +1,13 @@
 import { useCallback, useEffect } from "react";
-import { z } from "zod";
 import type { SaveListMode } from "@/features/saves/lib/list";
+import {
+  pasteImportOf,
+  runPasteImport,
+} from "@/features/saves/lib/paste-import";
 import { clearSaveSelection, clickSave } from "@/features/saves/lib/select";
 import { isLibrarySaveDrag } from "@/features/saves/lib/start-drag";
-import { asUrlList, filePathsFromText } from "@/features/saves/lib/url-list";
 import { runViewerAction } from "@/features/saves/lib/viewer-actions";
-import { importFilesWithDuplicateReview } from "@/features/saves/state/duplicate-import-review";
 import { useSelectionSize } from "@/features/saves/state/selection";
-import { notify } from "@/shared/lib/toast";
 import { usePrefs } from "@/shared/state/prefs";
 
 interface CardActions {
@@ -20,62 +20,6 @@ interface CardActions {
   onDrop: (e: React.DragEvent) => Promise<void>;
 }
 
-const ImportReplySchema = z
-  .object({
-    ok: z.boolean().catch(false),
-    id: z.string().optional().catch(undefined),
-    ids: z.array(z.string()).optional().catch(undefined),
-  })
-  .catch({ ok: false });
-
-function pasteSavedTitle(count: number): string {
-  return count === 1 ? "Saved to Pond" : `Saved ${count} items to Pond`;
-}
-
-function downloadingTitle(count: number): string {
-  return count === 1 ? "Downloading" : `Downloading ${count} links`;
-}
-
-async function importFilesAndNotify(paths: readonly string[]): Promise<void> {
-  const result = ImportReplySchema.parse(
-    await importFilesWithDuplicateReview({ paths: [...paths] }),
-  );
-  if (!result.ok) return;
-  const count = result.ids?.length ?? paths.length;
-  if (count === 0) return;
-  notify({
-    id: "paste-import",
-    title: pasteSavedTitle(count),
-  });
-}
-
-async function quickAddUrls(urls: readonly string[]): Promise<void> {
-  let added = 0;
-  for (const url of urls) {
-    const result = ImportReplySchema.parse(
-      await window.pond.query("saves.quickAdd", { url }),
-    );
-    if (result.ok) added += 1;
-  }
-  if (added === 0) return;
-  notify({
-    id: "paste-import",
-    title: downloadingTitle(added),
-  });
-}
-
-async function importClipboardAndNotify(): Promise<void> {
-  const result = ImportReplySchema.parse(
-    await window.pond.query("saves.importClipboard", {}),
-  );
-  if (!result.ok) return;
-  const count = result.ids?.length ?? 1;
-  if (count === 0) return;
-  notify({
-    id: "paste-import",
-    title: pasteSavedTitle(count),
-  });
-}
 export function useCardActions(
   filteredIds: ReadonlyArray<string>,
   mode: SaveListMode,
@@ -131,51 +75,10 @@ export function useCardActions(
 
       const data = e.clipboardData;
       if (!data) return;
-
-      const files = Array.from(data.files ?? []);
-      const paths = files
-        .map((f) => {
-          try {
-            return window.pond.pathForFile(f);
-          } catch {
-            return "";
-          }
-        })
-        .filter(Boolean);
-
-      if (paths.length > 0) {
-        e.preventDefault();
-        void importFilesAndNotify(paths);
-        return;
-      }
-
-      const text =
-        data.getData("text/uri-list") || data.getData("text/plain") || "";
-      const textPaths = filePathsFromText(text);
-      if (textPaths.length > 0) {
-        e.preventDefault();
-        void importFilesAndNotify(textPaths);
-        return;
-      }
-
-      /** Browsers often advertise a `Files` type for copied links; prefer URL text before image import. */
-      const urls = asUrlList(text);
-      if (urls) {
-        e.preventDefault();
-        void quickAddUrls(urls);
-        return;
-      }
-
-      const types = Array.from(data.types ?? []);
-      /** Finder paste often exposes `Files` with an empty FileList; main reads the native pasteboard. */
-      if (
-        types.includes("Files") ||
-        files.some((f) => f.type.startsWith("image/")) ||
-        types.some((t) => t.startsWith("image/"))
-      ) {
-        e.preventDefault();
-        void importClipboardAndNotify();
-      }
+      const plan = pasteImportOf(data);
+      if (!plan) return;
+      e.preventDefault();
+      void runPasteImport(plan);
     };
 
     document.addEventListener("paste", onPaste);
@@ -200,31 +103,8 @@ export function useCardActions(
     const dt = e.dataTransfer;
     if (!dt || isLibrarySaveDrag(dt)) return;
 
-    /** Electron 41 removed File.path; resolve absolute paths via the preload bridge. */
-    const paths = Array.from(dt.files ?? [])
-      .map((f) => {
-        try {
-          return window.pond.pathForFile(f);
-        } catch {
-          return "";
-        }
-      })
-      .filter(Boolean);
-    if (paths.length > 0) {
-      await importFilesAndNotify(paths);
-      return;
-    }
-
-    const text = dt.getData("text/uri-list") || dt.getData("text/plain");
-    const textPaths = filePathsFromText(text);
-    if (textPaths.length > 0) {
-      await importFilesAndNotify(textPaths);
-      return;
-    }
-
-    const urls = asUrlList(text);
-    if (!urls) return;
-    await quickAddUrls(urls);
+    const plan = pasteImportOf(dt);
+    if (plan && plan.kind !== "clipboard") await runPasteImport(plan);
   }, []);
 
   return {

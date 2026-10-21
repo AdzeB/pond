@@ -34,6 +34,7 @@ export function NoteItem({
         placeholder="Write a note"
         hint="Double-click to write"
         variant="note"
+        style={data}
       />
     </div>
   );

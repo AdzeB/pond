@@ -390,6 +390,9 @@ importers:
       sharp:
         specifier: 'catalog:'
         version: 0.35.4(@types/node@24.19.2)
+      shiki:
+        specifier: ^4.4.3
+        version: 4.4.3
       sqlite-vec:
         specifier: ^0.1.9
         version: 0.1.9

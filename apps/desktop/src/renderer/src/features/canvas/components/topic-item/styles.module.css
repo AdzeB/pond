@@ -1,0 +1,13 @@
+.topic {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background: var(--topic-fill);
+  border: 1.5px solid var(--topic-edge);
+  border-radius: 999px;
+
+  &[data-selected] {
+    outline: var(--canvas-selection);
+  }
+}

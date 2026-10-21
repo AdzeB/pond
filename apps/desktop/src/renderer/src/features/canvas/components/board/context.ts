@@ -8,8 +8,11 @@ export interface BoardActions {
   barsHidden: boolean;
   record(): void;
   setText(id: string, text: string): void;
+  setRows(id: string, rows: string[][]): void;
   startEditing(id: string): void;
-  finishEditing(): void;
+  /** Ignored unless `id` is still the item being edited, so a late blur can't end the next edit. */
+  finishEditing(id: string): void;
+  branch(id: string, kind: "child" | "sibling"): void;
   restyle(patch: Partial<ConnectorStyle>): void;
   deleteConnectors(): void;
 }

@@ -142,6 +142,7 @@
     "remark-gfm": "catalog:",
     "rooks": "^9.9.0",
     "sharp": "catalog:",
+    "shiki": "^4.4.3",
     "sqlite-vec": "^0.1.9",
     "three": "^0.186.0",
     "ulid": "^3.0.2",

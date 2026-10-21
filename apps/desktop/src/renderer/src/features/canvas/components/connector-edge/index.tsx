@@ -1,3 +1,4 @@
+import type { CanvasCap } from "@shared/canvas-contracts";
 import {
   BaseEdge,
   EdgeLabelRenderer,
@@ -11,11 +12,55 @@ import { INK } from "../../lib/colors";
 import {
   CONNECTOR_STYLE,
   type ConnectorEdge as ConnectorEdgeType,
+  capsOf,
 } from "../../lib/document";
 import { useBoard } from "../board/context";
 import { ConnectorBar } from "../connector-bar";
 import { EditableText } from "../editable-text";
 import styles from "./styles.module.css";
+
+const CAP_TIP = {
+  arrow: 10,
+  triangle: 11,
+  circle: 10,
+  diamond: 11,
+} satisfies Record<Exclude<CanvasCap, "none">, number>;
+
+interface CapProps {
+  id: string;
+  cap: CanvasCap;
+  ink: string;
+}
+
+function Cap({ id, cap, ink }: CapProps) {
+  if (cap === "none") return null;
+  return (
+    <marker
+      id={id}
+      viewBox="0 0 12 12"
+      refX={CAP_TIP[cap]}
+      refY={6}
+      markerWidth={12}
+      markerHeight={12}
+      markerUnits="userSpaceOnUse"
+      orient="auto-start-reverse"
+    >
+      {cap === "arrow" ? (
+        <path
+          className={styles.arrow}
+          d="M2.5 2L10 6L2.5 10"
+          style={{ stroke: ink }}
+        />
+      ) : cap === "triangle" ? (
+        <path d="M1.5 1.5L11 6L1.5 10.5Z" style={{ fill: ink }} />
+      ) : cap === "circle" ? (
+        <circle cx={6} cy={6} r={4} style={{ fill: ink }} />
+      ) : (
+        <path d="M6 1L11 6L6 11L1 6Z" style={{ fill: ink }} />
+      )}
+    </marker>
+  );
+}
 
 export function ConnectorEdge({
   id,
@@ -45,27 +90,13 @@ export function ConnectorEdge({
         ? getStraightPath(ends)
         : getBezierPath(ends);
   const ink = INK[style.color];
-  const arrow = `url(#${id}-arrow)`;
+  const caps = capsOf(style);
   const editing = board.editingId === id;
   return (
     <>
       <defs>
-        <marker
-          id={`${id}-arrow`}
-          viewBox="0 0 12 12"
-          refX={10}
-          refY={6}
-          markerWidth={12}
-          markerHeight={12}
-          markerUnits="userSpaceOnUse"
-          orient="auto-start-reverse"
-        >
-          <path
-            className={styles.arrow}
-            d="M2.5 2L10 6L2.5 10"
-            style={{ stroke: ink }}
-          />
-        </marker>
+        <Cap id={`${id}-start`} cap={caps.start} ink={ink} />
+        <Cap id={`${id}-end`} cap={caps.end} ink={ink} />
       </defs>
       {selected ? <path className={styles.halo} d={path} /> : null}
       <BaseEdge
@@ -75,8 +106,8 @@ export function ConnectorEdge({
           stroke: ink,
           strokeDasharray: style.dashed ? "6 5" : undefined,
         }}
-        markerStart={style.startArrow ? arrow : undefined}
-        markerEnd={style.endArrow ? arrow : undefined}
+        markerStart={caps.start === "none" ? undefined : `url(#${id}-start)`}
+        markerEnd={caps.end === "none" ? undefined : `url(#${id}-end)`}
       />
       <EdgeLabelRenderer>
         {style.label || editing ? (

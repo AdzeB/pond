@@ -18,8 +18,7 @@
     border-radius: 50%;
   }
 
-  &[data-outline="diamond"],
-  &[data-outline="triangle"] {
+  &[data-drawn] {
     background: none;
     border: 0;
   }
@@ -30,6 +29,27 @@
 
   &[data-outline="triangle"] {
     --figure-inset: 40% 22% 8%;
+  }
+
+  &[data-outline="hexagon"] {
+    --figure-inset: 12% 22%;
+  }
+
+  &[data-outline="parallelogram"],
+  &[data-outline="trapezoid"] {
+    --figure-inset: 12% 20%;
+  }
+
+  &[data-outline="star"] {
+    --figure-inset: 38% 30% 24%;
+  }
+
+  &[data-outline="cylinder"] {
+    --figure-inset: 28% 12% 14%;
+  }
+
+  &[data-outline="speech"] {
+    --figure-inset: 10% 10% 30%;
   }
 
   &[data-selected] {
@@ -46,11 +66,15 @@
   overflow: visible;
   pointer-events: none;
 
-  & polygon {
+  & path {
     fill: var(--figure-fill);
     stroke: var(--figure-edge);
     stroke-width: 1.5px;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
+  }
+
+  & .details {
+    fill: none;
   }
 }

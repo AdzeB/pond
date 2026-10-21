@@ -1,3 +1,7 @@
+.dots {
+  pointer-events: none;
+}
+
 .board {
   --xy-background-color: transparent;
   --xy-background-pattern-color: var(--ds-gray-a6);
@@ -30,8 +34,18 @@
 
   &[data-tool="note"] :global(.react-flow__pane),
   &[data-tool="figure"] :global(.react-flow__pane),
-  &[data-tool="text"] :global(.react-flow__pane) {
+  &[data-tool="text"] :global(.react-flow__pane),
+  &[data-tool="section"] :global(.react-flow__pane),
+  &[data-tool="table"] :global(.react-flow__pane),
+  &[data-tool="code"] :global(.react-flow__pane),
+  &[data-tool="topic"] :global(.react-flow__pane) {
     cursor: crosshair;
+  }
+
+  &[data-exporting] > :not(:global(.react-flow)),
+  &[data-exporting] .dots,
+  &[data-exporting] :global(.react-flow__handle) {
+    visibility: hidden;
   }
 
   & :global(.react-flow__node) {
@@ -82,8 +96,4 @@
     inset: -6px;
     content: "";
   }
-}
-
-.dots {
-  pointer-events: none;
 }

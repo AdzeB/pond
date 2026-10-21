@@ -1,12 +1,15 @@
 import { CanvasContentSchema, type CanvasItem } from "@shared/canvas-contracts";
+import type { NodeChange } from "@xyflow/react";
 import { describe, expect, it } from "vitest";
 import {
   alignFrames,
   type Bounds,
+  branchOf,
   type CanvasNode,
   type CanvasSnapshot,
   CONNECTOR_STYLE,
   type ConnectorEdge,
+  capsOf,
   clipOf,
   clipText,
   contentOf,
@@ -16,16 +19,21 @@ import {
   duplicateOf,
   figureAt,
   GRID,
+  groupChanges,
   isLocked,
   noteAt,
   pasteOf,
   placeSaves,
   reorder,
+  resizeTable,
+  sectionContents,
   snapshotOf,
   textAt,
   tidyFrames,
   toEdge,
   toNode,
+  withCap,
+  withGroup,
   withLock,
 } from "./document";
 
@@ -378,5 +386,192 @@ describe("canvas document", () => {
     expect(history.redo(first)).toBe(second);
     expect(history.redo(second)).toBe(third);
     expect(history.redo(third)).toBeNull();
+  });
+
+  it("round-trips sections, tables, code, topics, groups, and text styles", () => {
+    const extra: CanvasItem[] = [
+      {
+        kind: "section",
+        id: "area",
+        x: -48,
+        y: -72,
+        width: 720,
+        height: 480,
+        title: "Research",
+        color: "green",
+      },
+      {
+        kind: "table",
+        id: "grid",
+        x: 0,
+        y: 600,
+        width: 288,
+        height: 96,
+        rows: [
+          ["Name", "Score"],
+          ["Pond", "10"],
+        ],
+        color: "blue",
+        textSize: "large",
+        group: "pair",
+      },
+      {
+        kind: "code",
+        id: "snippet",
+        x: 400,
+        y: 600,
+        width: 432,
+        height: 216,
+        text: "const a = 1;",
+        language: "typescript",
+        group: "pair",
+      },
+      {
+        kind: "topic",
+        id: "idea",
+        x: 0,
+        y: 900,
+        width: 192,
+        height: 48,
+        text: "Idea",
+        color: "pink",
+        font: "bookish",
+      },
+    ];
+    const nodes = extra.map(toNode);
+    expect(nodes[0]?.zIndex).toBe(-1);
+    const content = contentOf(nodes, [], { x: 0, y: 0, zoom: 1 });
+    expect(CanvasContentSchema.parse(content).items).toEqual(extra);
+  });
+
+  it("selects and deselects every member of a group together", () => {
+    const nodes = [
+      withGroup(toNode(itemAt(0)), "g"),
+      withGroup(toNode(itemAt(1)), "g"),
+      toNode(itemAt(2)),
+    ];
+    const picked = (changes: NodeChange<CanvasNode>[]) =>
+      changes.flatMap((change) =>
+        change.type === "select" ? [[change.id, change.selected]] : [],
+      );
+    expect(
+      picked(
+        groupChanges(nodes, [{ type: "select", id: "card", selected: true }]),
+      ),
+    ).toEqual([
+      ["card", true],
+      ["note", true],
+    ]);
+    expect(
+      picked(
+        groupChanges(nodes, [
+          { type: "select", id: "note", selected: false },
+          { type: "select", id: "step", selected: true },
+        ]),
+      ),
+    ).toEqual([
+      ["step", true],
+      ["card", false],
+      ["note", false],
+    ]);
+    expect(withGroup(nodes[0] ?? toNode(itemAt(0)), null).data.group).toBe(
+      undefined,
+    );
+  });
+
+  it("gives duplicated groups a fresh group shared by the copies", () => {
+    const nodes = [
+      withGroup(toNode(itemAt(1)), "g"),
+      withGroup(toNode(itemAt(2)), "g"),
+    ];
+    const copy = duplicateOf(snapshotOf(nodes, []), new Set(["note", "step"]));
+    const groups = new Set(copy.items.map((item) => item.group));
+    expect(groups.size).toBe(1);
+    expect(groups.has("g")).toBe(false);
+    expect(groups.has(undefined)).toBe(false);
+  });
+
+  it("finds the items wholly inside a section", () => {
+    const section = { id: "area", x: 0, y: 0, width: 500, height: 500 };
+    expect(
+      sectionContents(section, [
+        section,
+        { id: "inside", x: 10, y: 10, width: 100, height: 100 },
+        { id: "across", x: 450, y: 10, width: 100, height: 100 },
+        { id: "outside", x: 600, y: 0, width: 10, height: 10 },
+      ]),
+    ).toEqual(["inside"]);
+  });
+
+  it("grows and shrinks a table one cell at a time", () => {
+    const table = {
+      kind: "table" as const,
+      id: "grid",
+      x: 0,
+      y: 0,
+      width: 200,
+      height: 100,
+      rows: [
+        ["a", "b"],
+        ["c", "d"],
+      ],
+      color: "gray" as const,
+    };
+    const taller = resizeTable(table, "add-row");
+    expect(taller.rows).toEqual([
+      ["a", "b"],
+      ["c", "d"],
+      ["", ""],
+    ]);
+    expect(taller.height).toBe(150);
+    const narrower = resizeTable(table, "remove-column");
+    expect(narrower.rows).toEqual([["a"], ["c"]]);
+    expect(narrower.width).toBe(100);
+    expect(resizeTable(narrower, "remove-column")).toBe(narrower);
+  });
+
+  it("reads arrow flags as caps until a cap is set", () => {
+    expect(capsOf({ ...CONNECTOR_STYLE, startArrow: true })).toEqual({
+      start: "arrow",
+      end: "arrow",
+    });
+    const patched = { ...CONNECTOR_STYLE, ...withCap("end", "diamond") };
+    expect(capsOf(patched)).toEqual({ start: "none", end: "diamond" });
+    expect(patched.endArrow).toBe(true);
+    expect(withCap("start", "none")).toEqual({
+      start: "none",
+      startArrow: false,
+    });
+  });
+
+  it("branches topics to the right and centres each subtree on its parent", () => {
+    const root: CanvasItem = {
+      kind: "topic",
+      id: "root",
+      x: 0,
+      y: 0,
+      width: 192,
+      height: 48,
+      text: "Root",
+      color: "blue",
+    };
+    const first = branchOf({ items: [root], connectors: [] }, "root", "child");
+    if (!first) throw new Error("No branch");
+    const second = branchOf(first.snapshot, first.created, "sibling");
+    if (!second) throw new Error("No sibling");
+    const { items: placed, connectors } = second.snapshot;
+    expect(connectors.map((connector) => connector.from)).toEqual([
+      "root",
+      "root",
+    ]);
+    expect(connectors.every((connector) => connector.end === "none")).toBe(
+      true,
+    );
+    const [, top, bottom] = placed;
+    expect(top?.x).toBe(192 + 72);
+    expect(bottom?.x).toBe(192 + 72);
+    expect(top?.y).toBe(-36);
+    expect(bottom?.y).toBe(36);
+    expect(placed[0]?.y).toBe(0);
   });
 });

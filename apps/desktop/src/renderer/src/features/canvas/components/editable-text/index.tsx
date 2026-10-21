@@ -1,5 +1,6 @@
 import { clsx as cn } from "clsx";
 import { useEffect, useRef } from "react";
+import type { TextStyle } from "../../lib/text-style";
 import { useBoard } from "../board/context";
 import styles from "./styles.module.css";
 
@@ -9,7 +10,8 @@ interface EditableTextProps {
   label: string;
   placeholder: string;
   hint: string;
-  variant: "note" | "text" | "figure" | "label";
+  variant: "note" | "text" | "figure" | "label" | "topic" | "section";
+  style?: TextStyle;
 }
 
 export function EditableText({
@@ -19,6 +21,7 @@ export function EditableText({
   placeholder,
   hint,
   variant,
+  style,
 }: EditableTextProps) {
   const board = useBoard();
   const editing = board.editingId === id;
@@ -37,15 +40,30 @@ export function EditableText({
         ref={field}
         className={cn(styles.field, "nodrag", "nowheel", "nopan")}
         data-variant={variant}
+        data-size={style?.textSize}
+        data-font={style?.font}
         aria-label={label}
         placeholder={placeholder}
         value={text}
         spellCheck
+        rows={1}
         onChange={(event) => board.setText(id, event.currentTarget.value)}
-        onBlur={() => board.finishEditing()}
+        onBlur={() => board.finishEditing(id)}
         onKeyDown={(event) => {
           event.stopPropagation();
-          if (event.key === "Escape") event.currentTarget.blur();
+          if (event.nativeEvent.isComposing) return;
+          if (event.key === "Escape") {
+            event.currentTarget.blur();
+            return;
+          }
+          const ends = event.key === "Enter" && !event.shiftKey;
+          if (variant === "topic" && (event.key === "Tab" || ends)) {
+            event.preventDefault();
+            board.branch(id, event.key === "Tab" ? "child" : "sibling");
+          } else if (variant === "section" && ends) {
+            event.preventDefault();
+            event.currentTarget.blur();
+          }
         }}
       />
     );
@@ -53,6 +71,8 @@ export function EditableText({
     <div
       className={styles.body}
       data-variant={variant}
+      data-size={style?.textSize}
+      data-font={style?.font}
       data-empty={text ? undefined : true}
     >
       {text || hint}

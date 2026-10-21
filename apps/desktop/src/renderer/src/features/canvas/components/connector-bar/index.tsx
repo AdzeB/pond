@@ -11,7 +11,8 @@ import {
 import type { CanvasLine } from "@shared/canvas-contracts";
 import { useStore, ViewportPortal } from "@xyflow/react";
 import type { ComponentType } from "react";
-import type { ConnectorStyle } from "../../lib/document";
+import { capItems } from "../../lib/board-menu";
+import { type ConnectorStyle, capsOf, withCap } from "../../lib/document";
 import { Bar } from "../bar";
 import { useBoard } from "../board/context";
 import styles from "./styles.module.css";
@@ -36,6 +37,7 @@ interface ConnectorBarProps {
 export function ConnectorBar({ id, x, y, style }: ConnectorBarProps) {
   const board = useBoard();
   const zoom = useStore((state) => state.transform[2]);
+  const caps = capsOf(style);
   return (
     <ViewportPortal>
       <div
@@ -58,20 +60,24 @@ export function ConnectorBar({ id, x, y, style }: ConnectorBarProps) {
             ))}
           </Bar.Group>
           <Bar.Group aria-label="Ends">
-            <Bar.Action
-              label="Start Arrow"
-              pressed={style.startArrow}
-              onClick={() => board.restyle({ startArrow: !style.startArrow })}
+            <Bar.Menu
+              label="Start"
+              buildItems={() =>
+                capItems(caps.start, (cap) =>
+                  board.restyle(withCap("start", cap)),
+                )
+              }
             >
               <IconArrowLeft />
-            </Bar.Action>
-            <Bar.Action
-              label="End Arrow"
-              pressed={style.endArrow}
-              onClick={() => board.restyle({ endArrow: !style.endArrow })}
+            </Bar.Menu>
+            <Bar.Menu
+              label="End"
+              buildItems={() =>
+                capItems(caps.end, (cap) => board.restyle(withCap("end", cap)))
+              }
             >
               <IconArrowRight />
-            </Bar.Action>
+            </Bar.Menu>
             <Bar.Action
               label="Dashed"
               pressed={style.dashed}
