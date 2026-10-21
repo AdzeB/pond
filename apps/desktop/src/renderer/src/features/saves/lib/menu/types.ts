@@ -37,6 +37,8 @@ export interface SaveMenuContext {
   isGif: boolean;
   isWebp: boolean;
   isVideo: boolean;
+  canDownloadVideo: boolean;
+  canRemoveVideo: boolean;
   copyLabel: string;
   archivable: boolean;
   hasCustomThumbnail: boolean;

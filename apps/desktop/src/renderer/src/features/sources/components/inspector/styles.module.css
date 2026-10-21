@@ -1,62 +1,33 @@
-/* Mirrors the Settings window: sidebar on the window gray, page in an inset panel. */
-.layout {
-  display: grid;
-  flex: 1;
-  grid-template-columns: 200px minmax(0, 1fr);
-  min-height: 0;
-  background: var(--ds-gray-2);
+.sidebar {
+  padding: 0 8px 12px 12px;
 }
 
-.aside {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  padding: 12px 8px 0 12px;
+.header {
+  height: var(--ds-title-bar-height);
 }
 
-.identity {
-  display: flex;
+/* Lifts the search above the frameless window's drag strip so it stays clickable. */
+.search {
+  -webkit-app-region: no-drag;
+  position: relative;
+  z-index: 21;
   flex: none;
-  gap: 8px;
-  align-items: center;
-  height: 32px;
-  padding-inline-start: 6px;
 }
 
-.name {
+.page {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
-  white-space: nowrap;
-}
-
-.nav {
-  flex: 1;
-  height: auto;
-}
-
-.panel {
-  min-width: 0;
-  padding: 0;
-  margin: 8px 8px 8px 0;
-  background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-md);
-  box-shadow: var(--ds-shadow-xs);
-}
-
-.panel .page {
-  --settings-margin-block: 32px;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .unavailable {
-  flex: 1;
-  justify-content: center;
-  text-align: center;
+  margin: auto;
+  font-size: var(--ds-text-sm);
+  line-height: 1.5;
+  color: var(--ds-gray-10);
 }
 
 .nickname {
@@ -84,12 +55,4 @@
   font-size: var(--ds-text-sm);
   line-height: 1.4;
   color: var(--ds-red-11);
-}
-
-.empty {
-  padding: 20px 0;
-  margin: 0;
-  font-size: var(--ds-text-sm);
-  line-height: 1.5;
-  color: var(--ds-gray-10);
 }

@@ -7,7 +7,7 @@ export function migrateGlobal(sqlite: Database.Database): void {
   sqlite.exec(`
 				CREATE TABLE IF NOT EXISTS settings (
 					id TEXT PRIMARY KEY DEFAULT 'singleton',
-					video_download TEXT NOT NULL DEFAULT '{"enabled":true,"maxHeight":1080,"maxFileSizeMb":500}',
+					video_download TEXT NOT NULL DEFAULT '{"autoDownload":false,"maxHeight":1080,"maxFileSizeMb":500}',
 					image_download TEXT,
 					prefs TEXT,
 					library_root TEXT,

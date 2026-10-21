@@ -51,6 +51,10 @@ const ArchivePayloadSchema = z
   .object({ scope: z.enum(["page", "site"]).optional().catch(undefined) })
   .catch({});
 
+const FetchVideoPayloadSchema = z
+  .object({ requested: z.boolean().optional().catch(undefined) })
+  .catch({});
+
 export const WORKERS = {
   harvest_metadata: async (saveId, payload, ctx) => {
     const { runHarvestMetadata } = await import("./workers/harvest-metadata");
@@ -72,9 +76,13 @@ export const WORKERS = {
     const { runArchivePage } = await import("./workers/archive-page");
     await runArchivePage(saveId, ArchivePayloadSchema.parse(payload), ctx);
   },
-  fetch_video_ytdlp: async (saveId, _payload, ctx) => {
+  fetch_video_ytdlp: async (saveId, payload, ctx) => {
     const { runFetchVideoYtdlp } = await import("./workers/fetch-video-ytdlp");
-    await runFetchVideoYtdlp(saveId, ctx);
+    await runFetchVideoYtdlp(
+      saveId,
+      FetchVideoPayloadSchema.parse(payload),
+      ctx,
+    );
   },
   ensure_poster: async (saveId, _payload, ctx) => {
     const { runEnsurePoster } = await import("./workers/ensure-poster");
@@ -94,6 +102,7 @@ export const NON_FATAL_OPS: ReadonlySet<Op> = new Set<Op>([
   "capture_tweet",
   "render_text_cover",
   "archive_page",
+  "fetch_video_ytdlp",
   "ensure_poster",
   "fetch_avatar",
 ]);

@@ -2989,16 +2989,16 @@ export const IconSidebarLeft = /* @__PURE__ */ createIcon(
   "SidebarLeft",
   "outline",
   [
-    ["rect", { x: "2.25", y: "3", width: "13.5", height: "12", rx: "3" }],
-    ["path", { d: "M6.75 3L6.75 15" }],
+    ["rect", { x: "1.75", y: "2.75", width: "14.5", height: "12.5", rx: "2" }],
+    ["path", { d: "M4.75 5.75L4.75 12.25" }],
   ],
 );
 export const IconSidebarRight = /* @__PURE__ */ createIcon(
   "SidebarRight",
   "outline",
   [
-    ["rect", { x: "2.25", y: "3", width: "13.5", height: "12", rx: "3" }],
-    ["path", { d: "M11.25 3L11.25 15" }],
+    ["rect", { x: "1.75", y: "2.75", width: "14.5", height: "12.5", rx: "2" }],
+    ["path", { d: "M13.25 5.75L13.25 12.25" }],
   ],
 );
 export const IconSizeLg = /* @__PURE__ */ createIcon("SizeLg", "outline", [

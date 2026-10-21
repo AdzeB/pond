@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   describeSyncSchedule,
+  isSourceFetchDue,
   isSyncScheduleDue,
   nextSyncOccurrence,
   type SyncSchedule,
@@ -144,4 +145,37 @@ it("anchors hourly repeats to the start date", () => {
   expect(nextSyncOccurrence(rule, new Date(2026, 8, 9, 6))).toEqual(
     new Date(2026, 8, 9, 12),
   );
+});
+
+describe("per-source fetch schedules", () => {
+  const hour = 3_600_000;
+  const at = Date.parse("2026-09-07T09:00:00Z");
+  const synced = (hoursAgo: number) =>
+    new Date(at - hoursAgo * hour).toISOString();
+
+  it("follows the global schedule without an interval", () => {
+    expect(isSourceFetchDue({ lastSyncedAt: synced(1) }, true, at)).toBe(true);
+    expect(isSourceFetchDue({ lastSyncedAt: synced(99) }, false, at)).toBe(
+      false,
+    );
+  });
+
+  it("never runs a paused source on a schedule", () => {
+    expect(
+      isSourceFetchDue({ paused: true, lastSyncedAt: null }, true, at),
+    ).toBe(false);
+  });
+
+  it("runs on its own interval regardless of the global schedule", () => {
+    const sync = { intervalHours: 2, lastSyncedAt: synced(3) };
+    expect(isSourceFetchDue(sync, false, at)).toBe(true);
+    expect(
+      isSourceFetchDue({ ...sync, lastSyncedAt: synced(1) }, true, at),
+    ).toBe(false);
+  });
+
+  it("waits out the interval after a failed attempt", () => {
+    const sync = { intervalHours: 2, lastSyncedAt: synced(5) };
+    expect(isSourceFetchDue(sync, false, at, at - hour)).toBe(false);
+  });
 });

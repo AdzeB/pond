@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
-import type { NewSave, Source } from "@pond/schema/db";
+import type { NewSave, Save, Source } from "@pond/schema/db";
 import type { CaptureMedia, RawJson, RawYtdlp } from "@pond/schema/raw";
 import { storedAsRawJson } from "@pond/schema/raw-schema";
 import { isVideoFile } from "@shared/media-index";
@@ -16,6 +16,7 @@ import {
 } from "../../../lib/poster-policy";
 import { probeVideoDims } from "../../../lib/video-dims";
 import { persistSave } from "../../persist-save";
+import { getVideoDownloadPrefs } from "../../prefs";
 import { type DownloadedVideoItem, downloadVideo } from "../../refresh/yt-dlp";
 import { isAutoVideoBlockedByStorageGuard } from "../../storage-watcher";
 import { TransientError } from "../extractors/errors";
@@ -23,12 +24,48 @@ import { expectedVideoDownloads, resolveYtDlpTarget } from "../specs";
 import { saveAuthorFrom, withYtdlpAuthor } from "../ytdlp-author";
 import { readSave, type WriteFileArgs } from "./apply";
 
+export interface FetchVideoPayload {
+  requested?: boolean;
+}
+
+export type VideoDownloadSave = Pick<
+  Save,
+  "source" | "url" | "accountId" | "author" | "mediaType" | "files" | "rawJson"
+>;
+
+interface FetchVideoRuntime {
+  readSave: (saveId: string) => Promise<VideoDownloadSave | null>;
+  getVideoDownloadPrefs: typeof getVideoDownloadPrefs;
+  downloadVideo: typeof downloadVideo;
+  isAutoVideoBlockedByStorageGuard: typeof isAutoVideoBlockedByStorageGuard;
+}
+
+const defaultRuntime: FetchVideoRuntime = {
+  readSave,
+  getVideoDownloadPrefs,
+  downloadVideo,
+  isAutoVideoBlockedByStorageGuard,
+};
+
 export async function runFetchVideoYtdlp(
   saveId: string,
+  payload: FetchVideoPayload = {},
   ctx?: TransferOptions,
+  runtime: FetchVideoRuntime = defaultRuntime,
 ): Promise<void> {
-  const save = await readSave(saveId);
+  const save = await runtime.readSave(saveId);
   if (!save) return;
+
+  if (
+    !payload.requested &&
+    !(await runtime.getVideoDownloadPrefs(save.source)).autoDownload
+  ) {
+    log.debug("[pond pipeline:fetch-video-ytdlp] auto download off, skipping", {
+      saveId,
+      source: save.source,
+    });
+    return;
+  }
 
   const expected = expectedVideoDownloads(save);
   const existingVideos = (save.files ?? []).filter(isVideoFile);
@@ -52,7 +89,7 @@ export async function runFetchVideoYtdlp(
     return;
   }
 
-  if (isAutoVideoBlockedByStorageGuard()) {
+  if (!payload.requested && runtime.isAutoVideoBlockedByStorageGuard()) {
     throw new TransientError(
       `fetch-video-ytdlp: storage guard blocking ${saveId}`,
     );
@@ -78,7 +115,7 @@ export async function runFetchVideoYtdlp(
   };
   if (ctx?.signal) request.signal = ctx.signal;
   if (ctx?.reportActivity) request.reportActivity = ctx.reportActivity;
-  const dl = await downloadVideo(request);
+  const dl = await runtime.downloadVideo(request);
   if (!dl || dl.items.length === 0) {
     throw new TransientError(
       `fetch-video-ytdlp: no video produced for ${saveId}`,

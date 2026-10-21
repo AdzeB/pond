@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { SETTINGS_GROUP_LABELS, SETTINGS_SECTIONS } from "@pond/schema";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  SETTINGS_MASTER_GROUPS,
+  sectionForId,
+  sectionForPath,
+} from "./registry";
 import { SETTINGS_SEARCH_INDEX } from "./search-index";
 
 function entry(id: string) {
@@ -43,6 +48,58 @@ describe("settings search index", () => {
     for (const section of SETTINGS_SECTIONS) {
       expect(section.label).not.toBe(SETTINGS_GROUP_LABELS[section.group]);
     }
+  });
+
+  it("indexes the global download settings under Images and Videos", () => {
+    expect(entry("videos:autoDownload").title).toBe(
+      "Download Videos Automatically",
+    );
+    expect(entry("videos:autoDownload").groupTitle).toBe("Downloads");
+    expect(entry("images:maxLongEdge").sectionLabel).toBe("Images");
+  });
+
+  it("indexes the Harvesting pages under their own labels", () => {
+    expect(entry("schedule").sectionLabel).toBe("Schedule");
+    expect(entry("sources").sectionLabel).toBe("Sources");
+  });
+
+  it("leaves hidden sections out of search", () => {
+    const hidden = new Set(
+      SETTINGS_SECTIONS.filter((section) => section.hidden).map(
+        (section) => section.id,
+      ),
+    );
+    expect(hidden.has("sources-youtube")).toBe(true);
+    expect(
+      SETTINGS_SEARCH_INDEX.filter((candidate) =>
+        hidden.has(candidate.sectionId),
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe("settings child sections", () => {
+  it("registers a hidden page under Sources for each source", () => {
+    const youtube = sectionForPath("sources-youtube");
+    expect(youtube?.label).toBe("YouTube");
+    expect(youtube?.parent).toBe("sources");
+    expect(youtube?.hidden).toBe(true);
+    expect(youtube?.config.title).toBe("YouTube");
+  });
+
+  it("keeps hidden sections out of the sidebar index", () => {
+    const listed = SETTINGS_MASTER_GROUPS.flatMap((group) =>
+      group.sections.map((section) => section.id),
+    );
+    expect(
+      SETTINGS_MASTER_GROUPS.find((group) => group.group === "harvesting"),
+    ).toMatchObject({ label: "Harvesting" });
+    expect(
+      SETTINGS_MASTER_GROUPS.find(
+        (group) => group.group === "harvesting",
+      )?.sections.map((section) => section.id),
+    ).toEqual(["schedule", "sources", "images", "videos"]);
+    expect(listed.some((id) => sectionForId(id)?.hidden)).toBe(false);
   });
 });
 

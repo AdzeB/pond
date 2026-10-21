@@ -355,9 +355,12 @@ function ItemShell({
   binding: Binding;
   sectionId?: string;
 }) {
+  const disabled =
+    item.control !== "custom" && (item.disabled?.(binding.values) ?? false);
   return (
     <Settings.Item
       id={sectionId ? `setting-${sectionId}-${item.key}` : undefined}
+      disabled={disabled}
     >
       <ItemView item={item} binding={binding} />
     </Settings.Item>

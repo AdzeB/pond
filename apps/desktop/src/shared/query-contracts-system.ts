@@ -5,6 +5,7 @@ import type {
   MediaType,
   Prefs,
   Source,
+  SourceOverrides,
   VideoDownloadSettings,
   WatchedAccount,
 } from "@pond/schema/db";
@@ -94,6 +95,14 @@ export type LibraryLocationResult<Data = Record<never, never>> =
 type PathResult<Data = Record<never, never>> = LibraryLocationResult<
   { path: string } & Data
 >;
+
+interface DownloadSettingsResult {
+  videoDownload: VideoDownloadSettings;
+  imageDownload: ImageDownloadSettings;
+  videoDownloadSources: SourceOverrides<VideoDownloadSettings>;
+  imageDownloadSources: SourceOverrides<ImageDownloadSettings>;
+}
+
 interface RetrievalSave {
   id: string;
   title: string | null;
@@ -224,19 +233,14 @@ export interface SystemQueryResults {
     recovered: number;
     lastRunAt: number | null;
   };
-  "settings.get": {
+  "settings.get": DownloadSettingsResult & {
     id: string;
-    videoDownload: VideoDownloadSettings;
-    imageDownload: ImageDownloadSettings;
     libraryRoot: string | null;
     updatedAt: Date;
   };
-  "settings.setVideoDownload": OkResult<{
-    videoDownload: VideoDownloadSettings;
-  }>;
-  "settings.setImageDownload": OkResult<{
-    imageDownload: ImageDownloadSettings;
-  }>;
+  "settings.setVideoDownload": OkResult<DownloadSettingsResult>;
+  "settings.setImageDownload": OkResult<DownloadSettingsResult>;
+  "settings.setSourceDownloadsCustom": OkResult<DownloadSettingsResult>;
   "settings.ingestToken": { token: string | null };
   "settings.rotateIngestToken": { token: string };
   "settings.getOnboarded": { onboarded: boolean };

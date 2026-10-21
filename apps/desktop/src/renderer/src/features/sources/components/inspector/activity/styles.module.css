@@ -1,0 +1,18 @@
+.empty {
+  padding-block: 48px;
+}
+
+.control {
+  gap: 8px;
+}
+
+.outcome {
+  font-size: var(--ds-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+
+  &[data-tone="warn"] {
+    color: var(--ds-red-11);
+  }
+}

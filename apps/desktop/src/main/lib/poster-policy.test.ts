@@ -5,6 +5,7 @@ import {
   needsPosterRepair,
   posterFilename,
   posterRepairIndexes,
+  remotePosterUrl,
   usesPlatformPoster,
   videoFilename,
   youtubeThumbnailUrl,
@@ -104,5 +105,85 @@ describe("youtubeThumbnailUrl", () => {
         }),
       ),
     ).toBe("https://i.ytimg.com/vi/y/hqdefault.jpg");
+  });
+});
+
+describe("remotePosterUrl", () => {
+  it("prefers a captured posterUrl", () => {
+    const rawJson = storedAsRawJson({
+      ytdlp: { thumbnail: "https://i.ytimg.com/vi/x/hqdefault.jpg" },
+      capture: {
+        media: [
+          {
+            type: "video",
+            url: "https://x.test/v.mp4",
+            posterUrl: "https://x.test/p.jpg",
+          },
+        ],
+      },
+    });
+    expect(remotePosterUrl(rawJson, null)).toBe("https://x.test/p.jpg");
+  });
+
+  it("finds a posterUrl on quoted media", () => {
+    const rawJson = storedAsRawJson({
+      capture: {
+        media: [],
+        quoted: {
+          id: "q",
+          source: "twitter",
+          url: "https://x.com/a/status/1",
+          media: [
+            {
+              type: "video",
+              url: "https://x.test/q.mp4",
+              posterUrl: "https://x.test/q.jpg",
+            },
+          ],
+        },
+      },
+    });
+    expect(remotePosterUrl(rawJson, null)).toBe("https://x.test/q.jpg");
+  });
+
+  it("uses the ytdlp thumbnail when no posterUrl was captured", () => {
+    const rawJson = storedAsRawJson({
+      ytdlp: { thumbnail: "https://i.ytimg.com/vi/x/hqdefault.jpg" },
+      capture: { media: [{ type: "video", url: "https://x.test/v.mp4" }] },
+    });
+    expect(remotePosterUrl(rawJson, null)).toBe(
+      "https://i.ytimg.com/vi/x/hqdefault.jpg",
+    );
+  });
+
+  it("uses an image URL stored as the video entry", () => {
+    const rawJson = storedAsRawJson({
+      capture: {
+        media: [{ type: "video", url: "https://cdn.test/frame.jpg?x=1" }],
+      },
+    });
+    expect(remotePosterUrl(rawJson, null)).toBe(
+      "https://cdn.test/frame.jpg?x=1",
+    );
+  });
+
+  it("falls back to an image mediaUrl", () => {
+    const rawJson = storedAsRawJson({
+      capture: {
+        media: [{ type: "video", url: "https://www.tiktok.com/@a/video/1" }],
+      },
+    });
+    expect(remotePosterUrl(rawJson, "https://cdn.test/og.webp")).toBe(
+      "https://cdn.test/og.webp",
+    );
+    expect(remotePosterUrl(rawJson, "https://cdn.test/clip.mp4")).toBeNull();
+  });
+
+  it("returns null for saves without captured video", () => {
+    const rawJson = storedAsRawJson({
+      capture: { media: [{ type: "image", url: "https://cdn.test/a.jpg" }] },
+    });
+    expect(remotePosterUrl(rawJson, "https://cdn.test/a.jpg")).toBeNull();
+    expect(remotePosterUrl(null, "https://cdn.test/a.jpg")).toBeNull();
   });
 });

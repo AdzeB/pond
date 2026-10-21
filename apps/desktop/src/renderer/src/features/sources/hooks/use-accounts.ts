@@ -10,6 +10,10 @@ import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 import { z } from "zod";
 import {
+  SOURCE_FETCH_PREF_FIELDS,
+  type SourceFetchPrefs,
+} from "@/features/sources/lib/fetch-prefs";
+import {
   type SyncAccountStatus,
   syncMonitor,
 } from "@/features/sources/state/sync-monitor";
@@ -21,7 +25,7 @@ export interface AccountRow {
   label: string | null;
   avatarUrl?: string | null;
   addedAt: string;
-  sync: {
+  sync: SourceFetchPrefs & {
     lastSyncedAt: string | null;
     lastError: string | null;
     knownCount: number;
@@ -66,6 +70,7 @@ const AccountsReplySchema = z
               syncLikes: z.boolean().optional().catch(undefined),
               importScope: ImportScopeSchema,
               importPending: z.boolean().optional().catch(undefined),
+              ...SOURCE_FETCH_PREF_FIELDS,
             })
             .catch({ lastSyncedAt: null, lastError: null, knownCount: 0 }),
           connected: z.boolean().catch(false),

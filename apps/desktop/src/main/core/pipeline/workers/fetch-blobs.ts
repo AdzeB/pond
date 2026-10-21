@@ -12,7 +12,7 @@ import { fetchMediaBatch } from "../../../lib/blob";
 import type { TransferOptions } from "../../../lib/download-transfer";
 import { probeImageDims, processImage } from "../../../lib/image-process";
 import { persistSave } from "../../persist-save";
-import { getImageDownloadPrefs } from "../../prefs";
+import { getImageDownloadPrefs, getVideoDownloadPrefs } from "../../prefs";
 import { ensureSaveThumbnail } from "../../save-thumbnail";
 import { TerminalError, TransientError } from "../extractors/errors";
 import {
@@ -43,7 +43,8 @@ export async function runFetchBlobs(
     }
   }
 
-  const urls = collectMediaUrls(save.rawJson);
+  const { autoDownload } = await getVideoDownloadPrefs(save.source);
+  const urls = collectMediaUrls(save.rawJson, { includeVideo: autoDownload });
   if (urls.length === 0) {
     log.debug("[pond pipeline:fetch-blobs] no media urls, skipping", saveId);
     return;
@@ -59,7 +60,7 @@ export async function runFetchBlobs(
     return;
   }
 
-  const imagePrefs = await getImageDownloadPrefs();
+  const imagePrefs = await getImageDownloadPrefs(save.source);
   const imageMaxBytes = imagePrefs.maxFileSizeMb
     ? imagePrefs.maxFileSizeMb * 1024 * 1024
     : null;
@@ -198,11 +199,18 @@ export function requireFetchedMedia(
   );
 }
 
-function collectMediaUrls(rawJson: RawJson | null): string[] {
+export function collectMediaUrls(
+  rawJson: RawJson | null,
+  opts: { includeVideo: boolean },
+): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   for (const m of walkCaptureMedia(rawJson?.capture)) {
-    if (m.type === "video" && !hasDirectVideoExtension(m.url)) continue;
+    if (
+      m.type === "video" &&
+      (!opts.includeVideo || !hasDirectVideoExtension(m.url))
+    )
+      continue;
     if (seen.has(m.url)) continue;
     seen.add(m.url);
     out.push(m.url);

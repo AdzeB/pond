@@ -75,23 +75,30 @@ export function registerSyncCron() {
           log.info("[pond sync-cron] offline, skipping");
           return;
         }
-        if (
-          !isSyncScheduleDue(cron, new Date(), lastSyncCronRunAt, calendarSince)
-        )
-          return;
-        if (!cron.calendar && !cron.recurrence) {
-          const jitter = Math.floor(Math.random() * SYNC_CRON_JITTER_MS);
-          await new Promise((resolve) => setTimeout(resolve, jitter));
+        const globalDue = isSyncScheduleDue(
+          cron,
+          new Date(),
+          lastSyncCronRunAt,
+          calendarSince,
+        );
+        if (globalDue) {
+          if (!cron.calendar && !cron.recurrence) {
+            const jitter = Math.floor(Math.random() * SYNC_CRON_JITTER_MS);
+            await new Promise((resolve) => setTimeout(resolve, jitter));
+          }
+          const latest = (await getPrefs()).sync.cron;
+          if (JSON.stringify(latest) !== JSON.stringify(cron)) return;
+          if (!net.isOnline() || isSyncBlockedByStorageGuard()) return;
+          lastSyncCronRunAt = Date.now();
+          log.info("[pond sync-cron] starting background sync", {
+            intervalHours: cron.intervalHours,
+          });
         }
-        const latest = (await getPrefs()).sync.cron;
-        if (JSON.stringify(latest) !== JSON.stringify(cron)) return;
-        if (!net.isOnline() || isSyncBlockedByStorageGuard()) return;
-
-        lastSyncCronRunAt = Date.now();
-        log.info("[pond sync-cron] starting background sync", {
-          intervalHours: cron.intervalHours,
+        await syncAllSources({
+          trigger: "cron",
+          maxItems: CRON_BATCH_LIMIT,
+          globalDue,
         });
-        await syncAllSources({ trigger: "cron", maxItems: CRON_BATCH_LIMIT });
       } finally {
         running = false;
       }

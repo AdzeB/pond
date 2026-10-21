@@ -1,10 +1,12 @@
+import type { SourceOverrides } from "@pond/schema/db";
+
 type VideoCodec = "h264" | "hevc" | "av1" | "vp9" | "any";
 type AudioCodec = "aac" | "opus" | "any";
 type VideoContainer = "auto" | "mp4" | "mkv" | "webm" | "mov";
 type SubtitleMode = "off" | "download" | "embed";
 
 export type VideoDownloadPrefs = {
-  enabled: boolean;
+  autoDownload: boolean;
   maxHeight: number | null;
   maxFps: number | null;
   videoCodec: VideoCodec;
@@ -20,7 +22,7 @@ export type VideoDownloadPrefs = {
 };
 
 export const DEFAULT_VIDEO_DOWNLOAD: VideoDownloadPrefs = {
-  enabled: true,
+  autoDownload: false,
   maxHeight: 1080,
   maxFps: null,
   videoCodec: "h264",
@@ -57,9 +59,9 @@ export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadPrefs = {
   maxFileSizeMb: 10,
 };
 
-export interface SettingsRow {
-  id: string;
+export interface DownloadSettings {
   videoDownload: VideoDownloadPrefs;
   imageDownload: ImageDownloadPrefs;
-  libraryRoot: string | null;
+  videoDownloadSources: SourceOverrides<VideoDownloadPrefs>;
+  imageDownloadSources: SourceOverrides<ImageDownloadPrefs>;
 }

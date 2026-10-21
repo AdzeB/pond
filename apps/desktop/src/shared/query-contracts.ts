@@ -9,6 +9,7 @@ import type {
   VideoDownloadSettings,
 } from "@pond/schema/db";
 import type { Query } from "@pond/schema/filters/types";
+import type { ExternalSource } from "@pond/schema/sources";
 import type { z } from "zod";
 import type {
   AccountQueryInputs,
@@ -187,8 +188,16 @@ export interface QueryInputs
   "tags.delete": NameInput;
   "tags.convertToGroup": NameInput;
   "tags.setForSave": { saveId: string; tags: string[] };
-  "settings.setVideoDownload": Partial<VideoDownloadSettings>;
-  "settings.setImageDownload": Partial<ImageDownloadSettings>;
+  "settings.setVideoDownload": Partial<VideoDownloadSettings> & {
+    source?: ExternalSource;
+  };
+  "settings.setImageDownload": Partial<ImageDownloadSettings> & {
+    source?: ExternalSource;
+  };
+  "settings.setSourceDownloadsCustom": {
+    source: ExternalSource;
+    custom: boolean;
+  };
   "settings.setPrefs": WirePrefsPatch;
   "feedback.emit": { event: FeedbackEvent };
   "notifications.openSettings": EmptyInput;

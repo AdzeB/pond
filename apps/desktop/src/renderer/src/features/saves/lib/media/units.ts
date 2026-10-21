@@ -11,6 +11,7 @@ import {
   isPostRenderKind,
   isTextCardThumbnailPath,
   isThumbnailKind,
+  POSTER_KIND,
   THUMBNAIL_DARK_KIND,
   THUMBNAIL_KIND,
 } from "@shared/save-file-names";
@@ -187,6 +188,15 @@ export function pickCardUnit(
 
   const primary = pickPrimaryUnit(save, opts);
   if (primary) return primary;
+
+  const poster = (save.files ?? []).find((file) => file.kind === POSTER_KIND);
+  if (poster) {
+    return {
+      key: poster.path,
+      url: buildPondUrl(save.id, poster),
+      isVideo: false,
+    };
+  }
 
   const previewable = (save.files ?? []).find((file) => {
     if (isAuxiliaryFile(file)) return false;
