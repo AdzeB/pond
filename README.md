@@ -47,7 +47,8 @@ pond doctor
 
 Copy the Local API token from Pond Settings. The CLI launches Pond when needed
 and sends every Library operation through the authenticated loopback service.
-Run `pond --help` for commands and output formats.
+Run `pond --help` for commands and output formats. To call the API directly,
+see [Local API](docs/api.md).
 
 ## Development
 
