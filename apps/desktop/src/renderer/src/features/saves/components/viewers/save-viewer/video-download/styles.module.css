@@ -1,0 +1,10 @@
+.root {
+  gap: 4px;
+}
+
+.label {
+  padding-inline: 8px;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+}

@@ -39,6 +39,17 @@ function labeledButton(host: HTMLElement, label: string): HTMLButtonElement {
   return button;
 }
 
+function buttonByText(
+  host: HTMLElement,
+  text: string,
+): HTMLButtonElement | null {
+  return (
+    [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === text,
+    ) ?? null
+  );
+}
+
 async function click(host: HTMLElement, label: string): Promise<void> {
   await act(async () => labeledButton(host, label).click());
 }
@@ -94,6 +105,7 @@ describe("SaveViewer", () => {
     host.remove();
     resultNavigation.setSource({ ids: [] });
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it("navigates every original file in a mixed-format Save", async () => {
@@ -140,5 +152,47 @@ describe("SaveViewer", () => {
     expect(host.querySelector('img[alt="Mixed viewer"]')).not.toBeNull();
     await click(host, "Next Slide");
     await findToolbar(host, "Font");
+  });
+
+  it("offers Download Video until the video file arrives", async () => {
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+    const queries: string[] = [];
+    vi.stubGlobal("pond", {
+      openSaveFile: async () => ({ ok: true }),
+      query: async (name: string) => {
+        queries.push(name);
+        return name === "saves.downloadVideo"
+          ? { ok: true, queued: 1 }
+          : PrefsSchema.parse({});
+      },
+      tx: async () => ({ ok: true }),
+    });
+    const poster = file("poster.jpg", "poster", "image/jpeg");
+    const save: Save = {
+      ...mixedSave([poster]),
+      id: "poster-only",
+      source: "twitter",
+      mediaType: "video",
+    };
+    pool.upsert(save);
+
+    await act(async () => root.render(<SaveViewer save={save} />));
+
+    expect(host.querySelector('img[alt="Mixed viewer"]')).not.toBeNull();
+    expect(buttonByText(host, "Open Original")).not.toBeNull();
+    const download = buttonByText(host, "Download Video");
+    if (!download) throw new Error("Missing Download Video button");
+    await act(async () => download.click());
+    expect(queries).toContain("saves.downloadVideo");
+    expect(buttonByText(host, "Downloading")?.disabled).toBe(true);
+
+    const downloaded: Save = {
+      ...save,
+      files: [file("clip.mp4", "video", "video/mp4"), poster],
+    };
+    await act(async () => root.render(<SaveViewer save={downloaded} />));
+    expect(buttonByText(host, "Downloading")).toBeNull();
+    expect(buttonByText(host, "Download Video")).toBeNull();
   });
 });

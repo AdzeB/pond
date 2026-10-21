@@ -1,35 +1,17 @@
-import { isVideoFile } from "@shared/media-index";
 import { isAuxiliaryKind, isThumbnailKind } from "@shared/save-file-names";
 import { resolveFileIndex } from "@/features/saves/lib/actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { deriveTypeKind } from "@/features/saves/lib/media/units";
+import {
+  hasVideoFile,
+  needsVideoDownload,
+} from "@/features/saves/lib/media/video-download";
+import { isHttpUrl } from "@/features/saves/lib/url-list";
 import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
 import type { Save, SaveFile } from "@/features/saves/types";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
 import type { BuildSaveMenuOptions, SaveMenuContext } from "./types";
-
-function isHttpUrl(url: string | null | undefined): boolean {
-  if (!url) return false;
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-function hasVideoFile(save: Save): boolean {
-  return save.files.some(isVideoFile);
-}
-
-function canDownloadVideo(save: Save): boolean {
-  return (
-    save.source !== "local" &&
-    deriveTypeKind(null, save) === "video" &&
-    !hasVideoFile(save)
-  );
-}
 
 function canRemoveVideo(save: Save): boolean {
   return save.source !== "local" && hasVideoFile(save);
@@ -122,7 +104,7 @@ export function createSaveMenuContext(
     isGif,
     isWebp,
     isVideo,
-    canDownloadVideo: incomplete || saves.some(canDownloadVideo),
+    canDownloadVideo: incomplete || saves.some(needsVideoDownload),
     canRemoveVideo: incomplete || saves.some(canRemoveVideo),
     copyLabel: isVideo ? "Copy Video" : "Copy",
     archivable:
