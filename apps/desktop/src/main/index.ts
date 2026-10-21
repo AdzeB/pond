@@ -430,12 +430,6 @@ async function startDeferredMaintenance(): Promise<void> {
     .catch((err) => log.warn("[pond] archive backfill failed", err))
     .then(async () =>
       (
-        await import("./core/refresh/missing-video-backfill")
-      ).startMissingVideoBackfill(),
-    )
-    .catch((err) => log.warn("[pond] missing video backfill failed", err))
-    .then(async () =>
-      (
         await import("./core/refresh/threads-card-backfill")
       ).startThreadsCardBackfill(),
     )
