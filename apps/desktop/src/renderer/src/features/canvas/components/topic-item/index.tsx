@@ -15,14 +15,7 @@ export function TopicItem({
 }: NodeProps<TopicNode>) {
   const board = useBoard();
   return (
-    <div
-      className={styles.topic}
-      data-selected={selected || undefined}
-      style={cssVars({
-        "--topic-fill": NOTE_FILL[data.color],
-        "--topic-edge": FIGURE_EDGE[data.color],
-      })}
-    >
+    <div className={styles.bounds}>
       <NodeResizer
         isVisible={selected && draggable && board.editingId !== id}
         minWidth={96}
@@ -30,15 +23,27 @@ export function TopicItem({
         onResizeStart={board.record}
       />
       <Handles />
-      <EditableText
-        id={id}
-        text={data.text}
-        label="Topic"
-        placeholder="Topic"
-        hint="Double-click to name"
-        variant="topic"
-        style={data}
-      />
+      <div
+        className={styles.topic}
+        data-selected={selected || undefined}
+        style={{
+          ...cssVars({
+            "--topic-fill": NOTE_FILL[data.color],
+            "--topic-edge": FIGURE_EDGE[data.color],
+          }),
+          transform: data.rotation ? `rotate(${data.rotation}deg)` : undefined,
+        }}
+      >
+        <EditableText
+          id={id}
+          text={data.text}
+          label="Topic"
+          placeholder="Topic"
+          hint="Double-click to name"
+          variant="topic"
+          style={data}
+        />
+      </div>
     </div>
   );
 }

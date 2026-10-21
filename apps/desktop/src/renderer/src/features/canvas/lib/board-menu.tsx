@@ -8,10 +8,13 @@ import {
   IconBroom,
   IconCopy,
   IconDuplicate,
+  IconFlipHorizontal2,
+  IconFlipVertical2,
   IconTrash,
 } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import {
+  CANVAS_ALIGNS,
   CANVAS_CAPS,
   CANVAS_FONTS,
   CANVAS_TEXT_SIZES,
@@ -24,6 +27,7 @@ import { type CanvasCommand, glyphsFor } from "./commands";
 import type { AlignEdge, LayerMove } from "./document";
 import { OUTLINES } from "./outlines";
 import {
+  ALIGN_LABELS,
   CODE_LANGUAGES,
   FONT_LABELS,
   TEXT_SIZE_LABELS,
@@ -40,6 +44,11 @@ export type MenuTarget =
       locked: boolean;
       grouped: boolean;
       duplicable: boolean;
+      canFlip: boolean;
+      canConvert: boolean;
+      canSort: boolean;
+      canCrop: boolean;
+      cropped: boolean;
     };
 
 type Run = (command: CanvasCommand) => void;
@@ -160,6 +169,32 @@ export function boardItems(target: MenuTarget, run: Run): MenuItemSpec[] {
     ...(target.grouped ? [item("Ungroup", { type: "ungroup" }, run)] : []),
     item("Wrap in Section", { type: "wrap" }, run),
     item(target.locked ? "Unlock" : "Lock", { type: "lock" }, run),
+    ...(target.movable
+      ? [
+          item("Rotate Clockwise", { type: "rotate", delta: 15 }, run),
+          item("Rotate Counterclockwise", { type: "rotate", delta: -15 }, run),
+        ]
+      : []),
+    ...(target.canFlip
+      ? [
+          item("Flip Horizontal", { type: "flip", axis: "horizontal" }, run, {
+            icon: <IconFlipHorizontal2 />,
+          }),
+          item("Flip Vertical", { type: "flip", axis: "vertical" }, run, {
+            icon: <IconFlipVertical2 />,
+          }),
+        ]
+      : []),
+    ...(target.canConvert
+      ? [item("Convert to Notes", { type: "convert-notes" }, run)]
+      : []),
+    ...(target.canSort
+      ? [item("Sort by Color", { type: "sort-notes" }, run)]
+      : []),
+    ...(target.canCrop ? [item("Crop", { type: "crop" }, run)] : []),
+    ...(target.cropped
+      ? [item("Reset Crop", { type: "reset-crop" }, run)]
+      : []),
     { type: "separator" },
     ...exportItems("selection", run),
     { type: "separator" },
@@ -242,6 +277,16 @@ export function textItems(
         ),
       ),
     },
+    { type: "separator" },
+    {
+      type: "group",
+      label: "Align",
+      items: CANVAS_ALIGNS.map((align) =>
+        choice(ALIGN_LABELS[align], align, current.align ?? null, () =>
+          pick({ align }),
+        ),
+      ),
+    },
   ];
 }
 
@@ -278,11 +323,34 @@ const CAP_LABELS = {
   triangle: "Triangle",
   circle: "Circle",
   diamond: "Diamond",
+  one: "One",
+  many: "Many",
+  "zero-one": "Zero or One",
+  "one-many": "One or Many",
+  "zero-many": "Zero or Many",
 } satisfies Record<CanvasCap, string>;
+
+function isRelation(cap: CanvasCap): boolean {
+  return (
+    cap === "one" ||
+    cap === "many" ||
+    cap === "zero-one" ||
+    cap === "one-many" ||
+    cap === "zero-many"
+  );
+}
 
 export function capItems(
   current: CanvasCap,
   pick: (cap: CanvasCap) => void,
 ): MenuItemSpec[] {
-  return CANVAS_CAPS.map((cap) => choice(CAP_LABELS[cap], cap, current, pick));
+  const caps = CANVAS_CAPS.map((cap) =>
+    choice(CAP_LABELS[cap], cap, current, pick),
+  );
+  const relation = CANVAS_CAPS.findIndex(isRelation);
+  return [
+    ...caps.slice(0, relation),
+    { type: "separator" },
+    { type: "group", label: "Relation", items: caps.slice(relation) },
+  ];
 }

@@ -15,11 +15,7 @@ export function NoteItem({
 }: NodeProps<NoteNode>) {
   const board = useBoard();
   return (
-    <div
-      className={styles.note}
-      data-selected={selected || undefined}
-      style={cssVars({ "--note-fill": NOTE_FILL[data.color] })}
-    >
+    <div className={styles.bounds}>
       <NodeResizer
         isVisible={selected && draggable && board.editingId !== id}
         minWidth={120}
@@ -27,15 +23,25 @@ export function NoteItem({
         onResizeStart={board.record}
       />
       <Handles />
-      <EditableText
-        id={id}
-        text={data.text}
-        label="Note"
-        placeholder="Write a note"
-        hint="Double-click to write"
-        variant="note"
-        style={data}
-      />
+      <div
+        className={styles.note}
+        data-selected={selected || undefined}
+        style={{
+          ...cssVars({ "--note-fill": NOTE_FILL[data.color] }),
+          transform: data.rotation ? `rotate(${data.rotation}deg)` : undefined,
+        }}
+      >
+        <EditableText
+          id={id}
+          text={data.text}
+          label="Note"
+          placeholder="Write a note"
+          hint="Double-click to write"
+          variant="note"
+          style={data}
+          rich
+        />
+      </div>
     </div>
   );
 }

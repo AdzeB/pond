@@ -26,14 +26,20 @@ interface PickerProps {
 
 interface AddSavesProps extends PickerProps {
   children: ReactElement;
+  label?: string;
 }
 
-export function AddSaves({ onCanvas, onAdd, children }: AddSavesProps) {
+export function AddSaves({
+  onCanvas,
+  onAdd,
+  children,
+  label = "Add Saves",
+}: AddSavesProps) {
   const [open, setOpen] = useState(false);
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
-      <Tooltip label="Add Saves" side="top">
-        <Popover.Trigger render={children} aria-label="Add Saves" />
+      <Tooltip label={label} side="top">
+        <Popover.Trigger render={children} aria-label={label} />
       </Tooltip>
       <Popover.Portal>
         <Popover.Positioner side="top" align="center" sideOffset={10}>

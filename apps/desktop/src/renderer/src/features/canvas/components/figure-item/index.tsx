@@ -17,29 +17,7 @@ export function FigureItem({
   const board = useBoard();
   const drawing = drawingOf(data.outline);
   return (
-    <div
-      className={styles.figure}
-      data-outline={data.outline}
-      data-drawn={drawing ? true : undefined}
-      data-selected={selected || undefined}
-      style={cssVars({
-        "--figure-fill": NOTE_FILL[data.color],
-        "--figure-edge": FIGURE_EDGE[data.color],
-      })}
-    >
-      {drawing ? (
-        <svg
-          className={styles.outline}
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden
-        >
-          <path d={drawing.fill} />
-          {drawing.details ? (
-            <path className={styles.details} d={drawing.details} />
-          ) : null}
-        </svg>
-      ) : null}
+    <div className={styles.bounds}>
       <NodeResizer
         isVisible={selected && draggable && board.editingId !== id}
         minWidth={48}
@@ -47,15 +25,44 @@ export function FigureItem({
         onResizeStart={board.record}
       />
       <Handles />
-      <EditableText
-        id={id}
-        text={data.text}
-        label="Shape"
-        placeholder="Add text"
-        hint=""
-        variant="figure"
-        style={data}
-      />
+      <div
+        className={styles.figure}
+        data-outline={data.outline}
+        data-drawn={drawing ? true : undefined}
+        data-selected={selected || undefined}
+        data-flip-x={data.flipX || undefined}
+        data-flip-y={data.flipY || undefined}
+        style={{
+          ...cssVars({
+            "--figure-fill": NOTE_FILL[data.color],
+            "--figure-edge": FIGURE_EDGE[data.color],
+          }),
+          transform: data.rotation ? `rotate(${data.rotation}deg)` : undefined,
+        }}
+      >
+        {drawing ? (
+          <svg
+            className={styles.outline}
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            aria-hidden
+          >
+            <path d={drawing.fill} />
+            {drawing.details ? (
+              <path className={styles.details} d={drawing.details} />
+            ) : null}
+          </svg>
+        ) : null}
+        <EditableText
+          id={id}
+          text={data.text}
+          label="Shape"
+          placeholder="Add text"
+          hint=""
+          variant="figure"
+          style={data}
+        />
+      </div>
     </div>
   );
 }

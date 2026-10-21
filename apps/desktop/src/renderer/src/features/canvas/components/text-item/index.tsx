@@ -13,7 +13,7 @@ export function TextItem({
 }: NodeProps<TextNode>) {
   const board = useBoard();
   return (
-    <div className={styles.text} data-selected={selected || undefined}>
+    <div className={styles.bounds}>
       <NodeResizer
         isVisible={selected && draggable && board.editingId !== id}
         minWidth={80}
@@ -21,15 +21,25 @@ export function TextItem({
         onResizeStart={board.record}
       />
       <Handles />
-      <EditableText
-        id={id}
-        text={data.text}
-        label="Text"
-        placeholder="Type something"
-        hint="Double-click to type"
-        variant="text"
-        style={data}
-      />
+      <div
+        className={styles.text}
+        data-selected={selected || undefined}
+        style={
+          data.rotation
+            ? { transform: `rotate(${data.rotation}deg)` }
+            : undefined
+        }
+      >
+        <EditableText
+          id={id}
+          text={data.text}
+          label="Text"
+          placeholder="Type something"
+          hint="Double-click to type"
+          variant="text"
+          style={data}
+        />
+      </div>
     </div>
   );
 }

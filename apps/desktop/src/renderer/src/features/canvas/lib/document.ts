@@ -186,7 +186,7 @@ export function toNode(item: CanvasItem): CanvasNode {
   }
 }
 
-function toItem(node: CanvasNode): CanvasItem {
+export function toItem(node: CanvasNode): CanvasItem {
   const frame: Omit<Pick<CanvasItem, Frame>, "kind"> = {
     id: node.id,
     x: round(node.position.x),
@@ -677,14 +677,15 @@ export function drawingFrom(
   points: readonly StrokePoint[],
   color: CanvasColor,
   size: number,
+  ink?: "highlight",
 ): CanvasItem | null {
   if (!points.length) return null;
   const xs = points.map(([x]) => x);
   const ys = points.map(([, y]) => y);
   const left = Math.min(...xs) - size;
   const top = Math.min(...ys) - size;
-  return {
-    kind: "drawing",
+  const drawing = {
+    kind: "drawing" as const,
     id: newId(),
     x: round(left),
     y: round(top),
@@ -692,12 +693,16 @@ export function drawingFrom(
     height: round(Math.max(1, Math.max(...ys) + size - top)),
     color,
     size,
-    points: points.map(([x, y, pressure]) => [
-      round(x - left),
-      round(y - top),
-      round(pressure),
-    ]),
+    points: points.map(
+      ([x, y, pressure]): StrokePoint => [
+        round(x - left),
+        round(y - top),
+        round(pressure),
+      ],
+    ),
   };
+  if (!ink) return drawing;
+  return { ...drawing, ink };
 }
 
 /** Copies take fresh IDs and start unlocked; a connector survives only when both of its ends were copied. */

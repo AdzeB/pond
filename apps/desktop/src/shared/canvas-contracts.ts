@@ -29,6 +29,8 @@ const CANVAS_OUTLINES = [
   "star",
   "cylinder",
   "speech",
+  "document",
+  "chevron",
 ] as const;
 const CanvasOutlineSchema = z.enum(CANVAS_OUTLINES);
 export type CanvasOutline = z.infer<typeof CanvasOutlineSchema>;
@@ -43,6 +45,11 @@ export const CANVAS_CAPS = [
   "triangle",
   "circle",
   "diamond",
+  "one",
+  "many",
+  "zero-one",
+  "one-many",
+  "zero-many",
 ] as const;
 const CanvasCapSchema = z.enum(CANVAS_CAPS);
 export type CanvasCap = z.infer<typeof CanvasCapSchema>;
@@ -58,6 +65,24 @@ export type CanvasTextSize = (typeof CANVAS_TEXT_SIZES)[number];
 
 export const CANVAS_FONTS = ["simple", "bookish", "technical"] as const;
 export type CanvasFont = (typeof CANVAS_FONTS)[number];
+
+export const CANVAS_ALIGNS = ["left", "center", "right"] as const;
+export type CanvasAlign = (typeof CANVAS_ALIGNS)[number];
+
+export const CanvasCropSchema = z
+  .object({
+    x: z.number().min(0).max(1),
+    y: z.number().min(0).max(1),
+    width: z.number().positive().max(1),
+    height: z.number().positive().max(1),
+  })
+  .refine(
+    (crop) => crop.x + crop.width <= 1.001 && crop.y + crop.height <= 1.001,
+    {
+      message: "Crop stays inside the image.",
+    },
+  );
+export type CanvasCrop = z.infer<typeof CanvasCropSchema>;
 
 /** Canvas IDs name files inside the Library, so they never contain path separators. */
 export const CanvasIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
@@ -75,11 +100,14 @@ const frame = {
   locked: z.boolean().optional(),
   /** Items sharing a group ID select and move together. */
   group: CanvasIdSchema.optional(),
+  /** Degrees clockwise. Omitted while the item is upright. */
+  rotation: z.number().int().min(0).max(359).optional(),
 };
 
 const textStyle = {
   textSize: z.enum(CANVAS_TEXT_SIZES).optional(),
   font: z.enum(CANVAS_FONTS).optional(),
+  align: z.enum(CANVAS_ALIGNS).optional(),
 };
 
 export const CanvasItemSchema = z.discriminatedUnion("kind", [
@@ -87,6 +115,7 @@ export const CanvasItemSchema = z.discriminatedUnion("kind", [
     ...frame,
     kind: z.literal("save"),
     saveId: z.string().min(1).max(200),
+    crop: CanvasCropSchema.optional(),
   }),
   z.object({
     ...frame,
@@ -107,6 +136,8 @@ export const CanvasItemSchema = z.discriminatedUnion("kind", [
     outline: CanvasOutlineSchema,
     text: TextSchema,
     color: CanvasColorSchema,
+    flipX: z.boolean().optional(),
+    flipY: z.boolean().optional(),
     ...textStyle,
   }),
   z.object({
@@ -143,6 +174,8 @@ export const CanvasItemSchema = z.discriminatedUnion("kind", [
     ...frame,
     kind: z.literal("drawing"),
     color: CanvasColorSchema,
+    /** Highlighter ink draws translucent. Omitted strokes are the marker. */
+    ink: z.enum(["pen", "highlight"]).optional(),
     size: z.number().min(1).max(48),
     points: z
       .array(

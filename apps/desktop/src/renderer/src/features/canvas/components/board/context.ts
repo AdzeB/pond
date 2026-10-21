@@ -1,3 +1,4 @@
+import type { CanvasCrop } from "@shared/canvas-contracts";
 import { createContext, useContext } from "react";
 import type { ConnectorStyle } from "../../lib/document";
 
@@ -6,9 +7,12 @@ export interface BoardActions {
   savesReady: boolean;
   connectorBarId: string | null;
   barsHidden: boolean;
+  croppingId: string | null;
   record(): void;
   setText(id: string, text: string): void;
   setRows(id: string, rows: string[][]): void;
+  setCrop(id: string, crop: CanvasCrop | null): void;
+  replaceSave(id: string, saveId: string): void;
   startEditing(id: string): void;
   /** Ignored unless `id` is still the item being edited, so a late blur can't end the next edit. */
   finishEditing(id: string): void;

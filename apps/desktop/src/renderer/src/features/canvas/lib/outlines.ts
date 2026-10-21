@@ -1,8 +1,10 @@
 import {
   IconChatBubble,
+  IconChevron,
   IconCircle,
   IconCylinder,
   IconDiamond,
+  IconDocument,
   IconHexagon,
   IconParallelogram,
   IconSquare,
@@ -30,6 +32,8 @@ export const OUTLINES: readonly {
   { outline: "star", label: "Star", Icon: IconStar },
   { outline: "cylinder", label: "Cylinder", Icon: IconCylinder },
   { outline: "speech", label: "Speech Bubble", Icon: IconChatBubble },
+  { outline: "document", label: "Document", Icon: IconDocument },
+  { outline: "chevron", label: "Chevron", Icon: IconChevron },
 ];
 
 /** Drawn outlines live in a 100×100 box stretched to the item, so paths never depend on its size. */
@@ -63,6 +67,12 @@ export function drawingOf(outline: CanvasOutline): Drawing | null {
       return {
         fill: "M8 0H92Q100 0 100 8V68Q100 76 92 76H42L22 100L26 76H8Q0 76 0 68V8Q0 0 8 0Z",
       };
+    case "document":
+      return {
+        fill: "M6 4H94V72Q82 88 70 72Q58 56 46 72Q34 88 22 72Q10 56 6 72Z",
+      };
+    case "chevron":
+      return { fill: "M0 0H62L100 50L62 100H0L38 50Z" };
     default:
       return null;
   }

@@ -14,29 +14,34 @@ export function SectionItem({
 }: NodeProps<SectionNode>) {
   const board = useBoard();
   return (
-    <div
-      className={styles.section}
-      data-selected={selected || undefined}
-      style={cssVars({
-        "--section-fill": NOTE_FILL[data.color],
-        "--section-edge": FIGURE_EDGE[data.color],
-      })}
-    >
+    <div className={styles.bounds}>
       <NodeResizer
         isVisible={selected && draggable && board.editingId !== id}
         minWidth={240}
         minHeight={144}
         onResizeStart={board.record}
       />
-      <div className={styles.title}>
-        <EditableText
-          id={id}
-          text={data.title}
-          label="Section Title"
-          placeholder="Section"
-          hint="Section"
-          variant="section"
-        />
+      <div
+        className={styles.section}
+        data-selected={selected || undefined}
+        style={{
+          ...cssVars({
+            "--section-fill": NOTE_FILL[data.color],
+            "--section-edge": FIGURE_EDGE[data.color],
+          }),
+          transform: data.rotation ? `rotate(${data.rotation}deg)` : undefined,
+        }}
+      >
+        <div className={styles.title}>
+          <EditableText
+            id={id}
+            text={data.title}
+            label="Section Title"
+            placeholder="Section"
+            hint="Section"
+            variant="section"
+          />
+        </div>
       </div>
     </div>
   );

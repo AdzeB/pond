@@ -95,16 +95,28 @@ import {
   textAt,
   tidyFrames,
   toEdge,
+  toItem,
   toNode,
   topicAt,
   withData,
   withGroup,
   withLock,
 } from "../../lib/document";
+import {
+  eraseDrawings,
+  flipped,
+  itemForRect,
+  noteFromText,
+  notesSorted,
+  quickPair,
+  type StampKind,
+  turned,
+} from "../../lib/edit";
 import { renderBoard } from "../../lib/export";
 import { OUTLINES } from "../../lib/outlines";
 import type { TextStyle } from "../../lib/text-style";
 import { canvases } from "../../state/canvases";
+import { Affordance } from "../affordance";
 import { CodeItem } from "../code-item";
 import { ConnectorEdge as ConnectorEdgeView } from "../connector-edge";
 import { DrawLayer } from "../draw-layer";
@@ -112,12 +124,20 @@ import { DrawingItem } from "../drawing-item";
 import { FigureItem } from "../figure-item";
 import { Guides } from "../guides";
 import { NoteItem } from "../note-item";
+import { PlaceLayer } from "../place-layer";
 import { SaveItem } from "../save-item";
 import { SectionItem } from "../section-item";
 import { SelectionBar, type SelectionMenu } from "../selection-bar";
 import { TableItem } from "../table-item";
 import { TextItem } from "../text-item";
-import { type CanvasTool, COLORED_TOOLS, Tools, toolForKey } from "../tools";
+import {
+  type CanvasTool,
+  COLORED_TOOLS,
+  type PenMode,
+  STAMP_TOOLS,
+  Tools,
+  toolForKey,
+} from "../tools";
 import { TopicItem } from "../topic-item";
 import { Zoom } from "../zoom";
 import { type BoardActions, BoardContext } from "./context";
@@ -230,6 +250,9 @@ export function Board({ canvas }: BoardProps) {
     canvas.connectors.map(toEdge),
   );
   const [tool, setTool] = useState<CanvasTool>("select");
+  const [penMode, setPenMode] = useState<PenMode>("marker");
+  const [kept, setKept] = useState(false);
+  const [croppingId, setCroppingId] = useState<string | null>(null);
   const [color, setColor] = useState<CanvasColor>("yellow");
   const [outline, setOutline] = useState<CanvasOutline>("rectangle");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -505,10 +528,35 @@ export function Board({ canvas }: BoardProps) {
 
   const onStroke = useCallback(
     (points: StrokePoint[], size: number) => {
-      const drawing = drawingFrom(points, color, size);
+      const drawing = drawingFrom(
+        points,
+        color,
+        size,
+        penMode === "highlight" ? "highlight" : undefined,
+      );
       if (drawing) insert([drawing]);
     },
-    [color, insert],
+    [color, insert, penMode],
+  );
+
+  const onErase = useCallback(
+    (points: StrokePoint[]) => {
+      const next = eraseDrawings(current().items, points, 18 / flow.getZoom());
+      if (!next) return;
+      record();
+      const selectedIds = new Set(
+        latest.current.nodes.flatMap((node) =>
+          node.selected ? [node.id] : [],
+        ),
+      );
+      setNodes(
+        next.map((item) => ({
+          ...toNode(item),
+          selected: selectedIds.has(item.id),
+        })),
+      );
+    },
+    [current, flow, record],
   );
 
   const recolor = (next: CanvasColor) => {
@@ -608,6 +656,7 @@ export function Board({ canvas }: BoardProps) {
       savesReady,
       connectorBarId,
       barsHidden: dragging,
+      croppingId,
       record,
       setText: (id, text) => {
         setNodes((existing) =>
@@ -624,6 +673,32 @@ export function Board({ canvas }: BoardProps) {
                 }
               : edge,
           ),
+        );
+      },
+      setCrop: (id, crop) => {
+        const node = latest.current.nodes.find((entry) => entry.id === id);
+        if (node?.type !== "save") return;
+        record();
+        setNodes((existing) =>
+          existing.map((entry) => {
+            if (entry.id !== id || entry.type !== "save") return entry;
+            if (!crop) {
+              const { crop: _crop, ...data } = entry.data;
+              return { ...entry, data };
+            }
+            return withData(entry, { crop });
+          }),
+        );
+        setCroppingId(null);
+      },
+      replaceSave: (id, saveId) => {
+        record();
+        setNodes((existing) =>
+          existing.map((entry) => {
+            if (entry.id !== id || entry.type !== "save") return entry;
+            const { crop: _crop, ...data } = entry.data;
+            return { ...entry, data: { ...data, saveId } };
+          }),
         );
       },
       setRows: (id, rows) => {
@@ -689,6 +764,7 @@ export function Board({ canvas }: BoardProps) {
     [
       beginEdit,
       connectorBarId,
+      croppingId,
       current,
       dragging,
       editingId,
@@ -998,6 +1074,105 @@ export function Board({ canvas }: BoardProps) {
       case "nudge":
         nudge(command.x, command.y);
         return;
+      case "rotate": {
+        const targets = movable();
+        if (!targets.length) return;
+        record();
+        const ids = new Set(targets.map((node) => node.id));
+        setNodes((existing) =>
+          existing.map((node) =>
+            ids.has(node.id)
+              ? withData(node, {
+                  rotation: turned(node.data.rotation, command.delta),
+                })
+              : node,
+          ),
+        );
+        return;
+      }
+      case "flip": {
+        const figures = latest.current.nodes.filter(
+          (node) => node.selected && node.type === "figure" && !isLocked(node),
+        );
+        if (!figures.length) return;
+        record();
+        const ids = new Set(figures.map((node) => node.id));
+        setNodes((existing) =>
+          existing.map((node) => {
+            if (!ids.has(node.id) || node.type !== "figure") return node;
+            const item = toItem(node);
+            if (item.kind !== "figure") return node;
+            return { ...toNode(flipped(item, command.axis)), selected: true };
+          }),
+        );
+        return;
+      }
+      case "convert-notes": {
+        const texts = latest.current.nodes.filter(
+          (node) => node.selected && node.type === "text" && !isLocked(node),
+        );
+        if (!texts.length) return;
+        record();
+        const ids = new Set(texts.map((node) => node.id));
+        setNodes((existing) =>
+          existing.map((node) => {
+            if (!ids.has(node.id) || node.type !== "text") return node;
+            const item = toItem(node);
+            return item.kind === "text"
+              ? { ...toNode(noteFromText(item, color)), selected: true }
+              : node;
+          }),
+        );
+        return;
+      }
+      case "sort-notes": {
+        const notes = latest.current.nodes.filter(
+          (node) => node.selected && node.type === "note" && !isLocked(node),
+        );
+        if (notes.length < 2) return;
+        place(
+          notesSorted(
+            notes.flatMap((node) =>
+              node.type === "note"
+                ? [
+                    {
+                      id: node.id,
+                      color: node.data.color,
+                      x: node.position.x,
+                      y: node.position.y,
+                      width: node.width ?? node.measured?.width ?? 0,
+                      height: node.height ?? node.measured?.height ?? 0,
+                    },
+                  ]
+                : [],
+            ),
+          ),
+        );
+        return;
+      }
+      case "crop": {
+        const save = latest.current.nodes.find(
+          (node) => node.selected && node.type === "save",
+        );
+        if (save) setCroppingId(save.id);
+        return;
+      }
+      case "reset-crop": {
+        const saves = latest.current.nodes.filter(
+          (node) => node.selected && node.type === "save" && node.data.crop,
+        );
+        if (!saves.length) return;
+        record();
+        const ids = new Set(saves.map((node) => node.id));
+        setNodes((existing) =>
+          existing.map((node) => {
+            if (!ids.has(node.id) || node.type !== "save") return node;
+            const { crop: _crop, ...data } = node.data;
+            return { ...node, data };
+          }),
+        );
+        return;
+      }
     }
   };
 
@@ -1024,6 +1199,17 @@ export function Board({ canvas }: BoardProps) {
         movable: picked.filter((node) => !isLocked(node)).length,
         locked: picked.length > 0 && picked.every(isLocked),
         duplicable: picked.some((node) => node.type !== "save"),
+        canFlip: picked.some(
+          (node) => node.type === "figure" && !isLocked(node),
+        ),
+        canConvert: picked.some(
+          (node) => node.type === "text" && !isLocked(node),
+        ),
+        canSort:
+          picked.filter((node) => node.type === "note" && !isLocked(node))
+            .length > 1,
+        canCrop: picked.some((node) => node.type === "save"),
+        cropped: picked.some((node) => node.type === "save" && node.data.crop),
       },
       run,
     );
@@ -1033,7 +1219,8 @@ export function Board({ canvas }: BoardProps) {
     selected.length === 1 && only?.type === "save" && pool.get(only.data.saveId)
       ? only.data.saveId
       : null;
-  const showColors = COLORED_TOOLS.has(tool);
+  const showColors =
+    COLORED_TOOLS.has(tool) && (tool !== "pen" || penMode !== "erase");
   const onCanvas = useMemo(
     () => new Set(saveIdsKey ? saveIdsKey.split("\n") : []),
     [saveIdsKey],
@@ -1112,15 +1299,33 @@ export function Board({ canvas }: BoardProps) {
     }
   };
 
-  /** Placing tools work over items too, so a click on a section drops the new item inside it. */
-  const placeFrom = (event: React.MouseEvent) => {
-    const item = placeAt(
-      flow.screenToFlowPosition({ x: event.clientX, y: event.clientY }),
-    );
+  const placeStamp = (
+    rect: { x: number; y: number; width: number; height: number } | null,
+    point: XYPosition,
+  ) => {
+    if (!isStamp(tool)) return;
+    const item = rect
+      ? itemForRect(tool, rect, {
+          color,
+          outline,
+          language: DEFAULT_LANGUAGE,
+        })
+      : placeAt(point);
     if (!item) return;
-    insert([item], { edit: item.kind !== "section" });
-    setTool("select");
+    insert([item], {
+      edit:
+        item.kind === "note" ||
+        item.kind === "text" ||
+        item.kind === "figure" ||
+        item.kind === "topic" ||
+        item.kind === "code",
+    });
+    if (!kept) setTool("select");
   };
+
+  function isStamp(value: CanvasTool): value is StampKind {
+    return STAMP_TOOLS.has(value);
+  }
 
   return (
     <BoardContext.Provider value={actions}>
@@ -1200,12 +1405,18 @@ export function Board({ canvas }: BoardProps) {
               return;
             }
             if (event.key === "Escape") {
+              if (croppingId) {
+                setCroppingId(null);
+                return;
+              }
+              setKept(false);
               setTool("select");
               return;
             }
             const next = toolForKey(event.key, event.shiftKey);
             if (next) {
               event.preventDefault();
+              setKept(false);
               setTool(next);
             }
           }}
@@ -1255,7 +1466,7 @@ export function Board({ canvas }: BoardProps) {
             panOnDrag={tool === "hand" ? true : tool === "select" ? [1] : false}
             panOnScroll
             elevateNodesOnSelect={false}
-            elementsSelectable={tool !== "pen" && tool !== "hand"}
+            elementsSelectable={tool === "select"}
             nodesDraggable={tool === "select"}
             nodesConnectable={tool === "select"}
             proOptions={{ hideAttribution: true }}
@@ -1321,8 +1532,9 @@ export function Board({ canvas }: BoardProps) {
             onEdgeDoubleClick={(_, edge) => {
               if (tool === "select") actions.startEditing(edge.id);
             }}
-            onPaneClick={placeFrom}
-            onNodeClick={placeFrom}
+            onPaneClick={() => {
+              if (croppingId) setCroppingId(null);
+            }}
           >
             <Background
               variant={BackgroundVariant.Dots}
@@ -1331,13 +1543,68 @@ export function Board({ canvas }: BoardProps) {
               className={styles.dots}
             />
             {tool === "pen" ? (
-              <DrawLayer color={color} size={PEN_SIZE} onStroke={onStroke} />
+              <DrawLayer
+                color={color}
+                size={
+                  penMode === "highlight"
+                    ? 28
+                    : penMode === "erase"
+                      ? 18
+                      : PEN_SIZE
+                }
+                mode={penMode}
+                onStroke={onStroke}
+                onErase={onErase}
+              />
+            ) : null}
+            {isStamp(tool) ? <PlaceLayer onPlace={placeStamp} /> : null}
+            {tool === "select" &&
+            !dragging &&
+            !editingId &&
+            !croppingId &&
+            selected.length === 1 &&
+            only &&
+            !isLocked(only) ? (
+              <Affordance
+                frame={frameOf(only)}
+                sides={
+                  only.type === "note" ||
+                  only.type === "figure" ||
+                  only.type === "text" ||
+                  only.type === "topic"
+                    ? ["top", "right", "bottom", "left"]
+                    : []
+                }
+                onCreate={(side) => {
+                  if (only.type === "topic" && side === "right") {
+                    actions.branch(only.id, "child");
+                    return;
+                  }
+                  const pair = quickPair(toItem(only), side);
+                  if (!pair) return;
+                  insert([pair.item], {
+                    connectors: [pair.connector],
+                    edit: true,
+                  });
+                }}
+                onRotateStart={record}
+                onRotate={(rotation) => {
+                  const id = only.id;
+                  setNodes((existing) =>
+                    existing.map((node) =>
+                      node.id === id ? withData(node, { rotation }) : node,
+                    ),
+                  );
+                }}
+              />
             ) : null}
             <Guides guides={guides} />
             <SelectionBar
               nodes={tool === "select" ? selected : []}
               hidden={dragging}
               canOpen={openable !== null}
+              canCrop={selected.length === 1 && only?.type === "save"}
+              onCanvas={onCanvas}
               arrange={
                 arrangeable > 1 ? () => arrangeItems(arrangeable, run) : null
               }
@@ -1345,6 +1612,14 @@ export function Board({ canvas }: BoardProps) {
               onColor={recolor}
               onOpen={() => {
                 if (openable) openSave(openable);
+              }}
+              onCrop={() => {
+                if (only?.type === "save") setCroppingId(only.id);
+              }}
+              onReplace={(ids) => {
+                const next = ids[0];
+                if (next && only?.type === "save")
+                  actions.replaceSave(only.id, next);
               }}
               onDuplicate={duplicate}
               onDelete={() => void flow.deleteElements({ nodes: selected })}
@@ -1354,12 +1629,19 @@ export function Board({ canvas }: BoardProps) {
             tool={tool}
             color={color}
             outline={outline}
+            penMode={penMode}
+            kept={kept}
             showColors={showColors}
             showOutlines={tool === "figure"}
             onCanvas={onCanvas}
-            onTool={setTool}
+            onTool={(next) => {
+              setKept(false);
+              setTool(next);
+            }}
             onColor={setColor}
             onOutline={setOutline}
+            onPenMode={setPenMode}
+            onKeep={setKept}
             onAddSaves={(saveIds) => addSaves(saveIds)}
           />
           <Zoom />

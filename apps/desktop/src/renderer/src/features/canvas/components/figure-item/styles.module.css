@@ -1,3 +1,8 @@
+.bounds {
+  width: 100%;
+  height: 100%;
+}
+
 .figure {
   position: relative;
   display: flex;
@@ -52,6 +57,14 @@
     --figure-inset: 10% 10% 30%;
   }
 
+  &[data-outline="document"] {
+    --figure-inset: 12% 12% 30%;
+  }
+
+  &[data-outline="chevron"] {
+    --figure-inset: 16% 34% 16% 14%;
+  }
+
   &[data-selected] {
     outline: var(--canvas-selection);
   }
@@ -77,4 +90,16 @@
   & .details {
     fill: none;
   }
+}
+
+.figure[data-flip-x] .outline {
+  transform: scaleX(-1);
+}
+
+.figure[data-flip-y] .outline {
+  transform: scaleY(-1);
+}
+
+.figure[data-flip-x][data-flip-y] .outline {
+  transform: scale(-1);
 }

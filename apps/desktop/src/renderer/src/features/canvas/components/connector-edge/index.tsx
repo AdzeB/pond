@@ -24,7 +24,7 @@ const CAP_TIP = {
   triangle: 11,
   circle: 10,
   diamond: 11,
-} satisfies Record<Exclude<CanvasCap, "none">, number>;
+} as const;
 
 interface CapProps {
   id: string;
@@ -32,8 +32,82 @@ interface CapProps {
   ink: string;
 }
 
+function isRelation(
+  cap: CanvasCap,
+): cap is "one" | "many" | "zero-one" | "one-many" | "zero-many" {
+  return (
+    cap === "one" ||
+    cap === "many" ||
+    cap === "zero-one" ||
+    cap === "one-many" ||
+    cap === "zero-many"
+  );
+}
+
+function Relation({ cap, ink }: { cap: CanvasCap; ink: string }) {
+  const stroke = { stroke: ink };
+  const bar = (x: number) => (
+    <path className={styles.arrow} d={`M${x} 2V14`} style={stroke} />
+  );
+  const ring = (x: number) => (
+    <circle cx={x} cy={8} r={4} className={styles.arrow} style={stroke} />
+  );
+  const foot = (from: number, to: number) => (
+    <>
+      <path className={styles.arrow} d={`M${from} 8L${to} 2`} style={stroke} />
+      <path className={styles.arrow} d={`M${from} 8H${to}`} style={stroke} />
+      <path className={styles.arrow} d={`M${from} 8L${to} 14`} style={stroke} />
+    </>
+  );
+  switch (cap) {
+    case "one":
+      return bar(32);
+    case "many":
+      return foot(16, 32);
+    case "zero-one":
+      return (
+        <>
+          {ring(12)}
+          {bar(32)}
+        </>
+      );
+    case "one-many":
+      return (
+        <>
+          {bar(12)}
+          {foot(18, 32)}
+        </>
+      );
+    case "zero-many":
+      return (
+        <>
+          {ring(8)}
+          {foot(18, 32)}
+        </>
+      );
+    default:
+      return null;
+  }
+}
+
 function Cap({ id, cap, ink }: CapProps) {
   if (cap === "none") return null;
+  if (isRelation(cap)) {
+    return (
+      <marker
+        id={id}
+        viewBox="0 0 36 16"
+        refX={34}
+        refY={8}
+        markerWidth={28}
+        markerHeight={14}
+        markerUnits="userSpaceOnUse"
+        orient="auto-start-reverse"
+      >
+        <Relation cap={cap} ink={ink} />
+      </marker>
+    );
+  }
   return (
     <marker
       id={id}

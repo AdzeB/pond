@@ -1,4 +1,8 @@
-import type { CanvasFont, CanvasTextSize } from "@shared/canvas-contracts";
+import type {
+  CanvasAlign,
+  CanvasFont,
+  CanvasTextSize,
+} from "@shared/canvas-contracts";
 
 export const TEXT_SIZE_LABELS = {
   small: "Small",
@@ -14,9 +18,16 @@ export const FONT_LABELS = {
   technical: "Technical",
 } satisfies Record<CanvasFont, string>;
 
+export const ALIGN_LABELS = {
+  left: "Left",
+  center: "Center",
+  right: "Right",
+} satisfies Record<CanvasAlign, string>;
+
 export interface TextStyle {
   textSize?: CanvasTextSize;
   font?: CanvasFont;
+  align?: CanvasAlign;
 }
 
 export const CODE_LANGUAGES = [

@@ -53,7 +53,7 @@ export function TableItem({
   }, [editing]);
 
   return (
-    <div className={styles.frame} data-selected={selected || undefined}>
+    <div className={styles.bounds}>
       <NodeResizer
         isVisible={selected && draggable && !editing}
         minWidth={96}
@@ -61,73 +61,84 @@ export function TableItem({
         onResizeStart={board.record}
       />
       <Handles />
-      <table
-        ref={grid}
-        aria-label="Table"
-        className={styles.table}
-        data-size={data.textSize}
-        data-font={data.font}
-        style={cssVars({
-          "--table-head": NOTE_FILL[data.color],
-          "--table-edge": FIGURE_EDGE[data.color],
-        })}
+      <div
+        className={styles.frame}
+        data-selected={selected || undefined}
+        style={
+          data.rotation
+            ? { transform: `rotate(${data.rotation}deg)` }
+            : undefined
+        }
       >
-        <tbody>
-          {data.rows.map((cells, row) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: rows have no identity beyond their position
-            <tr key={row}>
-              {cells.map((cell, column) => {
-                const key = `${row}-${column}`;
-                const Cell = row === 0 ? "th" : "td";
-                return (
-                  <Cell key={key} className={styles.cell} data-cell={key}>
-                    {editing ? (
-                      <textarea
-                        data-cell={key}
-                        className={cn(
-                          styles.field,
-                          "nodrag",
-                          "nowheel",
-                          "nopan",
-                        )}
-                        aria-label={`Row ${row + 1}, Column ${column + 1}`}
-                        value={cell}
-                        onChange={(event) =>
-                          board.setRows(
-                            id,
-                            withCell(
-                              data.rows,
-                              row,
-                              column,
-                              event.currentTarget.value,
-                            ),
-                          )
-                        }
-                        onBlur={(event) => {
-                          const next = event.relatedTarget;
-                          if (
-                            next instanceof Node &&
-                            grid.current?.contains(next)
-                          )
-                            return;
-                          board.finishEditing(id);
-                        }}
-                        onKeyDown={(event) => {
-                          event.stopPropagation();
-                          if (event.key === "Escape")
-                            event.currentTarget.blur();
-                        }}
-                      />
-                    ) : (
-                      cell
-                    )}
-                  </Cell>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+        <table
+          ref={grid}
+          aria-label="Table"
+          className={styles.table}
+          data-size={data.textSize}
+          data-font={data.font}
+          data-align={data.align}
+          style={cssVars({
+            "--table-head": NOTE_FILL[data.color],
+            "--table-edge": FIGURE_EDGE[data.color],
+          })}
+        >
+          <tbody>
+            {data.rows.map((cells, row) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: rows have no identity beyond their position
+              <tr key={row}>
+                {cells.map((cell, column) => {
+                  const key = `${row}-${column}`;
+                  const Cell = row === 0 ? "th" : "td";
+                  return (
+                    <Cell key={key} className={styles.cell} data-cell={key}>
+                      {editing ? (
+                        <textarea
+                          data-cell={key}
+                          className={cn(
+                            styles.field,
+                            "nodrag",
+                            "nowheel",
+                            "nopan",
+                          )}
+                          aria-label={`Row ${row + 1}, Column ${column + 1}`}
+                          value={cell}
+                          onChange={(event) =>
+                            board.setRows(
+                              id,
+                              withCell(
+                                data.rows,
+                                row,
+                                column,
+                                event.currentTarget.value,
+                              ),
+                            )
+                          }
+                          onBlur={(event) => {
+                            const next = event.relatedTarget;
+                            if (
+                              next instanceof Node &&
+                              grid.current?.contains(next)
+                            )
+                              return;
+                            board.finishEditing(id);
+                          }}
+                          onKeyDown={(event) => {
+                            event.stopPropagation();
+                            if (event.key === "Escape")
+                              event.currentTarget.blur();
+                          }}
+                        />
+                      ) : (
+                        cell
+                      )}
+                    </Cell>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

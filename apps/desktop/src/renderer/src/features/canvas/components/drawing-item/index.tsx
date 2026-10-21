@@ -19,6 +19,10 @@ export function DrawingItem({
     <svg
       className={styles.drawing}
       data-selected={selected || undefined}
+      data-highlight={data.ink === "highlight" || undefined}
+      style={
+        data.rotation ? { transform: `rotate(${data.rotation}deg)` } : undefined
+      }
       width={width}
       height={height}
       aria-hidden="true"

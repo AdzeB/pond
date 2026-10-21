@@ -27,7 +27,7 @@ export function CodeItem({
   }, [editing]);
 
   return (
-    <div className={styles.code} data-selected={selected || undefined}>
+    <div className={styles.bounds}>
       <NodeResizer
         isVisible={selected && draggable && !editing}
         minWidth={160}
@@ -35,64 +35,74 @@ export function CodeItem({
         onResizeStart={board.record}
       />
       <Handles />
-      <div className={styles.header}>{languageLabel(data.language)}</div>
-      {editing ? (
-        <textarea
-          ref={field}
-          className={cn(styles.source, "nodrag", "nowheel", "nopan")}
-          aria-label="Code"
-          placeholder="Write code"
-          value={data.text}
-          spellCheck={false}
-          onChange={(event) => board.setText(id, event.currentTarget.value)}
-          onBlur={() => board.finishEditing(id)}
-          onKeyDown={(event) => {
-            event.stopPropagation();
-            if (event.key === "Escape") {
-              event.currentTarget.blur();
-              return;
-            }
-            if (event.key !== "Tab") return;
-            event.preventDefault();
-            const element = event.currentTarget;
-            element.setRangeText(
-              INDENT,
-              element.selectionStart,
-              element.selectionEnd,
-              "end",
-            );
-            board.setText(id, element.value);
-          }}
-        />
-      ) : (
-        <pre
-          className={styles.source}
-          data-empty={data.text ? undefined : true}
-        >
-          {!data.text
-            ? "Double-click to write code"
-            : lines
-              ? lines.map((line, row) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: lines have no identity beyond their position
-                  <span key={row} className={styles.line}>
-                    {line.map((token, column) => (
-                      <span
-                        // biome-ignore lint/suspicious/noArrayIndexKey: tokens have no identity beyond their position
-                        key={column}
-                        className={styles.token}
-                        style={cssVars({
-                          "--token-light": token.light ?? "inherit",
-                          "--token-dark": token.dark ?? "inherit",
-                        })}
-                      >
-                        {token.content}
-                      </span>
-                    ))}
-                  </span>
-                ))
-              : data.text}
-        </pre>
-      )}
+      <div
+        className={styles.code}
+        data-selected={selected || undefined}
+        style={
+          data.rotation
+            ? { transform: `rotate(${data.rotation}deg)` }
+            : undefined
+        }
+      >
+        <div className={styles.header}>{languageLabel(data.language)}</div>
+        {editing ? (
+          <textarea
+            ref={field}
+            className={cn(styles.source, "nodrag", "nowheel", "nopan")}
+            aria-label="Code"
+            placeholder="Write code"
+            value={data.text}
+            spellCheck={false}
+            onChange={(event) => board.setText(id, event.currentTarget.value)}
+            onBlur={() => board.finishEditing(id)}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+              if (event.key === "Escape") {
+                event.currentTarget.blur();
+                return;
+              }
+              if (event.key !== "Tab") return;
+              event.preventDefault();
+              const element = event.currentTarget;
+              element.setRangeText(
+                INDENT,
+                element.selectionStart,
+                element.selectionEnd,
+                "end",
+              );
+              board.setText(id, element.value);
+            }}
+          />
+        ) : (
+          <pre
+            className={styles.source}
+            data-empty={data.text ? undefined : true}
+          >
+            {!data.text
+              ? "Double-click to write code"
+              : lines
+                ? lines.map((line, row) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: lines have no identity beyond their position
+                    <span key={row} className={styles.line}>
+                      {line.map((token, column) => (
+                        <span
+                          // biome-ignore lint/suspicious/noArrayIndexKey: tokens have no identity beyond their position
+                          key={column}
+                          className={styles.token}
+                          style={cssVars({
+                            "--token-light": token.light ?? "inherit",
+                            "--token-dark": token.dark ?? "inherit",
+                          })}
+                        >
+                          {token.content}
+                        </span>
+                      ))}
+                    </span>
+                  ))
+                : data.text}
+          </pre>
+        )}
+      </div>
     </div>
   );
 }

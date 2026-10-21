@@ -1,12 +1,15 @@
 import {
   IconCode2,
   IconCursor,
+  IconEraser,
   IconFigures,
   IconHand,
   IconHighlighter,
   IconImages,
   IconMindMap,
   IconNoteEdit,
+  IconPencil,
+  IconPinTack,
   IconSection,
   IconTable,
   IconText,
@@ -74,6 +77,19 @@ export function toolForKey(
   }
 }
 
+export type PenMode = "marker" | "highlight" | "erase";
+
+/** Tools that drop an item. They can stay selected. */
+export const STAMP_TOOLS: ReadonlySet<CanvasTool> = new Set([
+  "note",
+  "figure",
+  "text",
+  "section",
+  "table",
+  "code",
+  "topic",
+]);
+
 /** Tools whose items take a color from the palette. */
 export const COLORED_TOOLS: ReadonlySet<CanvasTool> = new Set([
   "note",
@@ -118,16 +134,30 @@ function place(mark: HTMLElement, button: HTMLElement, animate: boolean) {
   }
 }
 
+const PENS: ReadonlyArray<{
+  mode: PenMode;
+  label: string;
+  Icon: typeof IconPencil;
+}> = [
+  { mode: "marker", label: "Marker", Icon: IconPencil },
+  { mode: "highlight", label: "Highlighter", Icon: IconHighlighter },
+  { mode: "erase", label: "Eraser", Icon: IconEraser },
+];
+
 interface ToolsProps {
   tool: CanvasTool;
   color: CanvasColor;
   outline: CanvasOutline;
+  penMode: PenMode;
+  kept: boolean;
   showColors: boolean;
   showOutlines: boolean;
   onCanvas: ReadonlySet<string>;
   onTool(tool: CanvasTool): void;
   onColor(color: CanvasColor): void;
   onOutline(outline: CanvasOutline): void;
+  onPenMode(mode: PenMode): void;
+  onKeep(kept: boolean): void;
   onAddSaves(saveIds: string[]): void;
 }
 
@@ -135,12 +165,16 @@ export function Tools({
   tool,
   color,
   outline,
+  penMode,
+  kept,
   showColors,
   showOutlines,
   onCanvas,
   onTool,
   onColor,
   onOutline,
+  onPenMode,
+  onKeep,
   onAddSaves,
 }: ToolsProps) {
   const indicator = useRef<HTMLSpanElement>(null);
@@ -210,9 +244,58 @@ export function Tools({
         </Toolbar.Root>
         <div
           className={styles.palette}
-          data-open={showColors || undefined}
-          inert={!showColors}
+          data-open={
+            showColors ||
+            showOutlines ||
+            tool === "pen" ||
+            STAMP_TOOLS.has(tool) ||
+            undefined
+          }
+          inert={
+            !(
+              showColors ||
+              showOutlines ||
+              tool === "pen" ||
+              STAMP_TOOLS.has(tool)
+            )
+          }
         >
+          {tool === "pen" ? (
+            <fieldset className={styles.choices} aria-label="Marker">
+              {PENS.map(({ mode, label, Icon }) => (
+                <Tooltip key={mode} label={label} side="top">
+                  <Button
+                    icon
+                    size="sm"
+                    variant="ghost"
+                    aria-label={label}
+                    aria-pressed={penMode === mode}
+                    data-pressed={penMode === mode || undefined}
+                    onClick={() => onPenMode(mode)}
+                  >
+                    <Icon />
+                  </Button>
+                </Tooltip>
+              ))}
+            </fieldset>
+          ) : null}
+          {STAMP_TOOLS.has(tool) ? (
+            <fieldset className={styles.choices} aria-label="Placement">
+              <Tooltip label="Keep Selected" side="top">
+                <Button
+                  icon
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Keep Selected"
+                  aria-pressed={kept}
+                  data-pressed={kept || undefined}
+                  onClick={() => onKeep(!kept)}
+                >
+                  <IconPinTack />
+                </Button>
+              </Tooltip>
+            </fieldset>
+          ) : null}
           {showOutlines ? (
             <fieldset className={styles.choices} aria-label="Shape">
               {OUTLINES.map(({ outline: option, label, Icon }) => (

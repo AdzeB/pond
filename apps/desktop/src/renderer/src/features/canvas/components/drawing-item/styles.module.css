@@ -2,6 +2,12 @@
   display: block;
   overflow: visible;
   border-radius: var(--ds-radius-sm);
+  transform-origin: center;
+  transform-box: fill-box;
+
+  &[data-highlight] {
+    opacity: 0.45;
+  }
 
   &[data-selected] {
     outline: var(--canvas-selection);

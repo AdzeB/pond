@@ -724,6 +724,12 @@ export const IconCheckboxChecked = /* @__PURE__ */ createIcon(
     ["path", { d: "M6 9.25L8 11.25L12 6.75" }],
   ],
 );
+export const IconChevron = /* @__PURE__ */ createIcon("Chevron", "outline", [
+  [
+    "path",
+    { d: "M2.75 4.25H10.25L15.25 9L10.25 13.75H2.75L6.75 9L2.75 4.25Z" },
+  ],
+]);
 export const IconChevronDown = /* @__PURE__ */ createIcon(
   "ChevronDown",
   "outline",
@@ -1092,6 +1098,14 @@ export const IconDice = /* @__PURE__ */ createIcon("Dice", "outline", [
     { cx: "12", cy: "12", r: "1", fill: "currentColor", stroke: "none" },
   ],
 ]);
+export const IconDocument = /* @__PURE__ */ createIcon("Document", "outline", [
+  [
+    "path",
+    {
+      d: "M4.75 2.75H13.25V11.5C12.1 12.6 11 11.6 9.9 12.6C8.8 13.6 7.7 12.6 6.6 13.6C5.5 14.6 4.75 13.6 4.75 13.6V2.75Z",
+    },
+  ],
+]);
 export const IconDots = /* @__PURE__ */ createIcon("Dots", "outline", [
   [
     "circle",
@@ -1149,6 +1163,10 @@ export const IconDuplicate = /* @__PURE__ */ createIcon(
 export const IconEnvelope = /* @__PURE__ */ createIcon("Envelope", "outline", [
   ["rect", { x: "2.25", y: "3.5", width: "13.5", height: "11", rx: "2.75" }],
   ["path", { d: "M2.75 5.5L9 9.75L15.25 5.5" }],
+]);
+export const IconEraser = /* @__PURE__ */ createIcon("Eraser", "outline", [
+  ["path", { d: "M10.5 3.75L14.25 7.5L8.25 13.5H4.5V9.75L10.5 3.75Z" }],
+  ["path", { d: "M3.25 15.25H14.75" }],
 ]);
 export const IconExpand = /* @__PURE__ */ createIcon("Expand", "outline", [
   ["path", { d: "M10.25 7.75L15.25 2.75M10.75 2.75L15.25 2.75L15.25 7.25" }],
@@ -1391,6 +1409,25 @@ export const IconFlipHorizontal2 = /* @__PURE__ */ createIcon(
       },
     ],
     ["path", { d: "M9 2.25V15.75" }],
+  ],
+);
+export const IconFlipVertical2 = /* @__PURE__ */ createIcon(
+  "FlipVertical2",
+  "outline",
+  [
+    [
+      "path",
+      {
+        d: "M3.75 6.25V5.25A2 2 0 0 1 5.75 3.25H12.25A2 2 0 0 1 14.25 5.25V6.25",
+      },
+    ],
+    [
+      "path",
+      {
+        d: "M3.75 11.75V12.75A2 2 0 0 0 5.75 14.75H12.25A2 2 0 0 0 14.25 12.75V11.75",
+      },
+    ],
+    ["path", { d: "M2.25 9H15.75" }],
   ],
 );
 export const IconFloppyDisk = /* @__PURE__ */ createIcon(

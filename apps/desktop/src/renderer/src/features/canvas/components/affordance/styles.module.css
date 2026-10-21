@@ -1,0 +1,9 @@
+.slot {
+  position: absolute;
+  z-index: 6;
+  pointer-events: all;
+
+  &[data-turn] {
+    z-index: 7;
+  }
+}

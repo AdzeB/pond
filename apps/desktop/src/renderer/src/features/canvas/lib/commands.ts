@@ -21,7 +21,13 @@ export type CanvasCommand =
       scope?: "board" | "selection";
     }
   | { type: "zoom"; to: "fit" | "actual" | "selection" }
-  | { type: "nudge"; x: number; y: number };
+  | { type: "nudge"; x: number; y: number }
+  | { type: "rotate"; delta: number }
+  | { type: "flip"; axis: "horizontal" | "vertical" }
+  | { type: "convert-notes" }
+  | { type: "sort-notes" }
+  | { type: "crop" }
+  | { type: "reset-crop" };
 
 export type KeyChord = Pick<
   KeyboardEvent,
@@ -90,6 +96,14 @@ const BINDINGS: ReadonlyArray<readonly [Chord, CanvasCommand]> = [
   [
     { mod: true, shift: true, code: "KeyE", glyph: "E" },
     { type: "export", format: "png" },
+  ],
+  [
+    { alt: true, code: "KeyR", glyph: "R" },
+    { type: "rotate", delta: 15 },
+  ],
+  [
+    { alt: true, shift: true, code: "KeyR", glyph: "R" },
+    { type: "rotate", delta: -15 },
   ],
   [
     { shift: true, code: "Digit1", glyph: "1" },

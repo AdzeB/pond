@@ -1,5 +1,13 @@
+import {
+  IconBulletList,
+  IconTextBold,
+  IconTextItalic,
+  IconTextUnderline,
+} from "@pond/icons";
+import { Button } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import { useEffect, useRef } from "react";
+import { isRichNote, richNote } from "../../lib/rich-text";
 import type { TextStyle } from "../../lib/text-style";
 import { useBoard } from "../board/context";
 import styles from "./styles.module.css";
@@ -12,6 +20,8 @@ interface EditableTextProps {
   hint: string;
   variant: "note" | "text" | "figure" | "label" | "topic" | "section";
   style?: TextStyle;
+  /** Notes store bold, italic, underline, and lists in their text. */
+  rich?: boolean;
 }
 
 export function EditableText({
@@ -22,6 +32,7 @@ export function EditableText({
   hint,
   variant,
   style,
+  rich,
 }: EditableTextProps) {
   const board = useBoard();
   const editing = board.editingId === id;
@@ -34,6 +45,16 @@ export function EditableText({
     element.setSelectionRange(element.value.length, element.value.length);
   }, [editing]);
 
+  if (editing && rich)
+    return (
+      <RichNote
+        id={id}
+        text={text}
+        label={label}
+        variant={variant}
+        style={style}
+      />
+    );
   if (editing)
     return (
       <textarea
@@ -42,6 +63,7 @@ export function EditableText({
         data-variant={variant}
         data-size={style?.textSize}
         data-font={style?.font}
+        data-align={style?.align}
         aria-label={label}
         placeholder={placeholder}
         value={text}
@@ -73,9 +95,95 @@ export function EditableText({
       data-variant={variant}
       data-size={style?.textSize}
       data-font={style?.font}
+      data-align={style?.align}
+      data-rich={rich && isRichNote(text) ? true : undefined}
       data-empty={text ? undefined : true}
-    >
-      {text || hint}
+      {...(rich && isRichNote(text)
+        ? { dangerouslySetInnerHTML: { __html: richNote(text) } }
+        : { children: text || hint })}
+    />
+  );
+}
+
+const MARKS = [
+  { command: "bold", label: "Bold", Icon: IconTextBold },
+  { command: "italic", label: "Italic", Icon: IconTextItalic },
+  { command: "underline", label: "Underline", Icon: IconTextUnderline },
+  {
+    command: "insertUnorderedList",
+    label: "Bulleted List",
+    Icon: IconBulletList,
+  },
+] as const;
+
+function RichNote({
+  id,
+  text,
+  label,
+  variant,
+  style,
+}: {
+  id: string;
+  text: string;
+  label: string;
+  variant: EditableTextProps["variant"];
+  style?: TextStyle;
+}) {
+  const board = useBoard();
+  const field = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const element = field.current;
+    if (!element || started.current) return;
+    started.current = true;
+    if (isRichNote(text)) element.innerHTML = richNote(text);
+    else element.textContent = text;
+    element.focus();
+  }, [text]);
+
+  return (
+    <div className={cn(styles.rich, "nodrag", "nowheel", "nopan")}>
+      <div className={styles.format}>
+        {MARKS.map(({ command, label: mark, Icon }) => (
+          <Button
+            key={command}
+            icon
+            size="xs"
+            variant="ghost"
+            aria-label={mark}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              document.execCommand(command);
+            }}
+          >
+            <Icon size={12} />
+          </Button>
+        ))}
+      </div>
+      {/* biome-ignore lint/a11y/useSemanticElements: notes store inline HTML, which a textarea cannot hold. */}
+      <div
+        ref={field}
+        className={styles.field}
+        role="textbox"
+        tabIndex={0}
+        aria-multiline="true"
+        aria-label={label}
+        data-variant={variant}
+        data-size={style?.textSize}
+        data-font={style?.font}
+        data-align={style?.align}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={(event) =>
+          board.setText(id, richNote(event.currentTarget.innerHTML))
+        }
+        onBlur={() => board.finishEditing(id)}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+          if (event.key === "Escape") event.currentTarget.blur();
+        }}
+      />
     </div>
   );
 }
