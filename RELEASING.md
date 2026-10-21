@@ -80,7 +80,7 @@ The Developer ID certificate expires on November 14, 2027. Create a new one befo
 
 ### Windows
 
-Windows releases must be signed. Antivirus engines such as Bitdefender quarantine unsigned apps and can delete the install. The `windows` job fails without signing credentials, then checks that every `.exe`, `.dll`, and `.node` file carries a valid signature before the release is published.
+Sign Windows releases. Antivirus engines such as Bitdefender quarantine unsigned apps and can delete the install. Without signing credentials, the `windows` job logs a warning and ships an unsigned installer. With them, it fails if signing fails, then checks that every `.exe`, `.dll`, and `.node` file carries a valid signature before the release is published.
 
 Sign with [Azure Artifact Signing](https://learn.microsoft.com/azure/artifact-signing/), formerly Trusted Signing. Create a signing account and a public trust certificate profile, then create an app registration with the Artifact Signing Certificate Profile Signer role on that account. Add these repository secrets:
 

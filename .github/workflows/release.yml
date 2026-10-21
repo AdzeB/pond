@@ -208,13 +208,15 @@ jobs:
       - name: Desktop end-to-end smoke
         run: pnpm --filter @pond/desktop smoke:desktop
 
-      # Antivirus engines quarantine unsigned Windows apps, so a release never
-      # ships one. Azure Artifact Signing is preferred: set the AZURE_TENANT_ID,
-      # AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET secrets plus the
-      # AZURE_SIGNING_ENDPOINT, AZURE_SIGNING_ACCOUNT, AZURE_SIGNING_PROFILE,
-      # and AZURE_SIGNING_PUBLISHER variables. A PFX certificate in
-      # WIN_CSC_LINK and WIN_CSC_KEY_PASSWORD also works.
+      # Antivirus engines quarantine unsigned Windows apps. Azure Artifact
+      # Signing is preferred: set the AZURE_TENANT_ID, AZURE_CLIENT_ID, and
+      # AZURE_CLIENT_SECRET secrets plus the AZURE_SIGNING_ENDPOINT,
+      # AZURE_SIGNING_ACCOUNT, AZURE_SIGNING_PROFILE, and
+      # AZURE_SIGNING_PUBLISHER variables. A PFX certificate in WIN_CSC_LINK
+      # and WIN_CSC_KEY_PASSWORD also works. Without either, the installer
+      # ships unsigned with a warning.
       - name: Package Windows app and upload to release
+        id: package
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -228,7 +230,8 @@ jobs:
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
         run: |
-          ARGS=(--config.win.forceCodeSigning=true)
+          ARGS=()
+          SIGNED=true
           if [ -n "$AZURE_CLIENT_SECRET" ]; then
             for name in AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_SIGNING_ENDPOINT AZURE_SIGNING_ACCOUNT AZURE_SIGNING_PROFILE AZURE_SIGNING_PUBLISHER; do
               if [ -z "${!name}" ]; then
@@ -246,14 +249,19 @@ jobs:
           elif [ -n "$WIN_CSC_LINK" ] && [ -n "$WIN_CSC_KEY_PASSWORD" ]; then
             echo "Windows code signing: certificate"
           else
-            echo "No Windows signing credentials. Configure Azure Artifact Signing or WIN_CSC_LINK before releasing."
-            exit 1
+            echo "::warning::No Windows signing credentials; the installer will be unsigned and antivirus may quarantine it."
+            SIGNED=false
           fi
+          if [ "$SIGNED" = true ]; then
+            ARGS+=(--config.win.forceCodeSigning=true)
+          fi
+          echo "signed=$SIGNED" >> "$GITHUB_OUTPUT"
           # `pnpm exec` skips cmd.exe, which would re-split a publisher name with spaces.
           pnpm --filter @pond/desktop exec node ./scripts/build-native-host.mjs
           pnpm --filter @pond/desktop exec electron-builder --win --x64 --config.npmRebuild=false --publish always "${ARGS[@]}"
 
       - name: Verify Windows signatures
+        if: steps.package.outputs.signed == 'true'
         shell: pwsh
         run: |
           $files = @(Get-ChildItem apps/desktop/dist/*.exe) +
