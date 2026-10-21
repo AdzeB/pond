@@ -1,8 +1,8 @@
 import { createInterface } from "node:readline";
 import {
+  type ApiSave,
   type JsonObject,
   type JsonValue,
-  type ApiSave,
   PondApi,
 } from "@pond/api";
 import type { Command } from "commander";

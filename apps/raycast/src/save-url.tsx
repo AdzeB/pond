@@ -41,7 +41,9 @@ export default function SaveUrl(
         error instanceof Error ? error.message : "Try again with Pond open.";
       toast.style = Toast.Style.Failure;
       toast.title =
-        error instanceof PondRequestError ? "Could Not Save URL" : "Invalid URL";
+        error instanceof PondRequestError
+          ? "Could Not Save URL"
+          : "Invalid URL";
       toast.message = message;
       setUrlError(message);
     } finally {

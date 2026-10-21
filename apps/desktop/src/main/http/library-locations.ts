@@ -24,9 +24,7 @@ export function libraryLocationRoutes(
   );
 
   routes.post("/switch", async (c) => {
-    const parsed = ApiSwitchLibraryRequestSchema.safeParse(
-      await c.req.json(),
-    );
+    const parsed = ApiSwitchLibraryRequestSchema.safeParse(await c.req.json());
     if (!parsed.success) {
       return apiError(c, "invalid_request", "Choose a recent Library.");
     }
