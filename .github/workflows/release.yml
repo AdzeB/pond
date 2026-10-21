@@ -208,26 +208,62 @@ jobs:
       - name: Desktop end-to-end smoke
         run: pnpm --filter @pond/desktop smoke:desktop
 
-      # Windows code signing is optional. When WIN_CSC_LINK and
-      # WIN_CSC_KEY_PASSWORD are set, electron-builder signs the installer;
-      # otherwise it ships unsigned (Windows SmartScreen will warn).
-      - name: Report Windows signing mode
+      # Antivirus engines quarantine unsigned Windows apps, so a release never
+      # ships one. Azure Artifact Signing is preferred: set the AZURE_TENANT_ID,
+      # AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET secrets plus the
+      # AZURE_SIGNING_ENDPOINT, AZURE_SIGNING_ACCOUNT, AZURE_SIGNING_PROFILE,
+      # and AZURE_SIGNING_PUBLISHER variables. A PFX certificate in
+      # WIN_CSC_LINK and WIN_CSC_KEY_PASSWORD also works.
+      - name: Package Windows app and upload to release
         shell: bash
         env:
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-        run: |
-          if [ -n "$WIN_CSC_LINK" ]; then
-            echo "Windows code signing: enabled"
-          else
-            echo "::warning::WIN_CSC_LINK is not set; the Windows installer will be unsigned."
-          fi
-
-      - name: Package Windows app and upload to release
-        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SIGNING_ENDPOINT: ${{ vars.AZURE_SIGNING_ENDPOINT }}
+          AZURE_SIGNING_ACCOUNT: ${{ vars.AZURE_SIGNING_ACCOUNT }}
+          AZURE_SIGNING_PROFILE: ${{ vars.AZURE_SIGNING_PROFILE }}
+          AZURE_SIGNING_PUBLISHER: ${{ vars.AZURE_SIGNING_PUBLISHER }}
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-        run: pnpm dist:win:publish
+        run: |
+          ARGS=(--config.win.forceCodeSigning=true)
+          if [ -n "$AZURE_CLIENT_SECRET" ]; then
+            for name in AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_SIGNING_ENDPOINT AZURE_SIGNING_ACCOUNT AZURE_SIGNING_PROFILE AZURE_SIGNING_PUBLISHER; do
+              if [ -z "${!name}" ]; then
+                echo "Missing Azure Artifact Signing setting: $name"
+                exit 1
+              fi
+            done
+            echo "Windows code signing: Azure Artifact Signing"
+            ARGS+=(
+              "--config.win.azureSignOptions.endpoint=$AZURE_SIGNING_ENDPOINT"
+              "--config.win.azureSignOptions.codeSigningAccountName=$AZURE_SIGNING_ACCOUNT"
+              "--config.win.azureSignOptions.certificateProfileName=$AZURE_SIGNING_PROFILE"
+              "--config.win.azureSignOptions.publisherName=$AZURE_SIGNING_PUBLISHER"
+            )
+          elif [ -n "$WIN_CSC_LINK" ] && [ -n "$WIN_CSC_KEY_PASSWORD" ]; then
+            echo "Windows code signing: certificate"
+          else
+            echo "No Windows signing credentials. Configure Azure Artifact Signing or WIN_CSC_LINK before releasing."
+            exit 1
+          fi
+          # `pnpm exec` skips cmd.exe, which would re-split a publisher name with spaces.
+          pnpm --filter @pond/desktop exec node ./scripts/build-native-host.mjs
+          pnpm --filter @pond/desktop exec electron-builder --win --x64 --config.npmRebuild=false --publish always "${ARGS[@]}"
+
+      - name: Verify Windows signatures
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem apps/desktop/dist/*.exe) +
+            @(Get-ChildItem apps/desktop/dist/win-unpacked -Recurse -Include *.exe,*.dll,*.node)
+          $unsigned = $files | Where-Object { (Get-AuthenticodeSignature $_.FullName).Status -ne "Valid" }
+          if ($unsigned) {
+            $unsigned | ForEach-Object { Write-Output "Unsigned: $($_.FullName)" }
+            exit 1
+          }
+          Write-Output "Verified $($files.Count) signed files"
 
   publish:
     needs: [macos, windows]

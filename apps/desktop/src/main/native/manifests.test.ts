@@ -121,6 +121,54 @@ describe("native host manifests", () => {
     }
   });
 
+  it("registers every Windows key in the NSIS installer against the userData manifests", () => {
+    const installer = readFileSync(
+      new URL("../../../packaging/installer.nsh", import.meta.url),
+      "utf8",
+    );
+    expect(installer).toContain(
+      `!define POND_NMH_DIR "$APPDATA\\\${PRODUCT_NAME}\\native-messaging"`,
+    );
+    const registrations = [
+      ...WINDOWS_NATIVE_MESSAGING_REGISTRY_KEYS.map((key) => ({
+        key,
+        manifest: "so.pond.host.json",
+      })),
+      ...WINDOWS_FIREFOX_REGISTRY_KEYS.map((key) => ({
+        key,
+        manifest: "so.pond.host.firefox.json",
+      })),
+    ];
+    for (const { key, manifest } of registrations) {
+      expect(installer).toContain(
+        `WriteRegStr HKCU "${key.replace("HKCU\\", "")}" "" "\${POND_NMH_DIR}\\${manifest}"`,
+      );
+    }
+  });
+
+  it("leaves the registry to the installer in a packaged Windows app", async () => {
+    const writes: string[] = [];
+    const registry: string[][] = [];
+    await writeNativeHostManifests({
+      platform: "win32",
+      hostPath: () => "C:\\Pond\\pond-native-host.exe",
+      exists: () => true,
+      userDataDirectory: () => "C:\\Users\\test\\AppData\\Roaming\\Pond",
+      makeDirectory: () => {},
+      writeFile: (path) => writes.push(path),
+      installerRegistersKeys: () => true,
+      runRegistry: async (args) => {
+        registry.push(args);
+      },
+    });
+
+    expect(writes.map((path) => path.split(/[\\/]/).pop())).toEqual([
+      "so.pond.host.json",
+      "so.pond.host.firefox.json",
+    ]);
+    expect(registry).toEqual([]);
+  });
+
   it("writes an absolute native messaging executable into the manifest", () => {
     expect(
       JSON.parse(
@@ -155,6 +203,7 @@ describe("native host manifests", () => {
       userDataDirectory: () => "C:\\Users\\test\\AppData\\Roaming\\Pond",
       makeDirectory: () => {},
       writeFile: (path, body) => writes.set(path, body),
+      installerRegistersKeys: () => false,
       runRegistry: async (args) => {
         registry.push(args);
       },

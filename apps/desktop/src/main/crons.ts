@@ -35,7 +35,8 @@ export function registerYtDlpUpdateCron() {
     name: "yt-dlp-update",
     every: 24 * 60 * 60 * 1000,
     initialDelay: 5_000,
-    fn: () => maybeUpdateYtDlp(),
+    /** Windows antivirus flags a new app that downloads and runs an exe at first launch, so the first install waits for a video. */
+    fn: () => maybeUpdateYtDlp({ install: process.platform !== "win32" }),
   });
 }
 

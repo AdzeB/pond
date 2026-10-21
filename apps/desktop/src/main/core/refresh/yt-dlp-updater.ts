@@ -15,6 +15,7 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 import { killProcessTree } from "../../lib/process-tree";
 import {
+  binariesAvailable,
   invalidateBinariesCache,
   userBinDir,
   YTDLP_FILENAME,
@@ -24,6 +25,7 @@ const REPO = "yt-dlp/yt-dlp";
 const LATEST_API = `https://api.github.com/repos/${REPO}/releases/latest`;
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const DOWNLOAD_TIMEOUT_MS = 120_000;
+const ON_DEMAND_RETRY_MS = 10 * 60 * 1000;
 const ReleaseSchema = z.object({
   tag_name: z.string().optional().catch(undefined),
 });
@@ -91,15 +93,34 @@ function defaultDeps(): UpdaterDeps {
 
 let inFlight: Promise<void> | null = null;
 let recovering: Promise<void> | null = null;
+let onDemandFailedAt = 0;
+
+interface UpdateOptions {
+  force: boolean;
+  /** Download yt-dlp when no managed binary exists yet. */
+  install: boolean;
+}
 
 export function maybeUpdateYtDlp(
-  opts: { force?: boolean } = {},
+  opts: Partial<UpdateOptions> = {},
 ): Promise<void> {
   if (inFlight) return inFlight;
-  inFlight = runUpdate(defaultDeps(), opts.force ?? false).finally(() => {
+  inFlight = runUpdate(defaultDeps(), {
+    force: opts.force ?? false,
+    install: opts.install ?? true,
+  }).finally(() => {
     inFlight = null;
   });
   return inFlight;
+}
+
+/** A failed install backs off so a batch of queued videos makes one attempt, not one each. */
+export async function ensureYtDlp(): Promise<void> {
+  if (binariesAvailable().ytdlp) return;
+  if (Date.now() - onDemandFailedAt < ON_DEMAND_RETRY_MS) return;
+  await inFlight;
+  await maybeUpdateYtDlp({ force: true, install: true });
+  if (!binariesAvailable().ytdlp) onDemandFailedAt = Date.now();
 }
 
 /**
@@ -117,7 +138,7 @@ export function recoverYtDlp(): Promise<void> {
 
 export async function runUpdate(
   deps: UpdaterDeps,
-  force: boolean,
+  { force, install }: UpdateOptions,
 ): Promise<void> {
   const { asset, dir } = deps;
   if (!asset) return;
@@ -130,6 +151,7 @@ export async function runUpdate(
   try {
     await (recovering ?? recoverFiles(deps));
 
+    if (!install && !existsSync(active)) return;
     if (!force && (await checkedRecently(dir))) return;
 
     const tag = await deps.fetchLatestTag();
