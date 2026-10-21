@@ -245,6 +245,10 @@ export function pathEnvKey(env: NodeJS.ProcessEnv) {
   return Object.keys(env).find((key) => key.toUpperCase() === "PATH") ?? "PATH";
 }
 
+function bunBinDirectory(home: string, env: NodeJS.ProcessEnv) {
+  return join(env.BUN_INSTALL || join(home, ".bun"), "bin");
+}
+
 function windowsCliDirectories() {
   const home = homedir();
   const { APPDATA, LOCALAPPDATA, NVM_SYMLINK, VOLTA_HOME } = process.env;
@@ -253,9 +257,27 @@ function windowsCliDirectories() {
     join(home, ".local/bin"),
     LOCALAPPDATA && join(LOCALAPPDATA, "Programs"),
     NVM_SYMLINK,
-    join(home, ".bun/bin"),
+    bunBinDirectory(home, process.env),
     VOLTA_HOME && join(VOLTA_HOME, "bin"),
   ].filter((directory): directory is string => Boolean(directory));
+}
+
+/** Apps opened from Finder or a desktop launcher skip shell profiles, so their PATH lacks user install folders. */
+export function posixCliDirectories(
+  home: string,
+  env: NodeJS.ProcessEnv,
+  nvmVersions: string[],
+) {
+  const nvm = join(home, ".nvm/versions/node");
+  return [
+    join(home, ".local/bin"),
+    bunBinDirectory(home, env),
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    ...nvmVersions
+      .toSorted((a, b) => b.localeCompare(a, undefined, { numeric: true }))
+      .map((version) => join(nvm, version, "bin")),
+  ];
 }
 
 const CMD_META_CHARS = /([()\][%!^"`<>&|;, *?])/g;
@@ -325,22 +347,17 @@ export function scrubbedEnvironment(
 }
 
 async function cliEnvironment(codexHome?: string) {
-  const nvm = join(homedir(), ".nvm/versions/node");
-  const versions = await readdir(nvm).catch(() => []);
+  const home = homedir();
+  const versions = await readdir(join(home, ".nvm/versions/node")).catch(
+    () => [],
+  );
   const env = scrubbedEnvironment(process.env, process.platform, codexHome);
   const pathKey = pathEnvKey(env);
   env[pathKey] = [
     env[pathKey] ?? "",
     ...(process.platform === "win32"
       ? windowsCliDirectories()
-      : [
-          join(homedir(), ".local/bin"),
-          "/opt/homebrew/bin",
-          "/usr/local/bin",
-          ...versions
-            .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
-            .map((version) => join(nvm, version, "bin")),
-        ]),
+      : posixCliDirectories(home, process.env, versions)),
   ].join(delimiter);
   return env;
 }
