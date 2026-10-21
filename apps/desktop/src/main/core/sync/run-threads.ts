@@ -12,6 +12,7 @@ import {
 } from "../refresh/harvest-window";
 import { partitionForAccount } from "./accounts";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
+import { organizeIncoming } from "./incoming";
 import {
   loadSyncBaseline,
   patchAccountSync,
@@ -209,6 +210,11 @@ export async function syncThreads(
     ev.outcome = "aborted";
     return;
   }
+  await organizeIncoming(
+    bulk.createdIds,
+    account.sync.incoming,
+    "sync:threads",
+  );
 
   const lastSyncedAt = await persistWatermark(accountId, {
     full: baseline.full,

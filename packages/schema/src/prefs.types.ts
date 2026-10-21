@@ -116,6 +116,17 @@ export interface SourceSyncPrefs {
   collectionFolders?: Record<string, string>;
   /** Last time every collection was read to its end, which is the only way to find old saves moved into one. */
   lastCollectionCheckAt?: string | null;
+  /** Skipped by scheduled fetches; Fetch New Saves still runs it. */
+  paused?: boolean;
+  /** Replaces the global interval for this source. Omitted follows the global schedule. */
+  intervalHours?: number;
+  incoming?: IncomingSaveRule;
+}
+
+/** Where saves new to the library from one source are filed as they arrive. */
+export interface IncomingSaveRule {
+  folderId?: string;
+  tags?: string[];
 }
 
 export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {

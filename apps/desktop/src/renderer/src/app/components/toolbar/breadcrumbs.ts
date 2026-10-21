@@ -17,6 +17,7 @@ interface BreadcrumbInput {
   folders: readonly Pick<Folder, "id" | "name" | "parentId">[];
   saveLabel?: string;
   canvasLabel?: string;
+  sourceLabel?: string;
   searchResultCount?: number;
 }
 
@@ -42,9 +43,15 @@ function settingsCrumbs(path: string): Breadcrumb[] {
 function destinationCrumbs(
   base: string,
   canvasLabel?: string,
+  sourceLabel?: string,
 ): Breadcrumb[] | null {
   if (base.startsWith("/canvas/"))
     return [{ label: canvasLabel || "Canvas", path: base }];
+  if (base.startsWith("/sources/"))
+    return [
+      { label: "Sources", path: "/sources", nav: { kind: "sources" } },
+      { label: sourceLabel || "Source", path: base },
+    ];
   switch (base) {
     case "/assistant":
       return [{ label: "Assistant", path: base }];
@@ -97,11 +104,12 @@ export function buildBreadcrumbs({
   folders,
   saveLabel,
   canvasLabel,
+  sourceLabel,
   searchResultCount,
 }: BreadcrumbInput): Breadcrumb[] {
   const isSave = saveIdFromPath(pathname) !== null;
   const base = isSave ? listPath : pathname;
-  const destination = destinationCrumbs(base, canvasLabel);
+  const destination = destinationCrumbs(base, canvasLabel, sourceLabel);
   const searchCrumb =
     !isSave && searchResultCount !== undefined
       ? { label: `Search results (${searchResultCount})`, path: base }

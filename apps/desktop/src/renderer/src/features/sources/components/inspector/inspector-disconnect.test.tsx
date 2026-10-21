@@ -2,7 +2,7 @@ import { Dialog } from "@pond/ui";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { SourceInspector } from "@/features/sources/components/inspector";
+import { SourceDetail } from "@/features/sources/components/inspector";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
 import { sourceDetail } from "@/features/sources/state/source-detail";
 
@@ -76,7 +76,7 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-it("disconnects from a confirm dialog over connection details", async () => {
+it("disconnects from a confirm dialog on the connection page", async () => {
   const query = vi.fn(async (name: string) => {
     if (name === "accounts.list") return { accounts: [account] };
     if (name === "accounts.disconnect") return { ok: true };
@@ -88,13 +88,7 @@ it("disconnects from a confirm dialog over connection details", async () => {
     root.render(
       <>
         <Dialog.Host />
-        <Dialog.Root open>
-          <Dialog.Portal>
-            <Dialog.Popup>
-              <SourceInspector kind="account" id={account.id} />
-            </Dialog.Popup>
-          </Dialog.Portal>
-        </Dialog.Root>
+        <SourceDetail kind="account" id={account.id} page="connection" />
       </>,
     );
   });

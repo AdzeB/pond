@@ -1,10 +1,10 @@
 import { Dialog, type MenuItemSpec } from "@pond/ui";
 import { Children, isValidElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { detailsDialog } from "@/features/library";
 import type { CardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import type { AccountRow } from "@/features/sources/hooks/use-accounts";
 import type { WatchRow } from "@/features/sources/hooks/use-watches";
+import { sourceDetail } from "@/features/sources/state/source-detail";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import {
   accountMenuTarget,
@@ -232,14 +232,12 @@ describe("buildSourceActionMenu", () => {
     const start = findItem(items, "Choose What to Import");
     if (!start || !("onClick" in start))
       throw new Error("Missing Choose What to Import");
+    const open = vi
+      .spyOn(sourceDetail, "openAccount")
+      .mockImplementation(() => {});
     start.onClick?.();
-    expect(detailsDialog.getState()).toEqual({
-      kind: "source",
-      sourceKind: "account",
-      id: "acc-instagram",
-      page: "import",
-    });
-    detailsDialog.close();
+    expect(open).toHaveBeenCalledWith("acc-instagram", "filters");
+    open.mockRestore();
   });
 
   it("uses collection labels and hides account-only actions for watches", () => {

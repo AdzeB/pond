@@ -22,6 +22,8 @@ export function HeroAvatar({
   const [failed, setFailed] = useState(false);
   const { logo, icon: Icon } = getSourceDef(source);
   const pfp = avatarUrl && !failed ? avatarUrl : null;
+  const largeBadge = badgeSize >= 32;
+  const badgeBox = badgeSize + (largeBadge ? 8 : 4);
 
   if (!pfp) {
     const tile = (
@@ -48,8 +50,8 @@ export function HeroAvatar({
       {badge && (Icon || logo) ? (
         <span
           className={styles.badge}
-          style={{ width: badgeSize, height: badgeSize }}
-          data-large={badgeSize >= 32 || undefined}
+          style={{ width: badgeBox, height: badgeBox }}
+          data-large={largeBadge || undefined}
         >
           {Icon ? (
             <Icon width={badgeSize} height={badgeSize} />

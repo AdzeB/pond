@@ -3,9 +3,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { detailsDialog } from "@/features/library";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
 import { connectFlow } from "@/features/sources/state/connect-flow";
+import { sourceDetail } from "@/features/sources/state/source-detail";
 import { ConnectActions, ConnectWaitSection } from "./";
 
 let root: Root;
@@ -239,13 +239,12 @@ it("asks what to import before a new account syncs", async () => {
   const next = Array.from(host.querySelectorAll("button")).find(
     (element) => element.textContent === "Continue",
   );
+  const open = vi
+    .spyOn(sourceDetail, "openAccount")
+    .mockImplementation(() => {});
   await act(async () => next?.click());
-  expect(detailsDialog.getState()).toEqual({
-    kind: "source",
-    sourceKind: "account",
-    id: "acc-instagram",
-  });
-  detailsDialog.close();
+  expect(open).toHaveBeenCalledWith("acc-instagram");
+  open.mockRestore();
 });
 
 it("fails when Pond cannot open the sign-in page", async () => {

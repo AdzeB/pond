@@ -7,7 +7,7 @@ import {
 import { labelKey, normalizeLabelName } from "@pond/schema/label-name";
 import type { Transaction } from "@pond/schema/tx";
 import type { OkResult } from "@shared/query-contracts-shared";
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import type { Db } from "../db";
 import { getDb } from "../db";
@@ -285,6 +285,39 @@ export async function setSaveTags(
     },
   ]);
   return { ok: true };
+}
+
+/** Adds tags to each save, keeping the tags it already has. */
+export async function addTagsToSaves(
+  saveIds: readonly string[],
+  names: string[],
+  actorReason: string,
+): Promise<number> {
+  const add = normalizeTagList(names);
+  if (add.length === 0 || saveIds.length === 0) return 0;
+  const db = await getDb();
+  const txs: Transaction[] = [];
+  for (let offset = 0; offset < saveIds.length; offset += 500) {
+    const rows = await db
+      .select({ id: savesTable.id, tags: savesTable.tags })
+      .from(savesTable)
+      .where(inArray(savesTable.id, saveIds.slice(offset, offset + 500)));
+    for (const row of rows) {
+      const next = normalizeTagList([...row.tags, ...add]);
+      if (next.length === row.tags.length) continue;
+      txs.push({
+        kind: "update",
+        model: "save",
+        id: row.id,
+        patch: { tags: next },
+        before: { tags: row.tags },
+        meta: { actor: "system", actorReason },
+      });
+    }
+  }
+  if (txs.length === 0) return 0;
+  await executeBatch([...(await prepareTagRegistryUpdates(add)), ...txs]);
+  return txs.length;
 }
 
 export function planTagRegistryUpdates(

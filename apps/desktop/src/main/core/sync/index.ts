@@ -1,6 +1,12 @@
-import type { ConnectedAccount, Source } from "@pond/schema/db";
+import type {
+  ConnectedAccount,
+  Source,
+  SourceSyncPrefs,
+  WatchedAccount,
+} from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import log from "electron-log/main.js";
+import { isSourceFetchDue } from "../../../shared/sync-schedule";
 import { commitEvent, startSyncEvent, toErrorInfo } from "../../lib/wide-event";
 import { isAccountConnected } from "../refresh/harvest-window";
 import { isSyncBlockedByStorageGuard } from "../storage-watcher";
@@ -34,7 +40,12 @@ interface SyncOptions {
   trigger?: "manual" | "cron";
   maxItems?: number;
   forceFull?: boolean;
+  /** Set by the cron, which then runs only sources whose schedule is due. */
+  globalDue?: boolean;
 }
+
+/** A failed run doesn't move `lastSyncedAt`, so this keeps a per-source interval from retrying every tick. */
+const lastScheduledAt = new Map<string, number>();
 
 const SYNC_WATCHDOG_MS = {
   twitter: 30 * 60_000,
@@ -67,16 +78,30 @@ function isSyncableSource(source: Source): boolean {
 }
 
 export async function syncAllSources(opts: SyncOptions = {}): Promise<void> {
-  const accounts = (await listAccounts()).filter((a) =>
-    isSyncableSource(a.source),
+  const now = Date.now();
+  const wanted = (row: { id: string; sync: SourceSyncPrefs }) =>
+    opts.globalDue === undefined ||
+    isSourceFetchDue(
+      row.sync,
+      opts.globalDue,
+      now,
+      lastScheduledAt.get(row.id),
+    );
+  const accounts = (await listAccounts()).filter(
+    (a) => isSyncableSource(a.source) && wanted(a),
   );
+  const watches = (await listWatches()).filter(wanted);
+  if (opts.globalDue !== undefined) {
+    for (const row of [...accounts, ...watches]) {
+      lastScheduledAt.set(row.id, now);
+    }
+  }
   const connected = await Promise.all(
     accounts.map(async (account) =>
       (await isAccountConnected(account).catch(() => false)) ? account : null,
     ),
   );
   const runnable = connected.filter((a): a is ConnectedAccount => a !== null);
-  const watches = await listWatches();
   const sources = new Set<Source>([
     ...runnable.map((account) => account.source),
     ...watches.map((watch) => watch.source),
@@ -91,7 +116,10 @@ export async function syncAllSources(opts: SyncOptions = {}): Promise<void> {
           log.warn("[pond sync] syncAccount threw", account.id, err),
         );
       }
-      await syncWatchesForSource(source, opts);
+      await runWatches(
+        watches.filter((watch) => watch.source === source),
+        opts,
+      );
     }),
   );
 }
@@ -113,9 +141,16 @@ async function syncWatchesForSource(
   source: Source,
   opts: SyncOptions,
 ): Promise<void> {
-  const watches = (await listWatches()).filter(
-    (watch) => watch.source === source,
+  await runWatches(
+    (await listWatches()).filter((watch) => watch.source === source),
+    opts,
   );
+}
+
+async function runWatches(
+  watches: readonly WatchedAccount[],
+  opts: SyncOptions,
+): Promise<void> {
   for (const watch of watches) {
     await watchNow(watch.id, { trigger: opts.trigger ?? "manual" }).catch(
       (err) => log.warn("[pond watch] watchNow threw", watch.id, err),

@@ -236,7 +236,7 @@ function importScopeItem(target: SourceMenuTarget): MenuItemSpec | null {
   return {
     label: "Choose What to Import",
     icon: <IconSliders />,
-    onClick: () => sourceDetail.openAccount(target.id, "import"),
+    onClick: () => sourceDetail.openAccount(target.id, "filters"),
   };
 }
 

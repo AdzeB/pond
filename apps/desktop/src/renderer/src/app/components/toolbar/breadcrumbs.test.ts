@@ -87,7 +87,10 @@ describe("library breadcrumb paths", () => {
     ["/settings/storage", "Storage"],
     ["/settings/backups", "Backups"],
     ["/settings/processing", "Processing"],
-    ["/settings/harvesting", "Harvesting"],
+    ["/settings/schedule", "Schedule"],
+    ["/settings/sources", "Sources"],
+    ["/settings/images", "Images"],
+    ["/settings/videos", "Videos"],
   ] as const)("labels the focused section at %s", (pathname, label) => {
     expect(
       buildBreadcrumbs({
@@ -99,18 +102,33 @@ describe("library breadcrumb paths", () => {
     ).toEqual(["Settings", label]);
   });
 
-  it("nests a source download page under Harvesting", () => {
+  it("nests a source download page under Sources", () => {
     expect(
       buildBreadcrumbs({
-        pathname: "/settings/harvesting-youtube",
+        pathname: "/settings/sources-youtube",
         listPath: "/",
         nav: { kind: "all" },
         folders,
       }).map(({ label, path }) => ({ label, path })),
     ).toEqual([
       { label: "Settings", path: "/settings" },
-      { label: "Harvesting", path: "/settings/harvesting" },
-      { label: "YouTube", path: "/settings/harvesting-youtube" },
+      { label: "Sources", path: "/settings/sources" },
+      { label: "YouTube", path: "/settings/sources-youtube" },
+    ]);
+  });
+
+  it("nests a source detail page under Sources", () => {
+    expect(
+      buildBreadcrumbs({
+        pathname: "/sources/account/acc-1",
+        listPath: "/",
+        nav: { kind: "all" },
+        folders,
+        sourceLabel: "@raphaelsalaja",
+      }).map(({ label, path }) => ({ label, path })),
+    ).toEqual([
+      { label: "Sources", path: "/sources" },
+      { label: "@raphaelsalaja", path: "/sources/account/acc-1" },
     ]);
   });
 

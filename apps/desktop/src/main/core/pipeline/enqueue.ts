@@ -93,6 +93,7 @@ export interface EnqueueManyResult {
   created: number;
   existing: number;
   failed: number;
+  createdIds: string[];
 }
 
 function isItemList(
@@ -248,7 +249,12 @@ async function enqueueMany(
   opts: EnqueueOptions = {},
 ): Promise<EnqueueManyResult> {
   const persistence = await openEnqueuePersistence();
-  const result: EnqueueManyResult = { created: 0, existing: 0, failed: 0 };
+  const result: EnqueueManyResult = {
+    created: 0,
+    existing: 0,
+    failed: 0,
+    createdIds: [],
+  };
   const normalized = normalizeEnqueueItems(items, opts.trigger);
   const { candidates } = normalized;
   result.failed = normalized.failed;
@@ -303,6 +309,7 @@ async function enqueueMany(
   );
 
   result.created = fresh.length;
+  result.createdIds = bundles.map((bundle) => bundle.save.id);
   for (const action of insertedActions) broadcastSyncAction(action);
   kickReconciler();
   log.info("[pond pipeline:enqueue] many", {

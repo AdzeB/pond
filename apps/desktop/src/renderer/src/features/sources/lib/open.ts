@@ -12,6 +12,14 @@ export type SourcesIntent =
   | { type: "inspect-watch"; id: string };
 
 export function openSources(intent?: SourcesIntent): void {
+  if (intent?.type === "inspect-account") {
+    sourceDetail.openAccount(intent.id);
+    return;
+  }
+  if (intent?.type === "inspect-watch") {
+    sourceDetail.openWatch(intent.id);
+    return;
+  }
   const router = getAppRouter();
   if (router && router.state.location.pathname !== "/sources") {
     router.history.push("/sources");
@@ -26,12 +34,6 @@ export function openSources(intent?: SourcesIntent): void {
       return;
     case "watch":
       startWatch(intent.source);
-      return;
-    case "inspect-account":
-      sourceDetail.openAccount(intent.id);
-      return;
-    case "inspect-watch":
-      sourceDetail.openWatch(intent.id);
       return;
   }
 }
