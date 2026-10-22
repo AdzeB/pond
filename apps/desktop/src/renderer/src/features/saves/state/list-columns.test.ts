@@ -9,6 +9,7 @@ it("defaults name and date on and the rest off", () => {
   expect(LIST_COLUMN_DEFAULTS).toEqual({
     name: true,
     dateAdded: true,
+    datePublished: false,
     tags: false,
     dimensions: false,
     rating: false,

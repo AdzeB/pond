@@ -55,6 +55,11 @@ export function ListCard({ model, width }: SaveCardViewProps) {
           {formatAbsolute(save.savedAt) || "—"}
         </span>
       ) : null}
+      {columns.datePublished ? (
+        <span className={styles.cell}>
+          {formatAbsolute(save.publishedAt) || "—"}
+        </span>
+      ) : null}
       {columns.annotation ? (
         <span className={styles.cell}>{save.notes?.trim() ? "Yes" : "—"}</span>
       ) : null}
