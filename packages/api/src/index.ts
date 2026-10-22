@@ -52,6 +52,12 @@ export {
   API_VERSION,
 } from "@pond/schema/api";
 export type { JsonObject, JsonValue } from "@pond/schema/json";
+export {
+  hostToSource,
+  SOURCES,
+  type Source,
+  sourceLabel,
+} from "@pond/schema/source-ids";
 
 import type {
   ApiEditFoldersRequest,
@@ -402,24 +408,33 @@ export class PondApi {
     return this.post("/saves/folders", ApiEditResultSchema, input);
   }
 
-  trash(ids: readonly string[]) {
-    return this.post("/saves/trash", ApiEditResultSchema, { ids: [...ids] });
-  }
-
-  restore(ids: readonly string[]) {
-    return this.post("/saves/restore", ApiEditResultSchema, {
+  trash(ids: readonly string[], libraryId?: string) {
+    return this.post("/saves/trash", ApiEditResultSchema, {
       ids: [...ids],
+      libraryId,
     });
   }
 
-  setNote(id: string, note: string | null) {
-    return this.post("/saves/note", ApiEditResultSchema, { id, note });
+  restore(ids: readonly string[], libraryId?: string) {
+    return this.post("/saves/restore", ApiEditResultSchema, {
+      ids: [...ids],
+      libraryId,
+    });
   }
 
-  setRating(ids: readonly string[], rating: number) {
+  setNote(id: string, note: string | null, libraryId?: string) {
+    return this.post("/saves/note", ApiEditResultSchema, {
+      id,
+      note,
+      libraryId,
+    });
+  }
+
+  setRating(ids: readonly string[], rating: number, libraryId?: string) {
     return this.post("/saves/rating", ApiEditResultSchema, {
       ids: [...ids],
       rating,
+      libraryId,
     });
   }
 
