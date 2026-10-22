@@ -50,6 +50,10 @@ export function playUiSoft(): void {
   play("soft", "soft");
 }
 
+export function playUiHover(): void {
+  play("hover", "hover");
+}
+
 export function playUiToggle(on: boolean): void {
   play("toggle", on ? "toggleOn" : "toggleOff");
 }

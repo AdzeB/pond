@@ -5,9 +5,12 @@ import {
   type SoundDefinition,
 } from "@web-kits/audio";
 
+export { createHoverGate } from "./hover-gate";
+
 export const UI_SOUND_NAMES = [
   "tap",
   "soft",
+  "hover",
   "toggleOn",
   "toggleOff",
   "success",
@@ -43,45 +46,94 @@ function sine(opts: ToneOptions): Layer {
   };
 }
 
+interface SnapOptions {
+  frequency: number;
+  gain: number;
+  decay: number;
+  delay?: number;
+  resonance?: number;
+}
+
+/** A wide band of white noise reads as a physical contact without a pitch that tires on repeat. */
+function snap(opts: SnapOptions): Layer {
+  return {
+    source: { type: "noise", color: "white" },
+    filter: [
+      {
+        type: "bandpass",
+        frequency: opts.frequency,
+        resonance: opts.resonance ?? 0.9,
+      },
+      { type: "lowpass", frequency: 7500 },
+    ],
+    envelope: { attack: 0, decay: opts.decay, sustain: 0, release: 0.002 },
+    delay: opts.delay,
+    gain: opts.gain,
+  };
+}
+
+function tick(frequency: Hertz, gain: number, delay?: number): Layer {
+  return sine({
+    frequency,
+    attack: 0.0003,
+    decay: 0.0025,
+    release: 0.003,
+    delay,
+    gain,
+  });
+}
+
+/** One switch contact: the snap plus a tink on the inharmonic partial a small hard body rings at. */
+function contact(pitch: number, level: number, delay?: number): Layer[] {
+  return [
+    snap({ frequency: pitch, decay: 0.0016, gain: 0.5 * level, delay }),
+    tick(pitch * 1.62, 0.03 * level, delay),
+  ];
+}
+
+const BODY = tick({ start: 900, end: 700 }, 0.03);
+
 /** Small, damped room; macOS cues are nearly dry, so frequent ones only get a trace. */
 function room(mix: number, decay = 0.4): ReverbEffect {
   return { type: "reverb", decay, damping: 0.5, preDelay: 0.01, mix };
 }
 
-/** Modeled on measurements of macOS Tink, Media Keys, acknowledgment_sent, and Ping, not sampled from them. */
+/** Short and dark so contacts stay close-miked clicks instead of ringing tones. */
+function booth(mix: number): ReverbEffect {
+  return { type: "reverb", decay: 0.15, damping: 0.75, preDelay: 0.002, mix };
+}
+
+/**
+ * Clicks and toggles follow earshot's designed click and toggle recipes; success and trash are modeled on
+ * measurements of macOS system cues, not sampled from them.
+ * @see https://github.com/Leonxlnx/earshot/tree/main/earshot/forge/recipes
+ */
 export const UI_SOUNDS = {
   tap: {
     layers: [
-      sine({ frequency: { start: 740, end: 700 }, decay: 0.028, gain: 0.07 }),
-      sine({ frequency: 3500, decay: 0.008, release: 0.006, gain: 0.006 }),
+      ...contact(4200, 1),
+      BODY,
+      snap({ frequency: 4950, decay: 0.0012, gain: 0.175, delay: 0.009 }),
     ],
-    effects: [room(0.04)],
+    effects: [booth(0.06)],
   },
   soft: {
+    layers: [snap({ frequency: 2400, decay: 0.0014, gain: 0.3 }), BODY],
+    effects: [booth(0.04)],
+  },
+  hover: {
     layers: [
-      sine({
-        frequency: 520,
-        attack: 0.002,
-        decay: 0.014,
-        release: 0.01,
-        gain: 0.05,
-      }),
-      sine({ frequency: 2600, decay: 0.006, release: 0.005, gain: 0.005 }),
+      snap({ frequency: 5400, resonance: 1.8, decay: 0.0012, gain: 0.11 }),
+      tick(2600, 0.0075),
     ],
   },
   toggleOn: {
-    layers: [
-      sine({ frequency: { start: 620, end: 700 }, decay: 0.07, gain: 0.04 }),
-      sine({ frequency: { start: 652, end: 736 }, decay: 0.07, gain: 0.035 }),
-    ],
-    effects: [room(0.05)],
+    layers: [...contact(3200, 1), BODY, ...contact(3900, 0.5, 0.04)],
+    effects: [booth(0.08)],
   },
   toggleOff: {
-    layers: [
-      sine({ frequency: { start: 700, end: 600 }, decay: 0.07, gain: 0.038 }),
-      sine({ frequency: { start: 736, end: 630 }, decay: 0.07, gain: 0.033 }),
-    ],
-    effects: [room(0.05)],
+    layers: [...contact(3600, 1), BODY, ...contact(2800, 0.5, 0.04)],
+    effects: [booth(0.08)],
   },
   success: {
     layers: [
@@ -132,6 +184,6 @@ export const UI_SOUNDS = {
 export const SOUND_PATCH = definePatch({
   name: "pond",
   author: "pond",
-  description: "Warm interface sounds modeled on macOS system cues",
+  description: "Tactile interface clicks with warm macOS-style confirmations",
   sounds: UI_SOUNDS,
 });
