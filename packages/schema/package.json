@@ -49,6 +49,7 @@
     "./list-kinds": "./src/list-kinds.ts",
     "./native": "./src/native.ts",
     "./capture": "./src/capture.ts",
+    "./changelog": "./src/changelog.ts",
     "./folder-rules": "./src/folder-rules.ts",
     "./folder-presentation": "./src/folder-presentation.ts",
     "./saved-view-presentation": "./src/saved-view-presentation.ts",

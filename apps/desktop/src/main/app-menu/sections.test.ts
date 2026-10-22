@@ -171,12 +171,13 @@ describe("app menu sections", () => {
     expect(buildHelpSection(context).submenu).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ label: "Keyboard Shortcuts" }),
+        expect.objectContaining({ label: "What's New" }),
         expect.objectContaining({ label: "Export Debug Report" }),
         expect.objectContaining({ label: "Report an Issue" }),
       ]),
     );
     expect(externalUrls).toContain(
-      "https://github.com/raphaelsalaja/pond/releases",
+      "https://github.com/raphaelsalaja/pond/issues",
     );
   });
 

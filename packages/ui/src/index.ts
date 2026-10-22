@@ -7,6 +7,7 @@ export { Accordion } from "./accordion";
 export { Badge, type BadgeTone } from "./badge";
 export { BrandTile } from "./brand-tile";
 export { Button, type ButtonProps } from "./button";
+export { Changelog, type ChangelogCategory } from "./changelog";
 export { Checkbox } from "./checkbox";
 export { Chip, type ChipTone } from "./chip";
 export { ColorField } from "./color-field";

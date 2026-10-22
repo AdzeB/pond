@@ -86,13 +86,37 @@ jobs:
             fi
           done
 
+      - name: Write release notes
+        run: |
+          ENTRY="changelog/${GITHUB_REF_NAME#v}.md"
+          if [ ! -f "$ENTRY" ]; then
+            echo "Missing $ENTRY. Add a changelog entry before tagging."
+            exit 1
+          fi
+          ENTRY="$ENTRY" node --input-type=module > "$RUNNER_TEMP/release-notes.md" <<'NODE'
+          import { readFileSync } from "node:fs";
+
+          const source = readFileSync(process.env.ENTRY, "utf8");
+          const [, head, body] =
+            source.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/) ?? [];
+          const field = (key) =>
+            head?.match(new RegExp(`^${key}:\\s*(.+)$`, "m"))?.[1]?.trim();
+          const title = field("title");
+          const summary = field("summary");
+          if (!title || !summary || !body?.trim()) {
+            throw new Error(`${process.env.ENTRY} needs a title, summary, and sections`);
+          }
+          process.stdout.write(`**${title}**\n\n${summary}\n\n${body.trim()}\n`);
+          NODE
+
       - name: Create draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
-              --title "Pond ${GITHUB_REF_NAME#v}" --generate-notes
+              --title "Pond ${GITHUB_REF_NAME#v}" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
 
   macos:

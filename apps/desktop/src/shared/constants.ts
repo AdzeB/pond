@@ -209,6 +209,7 @@ export type MenuActionId =
   | "view.random"
   | "view.subfolders.toggle"
   | "help.shortcuts"
+  | "help.whats-new"
   | "help.export-debug-report";
 
 export type MenuActionSource = "accelerator" | "menu" | "automation";

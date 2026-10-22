@@ -43,6 +43,7 @@ import { getAppRouter } from "@/shared/lib/app-router";
 import { isEditableTarget } from "@/shared/lib/editable-target";
 import { openSettings } from "@/shared/lib/open-settings";
 import { notify } from "@/shared/lib/toast";
+import { whatsNewDialog } from "@/shared/state/whats-new";
 
 function selectedIds(): string[] {
   const selected = [...selection.snapshot()];
@@ -338,6 +339,9 @@ export function handleNativeMenuAction(
     }
     case "help.shortcuts":
       openSettings("shortcuts");
+      return true;
+    case "help.whats-new":
+      whatsNewDialog.open();
       return true;
     case "help.export-debug-report":
       void runNewAction(exportDebugReport);

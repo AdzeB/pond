@@ -1,0 +1,9 @@
+.popup {
+  --page-dialog-width: 600px;
+
+  max-height: min(640px, calc(100dvh - 32px));
+}
+
+.content {
+  padding-block: 16px 24px;
+}

@@ -2,6 +2,7 @@ import { Button, Settings } from "@pond/ui";
 import { useState } from "react";
 import { z } from "zod";
 import { loadAppInfo } from "@/shared/lib/app-info";
+import { whatsNewDialog } from "@/shared/state/whats-new";
 
 const UpdateCheckSchema = z.object({
   ok: z.boolean(),
@@ -64,6 +65,28 @@ export function CheckNowRow() {
           loading={busy}
         >
           {busy ? "Checking" : "Check Now"}
+        </Button>
+      </Settings.ItemControl>
+    </>
+  );
+}
+
+export function WhatsNewRow() {
+  return (
+    <>
+      <Settings.ItemDetails>
+        <Settings.ItemTitle>What's New</Settings.ItemTitle>
+        <Settings.ItemDescription>
+          Read the release notes for every version of Pond.
+        </Settings.ItemDescription>
+      </Settings.ItemDetails>
+      <Settings.ItemControl>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => whatsNewDialog.open()}
+        >
+          Open
         </Button>
       </Settings.ItemControl>
     </>

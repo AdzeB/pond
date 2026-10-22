@@ -1,0 +1,133 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  container: changelog / inline-size;
+}
+
+.entry {
+  display: grid;
+  gap: 12px;
+
+  @container changelog (width >= 520px) {
+    grid-template-columns: 136px minmax(0, 1fr);
+    gap: 24px;
+  }
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  @container changelog (width >= 520px) {
+    position: sticky;
+    top: 0;
+    align-self: start;
+  }
+}
+
+.version {
+  margin: 0;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-xl);
+  line-height: 20px;
+  color: var(--ds-gray-12);
+}
+
+.date {
+  font-size: var(--ds-text-sm);
+  line-height: 18px;
+  color: var(--ds-gray-10);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ds-text-lg);
+  font-weight: var(--ds-weight-xl);
+  line-height: 20px;
+  color: var(--ds-gray-12);
+}
+
+.summary {
+  margin: 4px 0 0;
+  font-size: var(--ds-text-md);
+  line-height: 20px;
+  color: var(--ds-gray-10);
+}
+
+.section {
+  --changelog-tone: var(--ds-green-11);
+
+  margin-top: 20px;
+
+  &[data-category="important"] {
+    --changelog-tone: var(--ds-yellow-11);
+  }
+
+  &[data-category="improved"] {
+    --changelog-tone: var(--ds-blue-11);
+  }
+
+  &[data-category="fixed"] {
+    --changelog-tone: var(--ds-orange-11);
+  }
+}
+
+.heading {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-xl);
+  line-height: 20px;
+  color: var(--changelog-tone);
+
+  &::after {
+    flex: 1;
+    height: 1px;
+    margin-left: 6px;
+    content: "";
+    background: linear-gradient(to right, var(--ds-gray-a4), transparent);
+  }
+}
+
+.icon {
+  flex: none;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  margin: 10px 0 0;
+  list-style: none;
+}
+
+.item {
+  position: relative;
+  padding-left: 20px;
+  font-size: var(--ds-text-md);
+  line-height: 20px;
+  color: var(--ds-gray-11);
+  text-wrap: pretty;
+
+  &::before {
+    position: absolute;
+    top: 8px;
+    left: 6px;
+    width: 4px;
+    height: 4px;
+    content: "";
+    background: var(--ds-gray-8);
+    border-radius: var(--ds-radius-full);
+  }
+}

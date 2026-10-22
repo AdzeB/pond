@@ -115,10 +115,8 @@ export function buildHelpSection(context: AppMenuContext): AppMenuItem {
         ),
       },
       {
-        label: "Release Notes",
-        click: context.openExternalUrl(
-          "https://github.com/raphaelsalaja/pond/releases",
-        ),
+        label: "What's New",
+        click: context.sendMenuAction("help.whats-new"),
       },
       {
         label: "Email",

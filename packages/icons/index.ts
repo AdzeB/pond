@@ -778,6 +778,27 @@ export const IconChevronRightFill = /* @__PURE__ */ createIcon(
 export const IconCircle = /* @__PURE__ */ createIcon("Circle", "outline", [
   ["circle", { cx: "9", cy: "9", r: "6.25" }],
 ]);
+export const IconCircleArrowUp = /* @__PURE__ */ createIcon(
+  "CircleArrowUp",
+  "outline",
+  [
+    ["circle", { cx: "9", cy: "9", r: "6.75" }],
+    ["path", { d: "M9 12L9 6M6.75 8.25L9 6L11.25 8.25" }],
+  ],
+);
+export const IconCircleArrowUpFill = /* @__PURE__ */ createIcon(
+  "CircleArrowUp",
+  "fill",
+  [
+    [
+      "path",
+      {
+        fillRule: "evenodd",
+        d: "M9 1.5A7.5 7.5 0 1 1 9 16.5A7.5 7.5 0 1 1 9 1.5ZM9 4.94L12.03 7.97L10.97 9.03L9.75 7.81V12.25A0.75 0.75 0 0 1 8.25 12.25V7.81L7.03 9.03L5.97 7.97Z",
+      },
+    ],
+  ],
+);
 export const IconCircleCheck = /* @__PURE__ */ createIcon(
   "CircleCheck",
   "outline",
@@ -3369,6 +3390,19 @@ export const IconTriangleWarning = /* @__PURE__ */ createIcon(
     [
       "circle",
       { cx: "9", cy: "12.25", r: "1", fill: "currentColor", stroke: "none" },
+    ],
+  ],
+);
+export const IconTriangleWarningFill = /* @__PURE__ */ createIcon(
+  "TriangleWarning",
+  "fill",
+  [
+    [
+      "path",
+      {
+        fillRule: "evenodd",
+        d: "M7.7 2.35A1.5 1.5 0 0 1 10.3 2.35L16.25 12.95A1.5 1.5 0 0 1 14.95 15.2H3.05A1.5 1.5 0 0 1 1.75 12.95ZM8.25 6.75A0.75 0.75 0 0 1 9.75 6.75V9.75A0.75 0.75 0 0 1 8.25 9.75ZM9 11.25A1 1 0 1 1 9 13.25A1 1 0 1 1 9 11.25Z",
+      },
     ],
   ],
 );

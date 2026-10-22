@@ -1,4 +1,7 @@
-import { CheckNowRow } from "@/features/settings/components/sections/general";
+import {
+  CheckNowRow,
+  WhatsNewRow,
+} from "@/features/settings/components/sections/general";
 import { NotificationPreferences } from "@/features/settings/components/sections/general/feedback";
 import { RaycastRow } from "@/features/settings/components/sections/general/raycast";
 import { SidebarPreferences } from "@/features/settings/components/sections/general/sidebar";
@@ -293,6 +296,13 @@ export const generalSection = defineCustomSection({
           key: "check-now",
           title: "Check for Updates",
           render: () => <CheckNowRow />,
+        },
+        {
+          control: "custom",
+          key: "whats-new",
+          title: "What's New",
+          keywords: ["changelog", "release notes", "version"],
+          render: () => <WhatsNewRow />,
         },
       ],
     }),
