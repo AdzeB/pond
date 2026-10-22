@@ -4,6 +4,22 @@
   max-height: min(640px, calc(100dvh - 32px));
 }
 
+.header {
+  min-height: 52px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--ds-gray-a4);
+}
+
+.title {
+  font-size: var(--ds-text-md);
+}
+
+.version {
+  margin-left: 6px;
+  font-weight: var(--ds-weight-md);
+  color: var(--ds-gray-10);
+}
+
 .content {
   padding-block: 16px 24px;
 }
