@@ -5,9 +5,12 @@ import {
   type SoundDefinition,
 } from "@web-kits/audio";
 
+export { createHoverGate } from "./hover-gate";
+
 export const UI_SOUND_NAMES = [
   "tap",
   "soft",
+  "hover",
   "toggleOn",
   "toggleOff",
   "success",
@@ -48,6 +51,7 @@ interface SnapOptions {
   gain: number;
   decay: number;
   delay?: number;
+  resonance?: number;
 }
 
 /** A wide band of white noise reads as a physical contact without a pitch that tires on repeat. */
@@ -55,7 +59,11 @@ function snap(opts: SnapOptions): Layer {
   return {
     source: { type: "noise", color: "white" },
     filter: [
-      { type: "bandpass", frequency: opts.frequency, resonance: 0.9 },
+      {
+        type: "bandpass",
+        frequency: opts.frequency,
+        resonance: opts.resonance ?? 0.9,
+      },
       { type: "lowpass", frequency: 7500 },
     ],
     envelope: { attack: 0, decay: opts.decay, sustain: 0, release: 0.002 },
@@ -112,6 +120,12 @@ export const UI_SOUNDS = {
   soft: {
     layers: [snap({ frequency: 2400, decay: 0.0014, gain: 0.3 }), BODY],
     effects: [booth(0.04)],
+  },
+  hover: {
+    layers: [
+      snap({ frequency: 5400, resonance: 1.8, decay: 0.0012, gain: 0.11 }),
+      tick(2600, 0.0075),
+    ],
   },
   toggleOn: {
     layers: [...contact(3200, 1), BODY, ...contact(3900, 0.5, 0.04)],

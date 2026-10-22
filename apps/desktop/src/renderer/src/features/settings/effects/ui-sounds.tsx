@@ -1,5 +1,11 @@
+import { createHoverGate } from "@pond/ui/sounds";
 import { useEffect } from "react";
-import { playUiSoft, playUiTap, playUiToggle } from "@/shared/lib/sounds";
+import {
+  playUiHover,
+  playUiSoft,
+  playUiTap,
+  playUiToggle,
+} from "@/shared/lib/sounds";
 
 const INTERACTIVE_SELECTOR = [
   "button",
@@ -21,6 +27,9 @@ const TOGGLE_SELECTOR = [
   'input[type="checkbox"]',
   "[aria-pressed]",
 ].join(",");
+
+/** Options and menu items fill whole grids and lists, so only discrete controls tick on hover. */
+const HOVER_SELECTOR = 'a[href], button, [role="button"]';
 
 const TEXT_FIELD_SELECTOR = "input, textarea, select, [contenteditable]";
 
@@ -106,11 +115,31 @@ export function UiSounds() {
       playUiToggle(toggleTurnsOn(control));
     };
 
+    const hover = createHoverGate();
+
+    /** A background window still gets pointerover, and ticking behind another app is noise. */
+    const onPointerOver = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse" || !document.hasFocus()) return;
+      const from = asElement(event.target);
+      const control = from?.closest(HOVER_SELECTOR);
+      if (!from || !control || shouldSkip(control, from)) return;
+      if (hover.enter(control, event.timeStamp)) playUiHover();
+    };
+
+    const onPointerOut = (event: PointerEvent) => {
+      const control = asElement(event.target)?.closest(HOVER_SELECTOR);
+      if (control) hover.leave(control, asElement(event.relatedTarget));
+    };
+
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("click", onClick, true);
+    document.addEventListener("pointerover", onPointerOver);
+    document.addEventListener("pointerout", onPointerOut);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("click", onClick, true);
+      document.removeEventListener("pointerover", onPointerOver);
+      document.removeEventListener("pointerout", onPointerOut);
     };
   }, []);
 
