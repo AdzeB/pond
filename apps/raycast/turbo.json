@@ -4,7 +4,7 @@
   "tasks": {
     "build": {
       "cache": false,
-      "inputs": ["$TURBO_EXTENDS$", "ai.yaml", "assets/**", "help.md", "package.json", "src/**", "tsconfig.json"],
+      "inputs": ["$TURBO_EXTENDS$", "ai.yaml", "assets/**", "package.json", "src/**", "tsconfig.json"],
       "outputs": []
     },
     "typecheck": {

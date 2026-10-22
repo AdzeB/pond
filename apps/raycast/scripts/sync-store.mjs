@@ -5,7 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const FILES = [".prettierrc", "CHANGELOG.md", "README.md", "ai.yaml", "eslint.config.js", "help.md", "tsconfig.json"];
+const FILES = [".prettierrc", "CHANGELOG.md", "README.md", "ai.yaml", "eslint.config.js", "tsconfig.json"];
 const FOLDERS = ["assets", "metadata", "src", "tests"];
 const MANAGED = new Set([...FILES, ...FOLDERS, "package.json", "package-lock.json", "node_modules"]);
 

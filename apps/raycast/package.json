@@ -281,10 +281,10 @@
     {
       "name": "token",
       "title": "Local API Token",
-      "description": "Copy it from Pond Settings, under General and then Raycast.",
+      "description": "In Pond, open Settings, then General, then Raycast, and choose Copy Token.",
       "type": "password",
       "required": true,
-      "placeholder": "Paste your token"
+      "placeholder": "Copy from Pond Settings → General → Raycast"
     },
     {
       "name": "baseUrl",
