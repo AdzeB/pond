@@ -418,16 +418,23 @@ function Content({ className, ...props }: ComponentPropsWithoutRef<"div">) {
   return <div className={cn(styles.content, className)} {...props} />;
 }
 
+interface FooterProps extends ComponentPropsWithoutRef<"div"> {
+  leading?: ReactNode;
+  layout?: "end" | "fill";
+}
+
 function Footer({
   className,
   children,
   leading,
+  layout = "end",
   ...props
-}: ComponentPropsWithoutRef<"div"> & { leading?: ReactNode }) {
+}: FooterProps) {
   return (
     <div
       className={cn(styles.footer, className)}
       data-leading={leading ? "" : undefined}
+      data-layout={layout}
       {...props}
     >
       {leading ? <div className={styles.leading}>{leading}</div> : null}

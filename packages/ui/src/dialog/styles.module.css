@@ -196,6 +196,10 @@
     width: 100%;
     text-wrap: nowrap;
   }
+
+  [data-layout="fill"] > & {
+    flex: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

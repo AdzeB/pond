@@ -25,6 +25,10 @@ Session connect happens in the background when Pond is waiting and you open that
 
 See [`docs/supported-sources.md`](../../docs/supported-sources.md) for the full list.
 
+## Support Pond
+
+Pond is free, open source, and made by one person. If the extension saves you time, you can [buy me a coffee](https://buymeacoffee.com/raphaelsalaja), or use **Buy Me a Coffee** at the bottom of the panel.
+
 ## Layout
 
 | Path | What it holds |

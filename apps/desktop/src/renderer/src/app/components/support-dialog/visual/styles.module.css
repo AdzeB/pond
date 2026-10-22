@@ -1,0 +1,107 @@
+.visual {
+  --cycle: 3200ms;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 72px;
+  margin-bottom: 16px;
+}
+
+.step {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-2xl);
+  box-shadow: var(--ds-shadow-md);
+  animation: tint var(--cycle) var(--ds-easing-standard) infinite;
+}
+
+.glyph {
+  display: block;
+  width: 30px;
+  height: 30px;
+  overflow: visible;
+  animation: beat var(--cycle) var(--ds-easing-snap) infinite;
+}
+
+.outline {
+  fill: currentColor;
+  animation: morph var(--cycle) var(--ds-easing-spring) infinite;
+}
+
+@keyframes morph {
+  0%,
+  15%,
+  91%,
+  100% {
+    d: var(--logo);
+  }
+
+  32%,
+  75% {
+    d: var(--heart);
+  }
+}
+
+@keyframes tint {
+  0%,
+  15%,
+  91%,
+  100% {
+    color: var(--ds-gray-12);
+  }
+
+  32%,
+  75% {
+    color: var(--ds-red-9);
+  }
+}
+
+@keyframes beat {
+  0%,
+  32%,
+  42%,
+  100% {
+    transform: scale(1);
+  }
+
+  36% {
+    transform: scale(1.14);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step,
+  .glyph,
+  .outline {
+    animation: none;
+  }
+
+  .step {
+    color: var(--ds-red-9);
+  }
+
+  .outline {
+    d: var(--heart);
+  }
+}
+
+:global(html[data-reduce-motion="true"]) {
+  & .step,
+  & .glyph,
+  & .outline {
+    animation: none;
+  }
+
+  & .step {
+    color: var(--ds-red-9);
+  }
+
+  & .outline {
+    d: var(--heart);
+  }
+}

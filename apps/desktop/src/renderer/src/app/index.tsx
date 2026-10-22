@@ -32,6 +32,7 @@ import { BootScreen } from "./components/boot-screen";
 import { ErrorBoundary } from "./components/error-boundary";
 import { ErrorScreen } from "./components/error-screen";
 import { SetupHost } from "./components/setup";
+import { SupportDialog } from "./components/support-dialog";
 import { AgentLibraryBridge } from "./effects/agent-library-bridge";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
 import "./effects/save-library-bridge";
@@ -191,6 +192,7 @@ function LibraryApp() {
               </Suspense>
               <ConversionDialogHost />
               <UpdateDialog />
+              <SupportDialog />
               <CommandMenuHost />
               <ToastHost />
             </Dialog.PortalProvider>

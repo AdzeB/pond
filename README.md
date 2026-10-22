@@ -139,6 +139,14 @@ adapter authors are expected to respect.
 
 Read [Responsible use](RESPONSIBLE-USE.md) before you connect an account.
 
+## Support Pond
+
+Pond is free, open source, and made by one person. Support covers the Apple Developer membership, Windows code signing, the website, and time to keep sources working as sites change.
+
+- [Buy Me a Coffee](https://buymeacoffee.com/raphaelsalaja), once or monthly
+- [GitHub Sponsors](https://github.com/sponsors/raphaelsalaja)
+- [Star the repository](https://github.com/raphaelsalaja/pond) to help others find it
+
 ## Documentation
 
 - [License](LICENSE)

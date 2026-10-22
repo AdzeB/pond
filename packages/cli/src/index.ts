@@ -20,6 +20,10 @@ export function createProgram(): Command {
     .description("Work with your local Pond Library")
     .version(manifest.version)
     .showHelpAfterError()
+    .addHelpText(
+      "after",
+      "\nPond is free and open source. Support it at https://buymeacoffee.com/raphaelsalaja",
+    )
     .allowExcessArguments(false)
     .option("--base-url <url>", "Local API endpoint")
     .option("--token <token>", "Scoped Local API token")

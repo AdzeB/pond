@@ -1012,6 +1012,18 @@ export const IconCubeFill = /* @__PURE__ */ createIcon("Cube", "fill", [
     },
   ],
 ]);
+export const IconCupTogo = /* @__PURE__ */ createIcon("CupTogo", "outline", [
+  ["path", { d: "M15.25 4.25H2.75" }],
+  ["path", { d: "M4.75 4.25L5.5 1.75H12.5L13.25 4.25" }],
+  [
+    "path",
+    {
+      d: "M13.75 6.75L13.073 15.329C13.032 15.849 12.598 16.25 12.076 16.25H5.924C5.402 16.25 4.968 15.849 4.927 15.329L4.25 6.75",
+    },
+  ],
+  ["path", { d: "M4.408 8.75H13.592" }],
+  ["path", { d: "M4.726 12.75H13.276" }],
+]);
 export const IconCursor = /* @__PURE__ */ createIcon("Cursor", "outline", [
   [
     "path",

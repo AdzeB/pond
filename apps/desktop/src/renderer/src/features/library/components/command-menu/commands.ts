@@ -3,6 +3,7 @@ import {
   IconBookmark,
   IconBookmarkSlash,
   IconChatBubble,
+  IconCoffee,
   IconCompass,
   IconCopy,
   IconDownload,
@@ -31,6 +32,7 @@ import { openSources, pickWatchedFolder } from "@/features/sources";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { openSettings } from "@/shared/lib/open-settings";
 import { setupFlow } from "@/shared/state/setup";
+import { supportDialog } from "@/shared/state/support";
 import type { CommandSpec } from "./types";
 
 export function navigateTo(path: string): void {
@@ -233,5 +235,14 @@ export const COMMANDS: readonly CommandSpec[] = [
     icon: IconCompass,
     keywords: "onboarding welcome guide tour setup",
     run: () => setupFlow.open("existing"),
+  },
+  {
+    id: "support",
+    group: "App",
+    label: "Support Pond",
+    detail: "Buy Me a Coffee or star on GitHub",
+    icon: IconCoffee,
+    keywords: "donate tip sponsor coffee github star",
+    run: () => supportDialog.open(),
   },
 ];

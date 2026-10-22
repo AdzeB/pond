@@ -1,0 +1,133 @@
+import { IconCircleCheckFill } from "@pond/icons";
+import { Button, Dialog } from "@pond/ui";
+import { useEffect } from "react";
+import { supportDialog, useSupportDialogOpen } from "@/shared/state/support";
+import {
+  firstSeenAt,
+  hasAskedForSupport,
+  markAskedForSupport,
+  shouldAskForSupport,
+} from "./eligibility";
+import styles from "./styles.module.css";
+import { SupportVisual } from "./visual";
+
+const BUY_ME_A_COFFEE = "https://buymeacoffee.com/raphaelsalaja";
+const GITHUB = "https://github.com/raphaelsalaja/pond";
+const X = "https://x.com/raphaelsalaja";
+const CHECK_DELAY_MS = 60_000;
+
+const PROMISES = [
+  "Free and open source",
+  "On this computer, with no account",
+  "Free of ads and tracking",
+] as const;
+
+/** Asks once per install, after real use, so the ask follows value instead of preceding it. */
+function useAskOnce(): void {
+  useEffect(() => {
+    if (hasAskedForSupport()) return;
+    const since = firstSeenAt(Date.now());
+    let active = true;
+    const timer = setTimeout(async () => {
+      try {
+        const counts = await window.pond.query("saves.sidebarCounts", {});
+        if (!active || hasAskedForSupport()) return;
+        if (
+          !shouldAskForSupport({
+            saves: counts.library,
+            firstSeenAt: since,
+            now: Date.now(),
+          })
+        )
+          return;
+        markAskedForSupport();
+        supportDialog.open();
+      } catch {}
+    }, CHECK_DELAY_MS);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, []);
+}
+
+export function SupportDialog() {
+  const open = useSupportDialogOpen();
+  useAskOnce();
+
+  function visit(url: string) {
+    void window.pond.openExternal(url);
+    supportDialog.close();
+  }
+
+  return (
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) supportDialog.close();
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Backdrop />
+        <Dialog.Popup>
+          <Dialog.Header data-empty />
+          <Dialog.Content>
+            <div className={styles.body}>
+              <SupportVisual />
+              <div className={styles.copy}>
+                <Dialog.Title className={styles.title}>
+                  Help Pond Keep Growing
+                </Dialog.Title>
+                <Dialog.Description className={styles.description}>
+                  Pond is made by one person.
+                  <br />
+                  If it helps you, a coffee funds its development.
+                </Dialog.Description>
+              </div>
+              <div className={styles.details}>
+                <p className={styles["details-title"]}>Pond stays</p>
+                <ul className={styles.checklist}>
+                  {PROMISES.map((promise) => (
+                    <li key={promise}>
+                      <IconCircleCheckFill size={12} className={styles.check} />
+                      <span>{promise}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className={styles.spread}>
+                <p className={styles["details-title"]}>Other ways to help</p>
+                <p className={styles.text}>
+                  Money is never expected. A star on GitHub or a follow on X
+                  helps more people find Pond.
+                </p>
+                <div className={styles.links}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => visit(GITHUB)}
+                  >
+                    Star on GitHub
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => visit(X)}
+                  >
+                    Follow on X
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Dialog.Content>
+          <Dialog.Footer layout="fill">
+            <Dialog.Cancel>Not Now</Dialog.Cancel>
+            <Dialog.Confirm onClick={() => visit(BUY_ME_A_COFFEE)}>
+              Buy Me a Coffee
+            </Dialog.Confirm>
+          </Dialog.Footer>
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}

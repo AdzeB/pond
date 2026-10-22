@@ -4,6 +4,7 @@ import {
   IconBookmark,
   IconCamera,
   IconChevronRight,
+  IconCoffee,
   IconCrop,
   IconGear3,
   IconImages,
@@ -42,6 +43,8 @@ import { useLibrary } from "@/utils/use-library";
 import { useActiveTab, useShortcuts } from "../hooks";
 import { ShortcutsPanel } from "./shortcuts";
 import styles from "./styles.module.css";
+
+const BUY_ME_A_COFFEE = "https://buymeacoffee.com/raphaelsalaja";
 
 interface Command {
   tool: CaptureTool;
@@ -183,6 +186,16 @@ function MoreRows({ onShortcuts }: { onShortcuts: () => void }) {
       >
         <IconGear3 size={16} />
         <span className={styles.label}>Settings</span>
+        <IconArrowUpRight size={12} className={styles.trailing} />
+      </Button>
+      <Button
+        variant="ghost"
+        width="full"
+        className={styles.row}
+        onClick={() => void browser.tabs.create({ url: BUY_ME_A_COFFEE })}
+      >
+        <IconCoffee size={16} />
+        <span className={styles.label}>Buy Me a Coffee</span>
         <IconArrowUpRight size={12} className={styles.trailing} />
       </Button>
     </div>
