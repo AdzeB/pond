@@ -1,6 +1,6 @@
 {
   "name": "pond-api",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Typed client for Pond's Local API on your Mac.",
   "license": "MIT",
@@ -53,7 +53,8 @@
     "exports": {
       ".": {
         "types": "./dist/index.d.ts",
-        "import": "./dist/index.js"
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
       }
     },
     "main": "./dist/index.js",
