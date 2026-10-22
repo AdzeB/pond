@@ -90,6 +90,7 @@ export const manifest: IconManifest = {
   CopyId: ["outline"],
   Crop: ["outline"],
   Cube: ["outline", "fill"],
+  CupTogo: ["outline"],
   Cursor: ["outline"],
   Cylinder: ["outline"],
   DescendingSorting: ["outline"],
