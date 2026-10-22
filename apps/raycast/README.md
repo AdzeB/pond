@@ -7,7 +7,7 @@ Search, save, and organize your [Pond](https://github.com/raphaelsalaja/pond) li
 You need macOS, Raycast, and the latest version of Pond.
 
 1. [Install Pond](https://github.com/raphaelsalaja/pond/releases/latest), open it, and pick a library.
-2. In Pond, open **Settings → General → Raycast** and choose **Copy Token**.
+2. In Pond, open **Settings → Preferences**, then choose **Copy Token** under **Integrations → Raycast**.
 3. Run any Pond command in Raycast and paste the token into **Local API Token**.
 
 Keep Pond running while you use the extension. **Launch at Login** and **Launch in Background** in Pond Settings keep it ready without a window. If something's off, the extension tells you what happened and offers the one action that fixes it: open Pond, copy a new token, or update Pond.
