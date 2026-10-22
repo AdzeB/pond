@@ -1,21 +1,21 @@
 import { Server as HttpServer } from "node:http";
 import { type ServerType, serve } from "@hono/node-server";
 import { getConnInfo } from "@hono/node-server/conninfo";
+import { API_VERSION } from "@pond/schema/api";
 import { app as electronApp } from "electron";
 import log from "electron-log/main.js";
 import { Hono } from "hono";
 import { DEFAULT_INGEST_PORT } from "../../shared/constants";
+import { pondMcpSnippet } from "../core/agent/mcp-hosts";
 import { getPrefs } from "../core/prefs";
 import { getIngestToken } from "../keychain";
 import { createAuthLimiter, tokensMatch } from "./auth";
 import { enqueueHandler } from "./enqueue";
+import { apiError, handleApiError } from "./errors";
 import { libraryRoutes } from "./library";
-import { libraryInfoHandler } from "./library-info";
 import { libraryLocationRoutes } from "./library-locations";
 import { operationRoutes } from "./operations";
-import { saveInfoHandler } from "./save-info";
-import { saveThumbHandler } from "./save-thumb";
-import { savesGetHandler } from "./saves-get";
+import { savesRoutes } from "./saves";
 import { sessionImportHandler } from "./session-import";
 import { sessionPendingHandler } from "./session-pending";
 
@@ -38,6 +38,14 @@ function isAllowedOrigin(
     }
   }
   return false;
+}
+
+function isLoopback(address: string | undefined): boolean {
+  return (
+    address === "127.0.0.1" ||
+    address === "::1" ||
+    address === "::ffff:127.0.0.1"
+  );
 }
 
 const authLimiter = createAuthLimiter();
@@ -64,6 +72,7 @@ function buildApp(): Hono {
   });
 
   api.get("/api/v2/app/info", async (c) => {
+    const { command, args } = pondMcpSnippet();
     return c.json({
       status: "success",
       data: {
@@ -71,6 +80,10 @@ function buildApp(): Hono {
         version: electronApp.getVersion(),
         platform: process.platform,
         arch: process.arch,
+        apiVersion: API_VERSION,
+        ...(isLoopback(getConnInfo(c).remote.address) && {
+          mcp: { command, args },
+        }),
       },
     });
   });
@@ -81,7 +94,11 @@ function buildApp(): Hono {
   ) => {
     const ip = getConnInfo(c).remote.address || "unknown";
     if (authLimiter.isBlocked(ip)) {
-      return c.json({ status: "error", error: "rate_limited" }, 429);
+      return apiError(
+        c,
+        "rate_limited",
+        "Too many failed sign-ins. Wait a minute, then try again.",
+      );
     }
     const auth = c.req.header("authorization") ?? "";
     const expected = await getIngestToken();
@@ -91,7 +108,11 @@ function buildApp(): Hono {
       if (tripped) {
         log.warn("[pond http] rate limited after repeated auth failures", ip);
       }
-      return c.json({ status: "error", error: "unauthorized" }, 401);
+      return apiError(
+        c,
+        "unauthorized",
+        "The Local API Token is missing or wrong. Copy it from Settings > General.",
+      );
     }
     authLimiter.clear(ip);
     await next();
@@ -104,22 +125,17 @@ function buildApp(): Hono {
   api.use("/api/v2/session/*", requireAuth);
 
   api.post("/api/v2/enqueue", enqueueHandler);
-  api.post("/api/v2/saves/get", savesGetHandler);
-  api.get("/api/v2/saves/get", savesGetHandler);
-  api.get("/api/v2/saves/info", saveInfoHandler);
-  api.get("/api/v2/saves/thumb", saveThumbHandler);
-  api.get("/api/v2/library/info", libraryInfoHandler);
+  api.route("/api/v2/saves", savesRoutes());
   api.route("/api/v2/library", libraryRoutes());
   api.route("/api/v2/library", libraryLocationRoutes());
   api.route("/api/v2/operations", operationRoutes());
   api.post("/api/v2/session/import", sessionImportHandler);
   api.get("/api/v2/session/pending", sessionPendingHandler);
 
-  api.notFound((c) => c.json({ status: "error", error: "not found" }, 404));
-  api.onError((err, c) => {
-    log.error("[pond http] unhandled error", err);
-    return c.json({ status: "error", error: String(err) }, 500);
-  });
+  api.notFound((c) =>
+    apiError(c, "not_found", `No route for ${c.req.method} ${c.req.path}.`),
+  );
+  api.onError(handleApiError);
 
   return api;
 }

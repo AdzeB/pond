@@ -33,8 +33,9 @@
       "project": ["src/**/*.ts"],
       "ignoreDependencies": ["tsx"]
     },
-    "packages/local-api": {
-      "project": ["src/**/*.ts"]
+    "packages/api": {
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["zod"]
     },
     ".": {
       "entry": ["scripts/*.{mjs,cjs,ts}", "tools/**/*.{ts,mjs}"]

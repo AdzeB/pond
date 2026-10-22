@@ -1,4 +1,4 @@
-import { basename } from "node:path";
+import { ApiSearchRequestSchema } from "@pond/schema/api";
 import { Hono } from "hono";
 import {
   ConversionApiRequestSchema,
@@ -6,17 +6,26 @@ import {
   ImageCompressionRequestSchema,
 } from "../../shared/conversion-contracts";
 import { LibraryQueryRequestSchema } from "../../shared/library-query";
+import { queryActiveLibraryPage } from "../core/active-library-query";
 import { conversionCapabilities } from "../core/conversion-capabilities";
 import {
   conversionJobs,
   conversionPresets,
   saveConversionPreset,
 } from "../core/conversion-jobs";
-import { queryLibraryPage } from "../core/library-query";
-import { getDb } from "../db";
-import { resolvePaths } from "../paths";
+import { libraryInfo } from "../ops";
+import {
+  libraryFolders,
+  librarySources,
+  libraryTags,
+  libraryViews,
+  searchSaves,
+} from "./api-library";
+import { type ApiRuntime, apiRuntime } from "./api-runtime";
+import { apiSavesByIds } from "./api-saves";
+import { handleApiError, invalidRequest } from "./errors";
 
-export function libraryRoutes() {
+export function libraryRoutes(runtime: ApiRuntime = apiRuntime) {
   const routes = new Hono();
   routes.get("/conversion/capabilities", async (c) =>
     c.json({ status: "success", data: await conversionCapabilities() }),
@@ -26,8 +35,7 @@ export function libraryRoutes() {
   );
   routes.post("/conversion/presets", async (c) => {
     const parsed = ConversionPresetSchema.safeParse(await c.req.json());
-    if (!parsed.success)
-      return c.json({ status: "error", error: parsed.error.message }, 400);
+    if (!parsed.success) return invalidRequest(c, parsed.error);
     return c.json({
       status: "success",
       data: saveConversionPreset(parsed.data),
@@ -35,8 +43,7 @@ export function libraryRoutes() {
   });
   routes.post("/conversion/start", async (c) => {
     const parsed = ConversionApiRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success)
-      return c.json({ status: "error", error: parsed.error.message }, 400);
+    if (!parsed.success) return invalidRequest(c, parsed.error);
     return c.json({
       status: "success",
       data: conversionJobs.start(parsed.data),
@@ -44,8 +51,7 @@ export function libraryRoutes() {
   });
   routes.post("/conversion/compress", async (c) => {
     const parsed = ImageCompressionRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success)
-      return c.json({ status: "error", error: parsed.error.message }, 400);
+    if (!parsed.success) return invalidRequest(c, parsed.error);
     return c.json({
       status: "success",
       data: conversionJobs.startCompression(parsed.data),
@@ -65,19 +71,41 @@ export function libraryRoutes() {
   );
   routes.post("/query", async (c) => {
     const parsed = LibraryQueryRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success)
-      return c.json({ status: "error", error: parsed.error.message }, 400);
-    const data = await queryLibraryPage(
-      await getDb(),
-      basename(resolvePaths().indexDb, ".db"),
-      parsed.data,
-    );
+    if (!parsed.success) return invalidRequest(c, parsed.error);
+    const page = await queryActiveLibraryPage(parsed.data);
+    const data = parsed.data.include?.includes("saves")
+      ? {
+          ...page,
+          saves: await apiSavesByIds(runtime, page.ids, {
+            includeDeleted: true,
+          }),
+        }
+      : page;
     return c.json({ status: "success", data });
   });
-  routes.onError((error, c) => {
-    if (error instanceof SyntaxError)
-      return c.json({ status: "error", error: "Invalid JSON." }, 400);
-    return c.json({ status: "error", error: error.message }, 500);
+  routes.get("/info", async (c) =>
+    c.json({ status: "success", data: await libraryInfo() }),
+  );
+  routes.get("/tags", async (c) =>
+    c.json({ status: "success", data: await libraryTags(runtime) }),
+  );
+  routes.get("/folders", async (c) =>
+    c.json({ status: "success", data: await libraryFolders(runtime) }),
+  );
+  routes.get("/views", async (c) =>
+    c.json({ status: "success", data: await libraryViews() }),
+  );
+  routes.get("/sources", async (c) =>
+    c.json({ status: "success", data: await librarySources(runtime) }),
+  );
+  routes.post("/search", async (c) => {
+    const parsed = ApiSearchRequestSchema.safeParse(await c.req.json());
+    if (!parsed.success) return invalidRequest(c, parsed.error);
+    return c.json({
+      status: "success",
+      data: await searchSaves(runtime, parsed.data),
+    });
   });
+  routes.onError(handleApiError);
   return routes;
 }

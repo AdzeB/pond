@@ -1,11 +1,11 @@
 import { createInterface } from "node:readline";
+import type { Command } from "commander";
 import {
+  type ApiSave,
   type JsonObject,
   type JsonValue,
-  type LocalApiSave,
-  PondLocalApi,
-} from "@pond/local-api";
-import type { Command } from "commander";
+  PondApi,
+} from "pond-api";
 import { z } from "zod";
 import { resolvedConfig } from "../config";
 import { parseArguments, runOperation } from "../operations";
@@ -62,7 +62,7 @@ export async function commandContext(program: Command) {
     token: globals.token,
     timeout: globals.timeout ? Number(globals.timeout) : undefined,
   });
-  const api = new PondLocalApi({
+  const api = new PondApi({
     baseUrl: config.baseUrl,
     token: config.token,
     ensureAvailable: () => ensurePondAvailable(config.baseUrl, config.timeout),
@@ -123,10 +123,10 @@ export async function stdinLines(): Promise<string[]> {
 }
 
 export async function waitForSaves(
-  api: PondLocalApi,
+  api: PondApi,
   ids: string[],
   timeout: number,
-): Promise<LocalApiSave[]> {
+): Promise<ApiSave[]> {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     const rows = await api.saves({ ids, includeDeleted: true });

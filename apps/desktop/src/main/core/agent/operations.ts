@@ -1,6 +1,7 @@
 import type { JsonObject, JsonValue } from "@pond/schema/json";
 import { z } from "zod";
 import type { AgentOperationRequest } from "../../../shared/agent-operations";
+import { PondError } from "../../lib/pond-error";
 import type { ToolSpec } from "./complete";
 
 export interface PondOperation {
@@ -31,7 +32,11 @@ export function pondOperationCatalog(): OperationCatalog {
 
 function findOperation(name: string, catalog: OperationCatalog) {
   const operation = catalog.operations.find((entry) => entry.name === name);
-  if (!operation) throw new Error(`Pond operation unavailable: ${name}`);
+  if (!operation)
+    throw new PondError(
+      "operation_not_found",
+      `Pond operation unavailable: ${name}`,
+    );
   return operation;
 }
 
@@ -40,7 +45,10 @@ export async function applyPondOperation(
   catalog = registered,
 ): Promise<JsonValue> {
   if (catalog.libraryId() !== request.libraryId)
-    throw new Error("The Library changed. Request this operation again.");
+    throw new PondError(
+      "library_mismatch",
+      "The Library changed. Request this operation again.",
+    );
   const operation = findOperation(request.operation, catalog);
   operation.inputSchema.parse(request.arguments);
   const result = await operation.execute(request.arguments);
@@ -52,7 +60,8 @@ export async function applyPondOperation(
     })
     .safeParse(result);
   if (failure.success)
-    throw new Error(
+    throw new PondError(
+      "operation_failed",
       failure.data.error ??
         failure.data.reason ??
         "The operation did not finish.",

@@ -1,7 +1,8 @@
-import { LocalApiSwitchLibraryRequestSchema } from "@pond/schema/local-api";
+import { ApiSwitchLibraryRequestSchema } from "@pond/schema/api";
 import { Hono } from "hono";
 import type { QueryResult } from "../../shared/query-contracts";
 import { libraryLocationQueries } from "../ipc/queries/library-locations";
+import { apiError, handleApiError } from "./errors";
 
 interface LibraryLocationRouteDeps {
   recent: () => Promise<QueryResult<"library.recent">>;
@@ -23,34 +24,22 @@ export function libraryLocationRoutes(
   );
 
   routes.post("/switch", async (c) => {
-    const parsed = LocalApiSwitchLibraryRequestSchema.safeParse(
-      await c.req.json(),
-    );
+    const parsed = ApiSwitchLibraryRequestSchema.safeParse(await c.req.json());
     if (!parsed.success) {
-      return c.json(
-        { status: "error", error: "Choose a recent Library." },
-        400,
-      );
+      return apiError(c, "invalid_request", "Choose a recent Library.");
     }
     const result = await deps.switchTo(parsed.data.path);
     if (!result.ok) {
-      return c.json(
-        {
-          status: "error",
-          error: result.error ?? "Could not switch Libraries.",
-        },
-        409,
+      return apiError(
+        c,
+        "library_unavailable",
+        result.error ?? "Could not switch Libraries.",
       );
     }
     return c.json({ status: "success", data: result });
   });
 
-  routes.onError((error, c) => {
-    if (error instanceof SyntaxError) {
-      return c.json({ status: "error", error: "Invalid JSON." }, 400);
-    }
-    return c.json({ status: "error", error: error.message }, 500);
-  });
+  routes.onError(handleApiError);
 
   return routes;
 }

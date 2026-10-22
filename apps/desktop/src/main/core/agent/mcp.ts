@@ -1,6 +1,6 @@
-import { basename } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { app } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import {
@@ -13,15 +13,17 @@ import {
   type LibraryQueryPage,
   LibraryQueryRequestSchema,
 } from "../../../shared/library-query";
-import { getDb } from "../../db";
-import { resolvePaths } from "../../paths";
+import { closeDb } from "../../db";
+import { readLibraryPointer } from "../../lib/library-pointer";
+import { invalidatePaths, resolvePaths } from "../../paths";
+import { queryActiveLibraryPage } from "../active-library-query";
 import { conversionCapabilities } from "../conversion-capabilities";
 import {
   conversionJobs,
   conversionPresets,
   saveConversionPreset,
 } from "../conversion-jobs";
-import { queryLibraryPage } from "../library-query";
+import { invalidatePrefs } from "../prefs";
 import type { ToolResult } from "./complete";
 import {
   MCP_ACCESS_OFF,
@@ -55,6 +57,16 @@ function textResult(
   };
 }
 
+/** MCP hosts keep this process alive across Library switches in the app, so reopen the index when the pointer moves. */
+function followActiveLibrary(): void {
+  const pointer = readLibraryPointer();
+  if (!pointer || pointer === resolvePaths().libraryRoot) return;
+  log.info("[pond mcp] following Library switch", pointer);
+  closeDb();
+  invalidatePaths();
+  invalidatePrefs();
+}
+
 function withAccess<Args extends unknown[]>(
   group: McpAccessGroup,
   run: (
@@ -62,6 +74,7 @@ function withAccess<Args extends unknown[]>(
   ) => ReturnType<typeof textResult> | Promise<ReturnType<typeof textResult>>,
 ) {
   return async (...args: Args) => {
+    followActiveLibrary();
     if (!(await mcpToolAllowed(group))) {
       return textResult({ error: MCP_ACCESS_OFF[group] });
     }
@@ -73,7 +86,7 @@ export async function startPondMcp(): Promise<void> {
   log.transports.console.level = false;
   const server = new McpServer({
     name: "pond",
-    version: "0.0.1",
+    version: app.getVersion(),
   });
 
   server.registerTool(
@@ -85,13 +98,7 @@ export async function startPondMcp(): Promise<void> {
       annotations: { readOnlyHint: true },
     },
     withAccess("search", async (request) =>
-      textResult(
-        await queryLibraryPage(
-          await getDb(),
-          basename(resolvePaths().indexDb, ".db"),
-          request,
-        ),
-      ),
+      textResult(await queryActiveLibraryPage(request)),
     ),
   );
   server.registerTool(

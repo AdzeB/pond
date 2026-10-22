@@ -1,0 +1,53 @@
+name: Publish pond-api
+
+on:
+  push:
+    tags: ["pond-api@*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: npm with trusted publishing
+        run: npm install --global npm@^11.5.1
+
+      - name: Tag matches the package version
+        if: github.ref_type == 'tag'
+        run: |
+          version=$(node -p "require('./packages/api/package.json').version")
+          test "${GITHUB_REF_NAME}" = "pond-api@${version}" || {
+            echo "Tag ${GITHUB_REF_NAME} doesn't match pond-api@${version}."
+            exit 1
+          }
+
+      - name: Test
+        run: pnpm turbo run test typecheck --filter=pond-api
+
+      - name: Build and smoke-test the tarball
+        working-directory: packages/api
+        run: pnpm build && pnpm pack:check
+
+      - name: Publish
+        working-directory: packages/api
+        run: |
+          pnpm pack --pack-destination "$RUNNER_TEMP"
+          npm publish "$RUNNER_TEMP"/pond-api-*.tgz --provenance --access public

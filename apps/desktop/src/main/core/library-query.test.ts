@@ -206,8 +206,8 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
     expect(ids.slice(0, 600).every((id) => Number(id) % 2 === 0)).toBe(true);
     expect((await queryLibraryIds(db, "library", request)).ids).toEqual(ids);
   });
-  it("rejects a cursor after mutations or switching libraries", async () => {
-    const { db, sqlite } = setup();
+  it("rejects a cursor from another library", async () => {
+    const { db } = setup();
     const first = await queryLibraryPage(db, "one", {
       query: EMPTY_QUERY,
       limit: 10,
@@ -217,14 +217,52 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
         query: EMPTY_QUERY,
         cursor: first.nextCursor,
       }),
-    ).rejects.toThrow("library changed");
-    sqlite.exec("update saves set title='changed' where id='0001'");
+    ).rejects.toMatchObject({ code: "library_mismatch" });
     await expect(
-      queryLibraryPage(db, "one", {
-        query: EMPTY_QUERY,
-        cursor: first.nextCursor,
-      }),
-    ).rejects.toThrow("library changed");
+      queryLibraryPage(db, "two", { libraryId: "one", query: EMPTY_QUERY }),
+    ).rejects.toMatchObject({ code: "library_mismatch" });
+  });
+  it("keeps paging from the same position after writes between pages", async () => {
+    const { db, sqlite } = setup();
+    const request = { query: EMPTY_QUERY, limit: 10 };
+    const first = await queryLibraryPage(db, "one", request);
+    expect(first.ids.at(-1)).toBe("1190");
+    sqlite.exec(
+      "update saves set title='changed' where id='0001';insert into saves (id,source,source_id,url,title,saved_at,status,media_type) values ('new','local','new','pond:new','New',5000,'complete','text')",
+    );
+    const second = await queryLibraryPage(db, "one", {
+      ...request,
+      cursor: first.nextCursor,
+    });
+    expect(second.ids).toEqual(
+      Array.from({ length: 10 }, (_, i) => String(1189 - i).padStart(4, "0")),
+    );
+    expect(second.total).toBe(1201);
+  });
+  it("pages through pinned saves without repeating or skipping", async () => {
+    const { db } = setup();
+    const pins = ["0003", "0001", "0500"];
+    const request = {
+      query: EMPTY_QUERY,
+      sortKey: "savedAt",
+      sortDir: "desc" as const,
+      limit: 2,
+    };
+    let page = await queryLibraryPage(db, "library", request, [], pins);
+    const ids = [...page.ids];
+    while (page.nextCursor) {
+      page = await queryLibraryPage(
+        db,
+        "library",
+        { ...request, limit: 97, cursor: page.nextCursor },
+        [],
+        pins,
+      );
+      ids.push(...page.ids);
+    }
+    expect(ids.slice(0, 5)).toEqual(["0003", "0001", "0500", "1199", "1198"]);
+    expect(ids).toHaveLength(1200);
+    expect(new Set(ids).size).toBe(1200);
   });
   it("keeps seeded random order stable across pages and unrelated imports", async () => {
     const { db, sqlite } = setup();
@@ -258,7 +296,7 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
         randomSeed: "another",
         cursor: first.nextCursor,
       }),
-    ).rejects.toThrow("library changed");
+    ).rejects.toMatchObject({ code: "stale_cursor" });
     sqlite.exec(
       "insert into saves (id,source,source_id,url,title,status,media_type) values ('new','local','new','pond:new','New','complete','text')",
     );
@@ -287,7 +325,7 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
         { ...request, cursor: page.nextCursor },
         [...order].reverse(),
       ),
-    ).rejects.toThrow("library changed");
+    ).rejects.toMatchObject({ code: "stale_cursor" });
     const ids = [...page.ids];
     while (page.nextCursor) {
       page = await queryLibraryPage(

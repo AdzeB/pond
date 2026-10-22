@@ -41,8 +41,9 @@ export function registerSaveCommands(program: Command): void {
         limit: Number(flags.limit),
         sortKey: "savedAt",
         sortDir: "desc",
+        include: ["saves"],
       });
-      return api.saves({ ids: page.ids });
+      return page.saves ?? [];
     },
   );
   action(
@@ -57,8 +58,9 @@ export function registerSaveCommands(program: Command): void {
         limit: 100,
         sortKey: "savedAt",
         sortDir: "desc",
+        include: ["saves"],
       });
-      return api.saves({ ids: page.ids });
+      return page.saves ?? [];
     },
   );
   action(program, saves.command("get").argument("<ids...>"), async (ids) => {

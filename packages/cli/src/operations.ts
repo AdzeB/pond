@@ -1,5 +1,5 @@
 import { createInterface } from "node:readline/promises";
-import type { JsonObject, JsonValue, PondLocalApi } from "@pond/local-api";
+import type { JsonObject, JsonValue, PondApi } from "pond-api";
 import { z } from "zod";
 
 export interface OperationOptions {
@@ -22,7 +22,7 @@ async function confirm(message: string): Promise<boolean> {
 }
 
 export async function runOperation(
-  api: PondLocalApi,
+  api: PondApi,
   name: string,
   args: JsonObject,
   options: OperationOptions,
