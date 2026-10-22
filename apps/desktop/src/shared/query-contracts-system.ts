@@ -1,3 +1,4 @@
+import type { ApiTokenInfo } from "@pond/schema/api";
 import type {
   AgentChat,
   AgentMessage,
@@ -243,6 +244,9 @@ export interface SystemQueryResults {
   "settings.setSourceDownloadsCustom": OkResult<DownloadSettingsResult>;
   "settings.ingestToken": { token: string | null };
   "settings.rotateIngestToken": { token: string };
+  "apiTokens.list": { tokens: ApiTokenInfo[] };
+  "apiTokens.create": { token: string; info: ApiTokenInfo };
+  "apiTokens.revoke": { ok: boolean };
   "settings.getOnboarded": { onboarded: boolean };
   "settings.setOnboarded": OkResult;
   "autoImport.status": Prefs["autoImport"] & {

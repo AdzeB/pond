@@ -5,6 +5,7 @@ import {
   IconGear3 as General,
   IconImages as Images,
   IconFolder as Library,
+  IconCode as LocalApi,
   IconBracketsCurly as Mcp,
   IconCube as Models,
   IconUser as Personalization,
@@ -38,6 +39,7 @@ const ICONS = new Map<string, IconComponent>([
   ["appearance", Appearance],
   ["shortcuts", Shortcuts],
   ["extension", Extension],
+  ["local-api", LocalApi],
   ["tags", Tags],
   ["library", Library],
   ["processing", Processing],
@@ -77,6 +79,7 @@ const BESPOKE_SECTION_IDS = new Set([
   "agent-models",
   "personalization",
   "mcp",
+  "local-api",
 ]);
 
 export function isBespokeSection(section: SectionDef): boolean {

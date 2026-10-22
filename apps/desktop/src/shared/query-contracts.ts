@@ -1,3 +1,4 @@
+import type { ApiTokenScope } from "@pond/schema/api";
 import type {
   Folder,
   ImageDownloadSettings,
@@ -287,6 +288,9 @@ export interface QueryInputs
   "settings.get": EmptyInput;
   "settings.ingestToken": EmptyInput;
   "settings.rotateIngestToken": EmptyInput;
+  "apiTokens.list": EmptyInput;
+  "apiTokens.create": { name: string; scopes: ApiTokenScope[] };
+  "apiTokens.revoke": { id: string };
   "settings.getOnboarded": EmptyInput;
   "settings.setOnboarded": EmptyInput;
   "settings.getPrefs": EmptyInput;

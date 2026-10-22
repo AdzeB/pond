@@ -1,4 +1,9 @@
 import { createHash, timingSafeEqual } from "node:crypto";
+import { API_TOKEN_SCOPE_LABELS, type ApiTokenInfo } from "@pond/schema/api";
+import log from "electron-log/main.js";
+import type { Context, MiddlewareHandler } from "hono";
+import { apiError } from "./errors";
+import { routeAccess } from "./scopes";
 
 const AUTH_WINDOW_MS = 5 * 60_000;
 const AUTH_MAX_FAILURES = 10;
@@ -37,5 +42,69 @@ export function createAuthLimiter(now: () => number = Date.now) {
     clear(key: string): void {
       failures.delete(key);
     },
+  };
+}
+
+interface RequireAuthOptions {
+  localToken: () => Promise<string | null>;
+  scopedToken: (presented: string) => Promise<ApiTokenInfo | null>;
+  limiter: ReturnType<typeof createAuthLimiter>;
+  remoteAddress: (c: Context) => string | undefined;
+}
+
+/** The Local API Token reaches every route; a scoped token reaches only the public routes its scopes cover. */
+export function createRequireAuth({
+  localToken,
+  scopedToken,
+  limiter,
+  remoteAddress,
+}: RequireAuthOptions): MiddlewareHandler {
+  return async (c, next) => {
+    const ip = remoteAddress(c) || "unknown";
+    if (limiter.isBlocked(ip)) {
+      return apiError(
+        c,
+        "rate_limited",
+        "Too many failed sign-ins. Wait a minute, then try again.",
+      );
+    }
+    const presented = (c.req.header("authorization") ?? "").replace(
+      /^Bearer\s+/i,
+      "",
+    );
+    const expected = await localToken();
+    if (expected && presented && tokensMatch(expected, presented)) {
+      limiter.clear(ip);
+      await next();
+      return;
+    }
+    const scoped = presented ? await scopedToken(presented) : null;
+    if (!scoped) {
+      if (limiter.recordFailure(ip)) {
+        log.warn("[pond http] rate limited after repeated auth failures", ip);
+      }
+      return apiError(
+        c,
+        "unauthorized",
+        "The token is missing, wrong, or revoked. Copy the Local API Token from Settings > General, or create one in Settings > Local API.",
+      );
+    }
+    limiter.clear(ip);
+    const access = routeAccess(c.req.method, c.req.path);
+    if (access === "internal") {
+      return apiError(
+        c,
+        "forbidden",
+        "This route needs the Local API Token from Settings > General.",
+      );
+    }
+    if (!scoped.scopes.includes(access)) {
+      return apiError(
+        c,
+        "forbidden",
+        `This token doesn't have ${API_TOKEN_SCOPE_LABELS[access]} access. Create one that does in Settings > Local API.`,
+      );
+    }
+    await next();
   };
 }

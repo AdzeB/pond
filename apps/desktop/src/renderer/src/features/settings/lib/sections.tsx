@@ -11,6 +11,7 @@ import {
 } from "@/features/settings/lib/config-harvesting";
 import { imagesSection } from "@/features/settings/lib/config-images";
 import { librarySection } from "@/features/settings/lib/config-library";
+import { localApiSection } from "@/features/settings/lib/config-local-api";
 import { mcpSection } from "@/features/settings/lib/config-mcp";
 import { processingSection } from "@/features/settings/lib/config-processing";
 import { sourceDownloadsSection } from "@/features/settings/lib/config-source-downloads";
@@ -46,6 +47,11 @@ const McpSection = lazy(() =>
     default: m.McpSection,
   })),
 );
+const LocalApiSection = lazy(() =>
+  import("@/features/settings/components/sections/local-api").then((m) => ({
+    default: m.LocalApiSection,
+  })),
+);
 const ShortcutSettings = lazy(() =>
   import("@/features/shortcuts").then((m) => ({
     default: m.ShortcutSettings,
@@ -56,6 +62,7 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ["viewer", viewerSection],
   ["appearance", appearanceSection],
   ["extension", extensionSection],
+  ["local-api", { ...localApiSection, component: LocalApiSection }],
   [
     "shortcuts",
     {

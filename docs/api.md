@@ -10,14 +10,35 @@ The TypeScript client lives in [`packages/api`](../packages/api) and is publishe
 
 ## Authentication
 
-Copy the Local API Token from **Settings → General → Raycast**. You can also open that page with `pond://settings/general`. Send the token as a Bearer header on every request except `/app/info`:
+Send a token as a Bearer header on every request except `/app/info`:
 
 ```sh
 curl -H "Authorization: Bearer $POND_TOKEN" \
   http://127.0.0.1:41610/api/v2/library/info
 ```
 
-Rotating the token in Settings invalidates the old one immediately. After more than 10 failed attempts from one address within five minutes, Pond answers `rate_limited` until that window ends.
+Pond accepts two kinds of token:
+
+- **Scoped tokens** are for your own scripts and apps. Create one in **Settings → Local API** (`pond://settings/local-api`), pick what it can reach, and copy it. Pond shows it once and keeps only a hash. Revoke it there when the tool no longer needs access. Scoped tokens start with `pond_`.
+- **The Local API Token** reaches every route, including the private ones below. Raycast uses it. Copy it from **Settings → General → Raycast** (`pond://settings/general`). Rotating it invalidates the old one immediately.
+
+After more than 10 failed attempts from one address within five minutes, Pond answers `rate_limited` until that window ends.
+
+### Access
+
+Each scoped token has one or more of these. A request outside them gets `forbidden`.
+
+| Access | Routes |
+| --- | --- |
+| Search Saves | `GET /library/info`, `/library/tags`, `/library/folders`, `/library/views`, `/library/sources`. `POST /library/query`, `/library/search`. `/saves/get`, `GET /saves/info`, `/saves/text`, `/saves/status`, `/saves/thumb`, `/saves/file`, `/saves/related`. |
+| Export Files | Every `/library/conversion` route. |
+| Add and Edit Saves | `POST /enqueue`, `/saves/tags`, `/saves/folders`, `/saves/trash`, `/saves/restore`, `/saves/note`, `/saves/rating`. |
+
+These routes are private. Only the Local API Token reaches them, and they may change between minor versions:
+
+- `/operations`, which reaches nearly every action in the app.
+- `/library/recent` and `/library/switch`.
+- `/session/*`, which the browser extension uses to hand Pond a signed-in session.
 
 ## Responses
 
@@ -41,7 +62,8 @@ Branch on `code`, never on `message`. Messages may change between releases.
 | Code | Status | Meaning |
 | --- | --- | --- |
 | `invalid_json` | 400 | The body isn't valid JSON. |
-| `unauthorized` | 401 | The token is missing or wrong. |
+| `unauthorized` | 401 | The token is missing, wrong, or revoked. |
+| `forbidden` | 403 | The token doesn't have access to that route. |
 | `not_found` | 404 | The route or file doesn't exist. |
 | `save_not_found` | 404 | A Save id doesn't exist in the active library. |
 | `no_thumbnail` | 404 | The Save has no image to show. |
@@ -61,13 +83,15 @@ New codes may appear in minor versions. Treat an unknown code by its HTTP status
 
 ## Versioning
 
-`GET /app/info` returns `apiVersion`, currently `2.1.0`. Within `/api/v2`:
+`GET /app/info` returns `apiVersion`, currently `2.2.0`. Within `/api/v2`:
 
 - Minor versions add endpoints, optional request fields, response fields, and error codes.
 - Nothing is removed or renamed, and no field changes type.
 - A breaking change ships under `/api/v3`, with `/api/v2` kept alongside it for at least one release.
 
-Ignore response fields you don't recognize. Pond builds before 2.1 don't send `apiVersion` and return errors as a bare string.
+The promise covers the routes in [Access](#access) and the MCP tools below. Private routes can change in any release.
+
+Ignore response fields you don't recognize. Pond builds before 2.1 don't send `apiVersion` and return errors as a bare string. Builds before 2.2 don't accept scoped tokens.
 
 ## Libraries
 
@@ -216,7 +240,7 @@ All of them use `POST` and return `{ "changed": n }`, the number of Saves that a
 
 ## Operations
 
-Operations are the same actions the Assistant and MCP server use, like creating folders or copying a file.
+Operations are the same actions the Assistant and MCP server use, like creating folders or copying a file. They're private: only the Local API Token reaches them, and names follow the app's internals, so they can change in any release.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -240,6 +264,25 @@ Operations are the same actions the Assistant and MCP server use, like creating 
 ## App
 
 `GET /app/info` needs no token. It returns `name`, `version`, `platform`, `arch`, and `apiVersion`. For loopback callers, it also returns the `mcp` command that connects an MCP client to Pond.
+
+## MCP server
+
+Pond also runs as a Model Context Protocol server over stdio, for agents like Cursor and Claude. Copy the command from **Settings → Model Context Protocol**, or read it from `/app/info`. It needs no token: the switches under **Access** on that page decide which tools answer.
+
+| Access | Tools |
+| --- | --- |
+| Search Saves | `query_library`, `search_library`, `read_save`, `grep_library`, `list_folders` |
+| Open in Pond | `open_save`, `apply_filter` |
+| Export Files | `list_conversion_capabilities`, `list_conversion_presets`, `save_conversion_preset`, `start_conversion`, `compress_images`, `conversion_status`, `cancel_conversion` |
+
+- `query_library` takes the same body as `POST /library/query` and returns ids with a cursor.
+- `search_library` ranks by meaning and keywords. Pass `saveId` to find Saves that look like one.
+- `read_save` returns one Save's caption, text in images, transcript, note, and metadata.
+- `grep_library` matches text inside captions, text in images, transcripts, notes, and titles.
+- `open_save` focuses a Save in the Pond window. `apply_filter` sets the library grid's filter.
+- `start_conversion` writes converted copies to a folder you choose and returns a job id for `conversion_status` and `cancel_conversion`. `compress_images` replaces originals and records Undo.
+
+A tool whose switch is off answers with an error that names the switch.
 
 ## Publishing the client
 

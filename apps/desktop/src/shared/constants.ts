@@ -10,6 +10,7 @@ export const LIBRARY_SCHEMA_VERSION = 1;
 export const KEYCHAIN_SERVICE = "so.pond.desktop";
 
 export const KEYCHAIN_INGEST_TOKEN = "ingest-token";
+export const KEYCHAIN_API_TOKENS = "api-tokens";
 
 export const KEYCHAIN_AGENT_PREFIX = "agent";
 
