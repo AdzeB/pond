@@ -10,6 +10,7 @@ import { safeHandle } from "../helpers";
 import { accountsQueries } from "./accounts";
 import { agentQueries } from "./agent";
 import { agentOperationsForQueries } from "./agent-operations";
+import { apiTokensQueries } from "./api-tokens";
 import { bulkQueries } from "./bulk";
 import { canvasesQueries } from "./canvases";
 import { conversionQueries } from "./conversion";
@@ -47,6 +48,7 @@ const queryRegistry = {
   ...downloadsQueries,
   ...queueQueries,
   ...settingsQueries,
+  ...apiTokensQueries,
   ...tagsQueries,
   ...tagGroupsQueries,
   ...savedViewsQueries,

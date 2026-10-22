@@ -3,12 +3,13 @@ import { QuerySchema } from "./filters/schema";
 import { EMPTY_QUERY } from "./filters/types";
 
 /** Bumped on every change to the HTTP contract: minor for additions, major for breaks. */
-export const API_VERSION = "2.1.0";
+export const API_VERSION = "2.2.0";
 
 export const API_ERROR_CODES = [
   "invalid_json",
   "invalid_request",
   "unauthorized",
+  "forbidden",
   "rate_limited",
   "not_found",
   "save_not_found",
@@ -57,6 +58,30 @@ export const ApiAppInfoSchema = z.object({
   apiVersion: z.string().optional(),
   /** Only sent to loopback callers, since the path can reveal the account name. */
   mcp: z.object({ command: z.string(), args: z.array(z.string()) }).optional(),
+});
+
+export const API_TOKEN_SCOPES = ["search", "export", "write"] as const;
+export const ApiTokenScopeSchema = z.enum(API_TOKEN_SCOPES);
+export type ApiTokenScope = z.infer<typeof ApiTokenScopeSchema>;
+
+export const API_TOKEN_SCOPE_LABELS = {
+  search: "Search Saves",
+  export: "Export Files",
+  write: "Add and Edit Saves",
+} satisfies Record<ApiTokenScope, string>;
+
+export const ApiTokenInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  scopes: z.array(ApiTokenScopeSchema),
+  createdAt: z.number(),
+  lastUsedAt: z.number().nullable(),
+});
+export type ApiTokenInfo = z.infer<typeof ApiTokenInfoSchema>;
+
+export const ApiTokenCreateSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  scopes: z.array(ApiTokenScopeSchema).min(1),
 });
 
 export const API_THUMBNAIL_SIZES = [

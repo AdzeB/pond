@@ -1,0 +1,45 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.scopes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: var(--ds-text-sm);
+  font-weight: 500;
+  color: var(--ds-gray-12);
+}
+
+.scope {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: var(--ds-cursor-interactive, pointer);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-12);
+}
+
+.description {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-11);
+}

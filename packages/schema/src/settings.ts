@@ -33,6 +33,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     label: "Browser Extension",
     group: "general",
   },
+  {
+    id: "local-api",
+    path: "local-api",
+    label: "Local API",
+    group: "general",
+  },
   { id: "tags", path: "tags", label: "Tags", hidden: true, group: "library" },
   {
     id: "library",

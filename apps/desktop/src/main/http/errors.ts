@@ -9,6 +9,7 @@ const STATUS = {
   invalid_json: 400,
   invalid_request: 422,
   unauthorized: 401,
+  forbidden: 403,
   rate_limited: 429,
   not_found: 404,
   save_not_found: 404,

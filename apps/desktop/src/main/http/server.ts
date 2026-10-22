@@ -9,7 +9,8 @@ import { DEFAULT_INGEST_PORT } from "../../shared/constants";
 import { pondMcpSnippet } from "../core/agent/mcp-hosts";
 import { getPrefs } from "../core/prefs";
 import { getIngestToken } from "../keychain";
-import { createAuthLimiter, tokensMatch } from "./auth";
+import { apiTokens } from "./api-tokens";
+import { createAuthLimiter, createRequireAuth } from "./auth";
 import { enqueueHandler } from "./enqueue";
 import { apiError, handleApiError } from "./errors";
 import { libraryRoutes } from "./library";
@@ -88,35 +89,12 @@ function buildApp(): Hono {
     });
   });
 
-  const requireAuth = async (
-    c: Parameters<Parameters<Hono["use"]>[1]>[0],
-    next: () => Promise<void>,
-  ) => {
-    const ip = getConnInfo(c).remote.address || "unknown";
-    if (authLimiter.isBlocked(ip)) {
-      return apiError(
-        c,
-        "rate_limited",
-        "Too many failed sign-ins. Wait a minute, then try again.",
-      );
-    }
-    const auth = c.req.header("authorization") ?? "";
-    const expected = await getIngestToken();
-    const presented = auth.replace(/^Bearer\s+/i, "");
-    if (!expected || !presented || !tokensMatch(expected, presented)) {
-      const tripped = authLimiter.recordFailure(ip);
-      if (tripped) {
-        log.warn("[pond http] rate limited after repeated auth failures", ip);
-      }
-      return apiError(
-        c,
-        "unauthorized",
-        "The Local API Token is missing or wrong. Copy it from Settings > General.",
-      );
-    }
-    authLimiter.clear(ip);
-    await next();
-  };
+  const requireAuth = createRequireAuth({
+    localToken: getIngestToken,
+    scopedToken: apiTokens.authenticate,
+    limiter: authLimiter,
+    remoteAddress: (c) => getConnInfo(c).remote.address,
+  });
 
   api.use("/api/v2/enqueue", requireAuth);
   api.use("/api/v2/saves/*", requireAuth);
