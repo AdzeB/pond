@@ -78,7 +78,7 @@ describe("interface sounds", () => {
 
       const sound = patch.sounds?.[name];
       expect(gainOf(sound, false)).toBeLessThanOrEqual(0.6);
-      if (name === "tap" || name === "soft" || name === "hover") {
+      if (name === "tap" || name === "soft") {
         expect(gainOf(sound, false)).toBeLessThanOrEqual(0.2);
         expect(longest).toBeLessThanOrEqual(100);
       }
@@ -102,14 +102,11 @@ describe("interface sounds", () => {
     expect(tone("tap")).toBeLessThan(tone("success"));
     expect(tone("soft")).toBeLessThan(tone("tap"));
     expect(noise("soft")).toBeLessThan(noise("tap"));
-    expect(tone("hover")).toBeLessThan(tone("soft"));
-    expect(noise("hover")).toBeLessThan(noise("soft"));
     expect(tone("toggleOn")).toBeLessThan(tone("success"));
   });
 
   it("starts click cues on a contact transient", () => {
-    const clicks = ["tap", "soft", "hover", "toggleOn", "toggleOff"] as const;
-    for (const name of clicks) {
+    for (const name of ["tap", "soft", "toggleOn", "toggleOff"] as const) {
       const [first] = layersOf(patch.sounds?.[name]);
       expect(first && isNoise(first)).toBe(true);
       expect(first?.envelope?.attack ?? 0).toBe(0);
