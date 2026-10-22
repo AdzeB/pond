@@ -66,6 +66,12 @@
   },
   "overrides": [
     {
+      "includes": ["apps/raycast/**"],
+      "formatter": {
+        "lineWidth": 120
+      }
+    },
+    {
       "includes": [
         "packages/ui/src/data-table/**/*.{ts,tsx}",
         "apps/desktop/src/renderer/src/features/downloads/components/page/columns.tsx"

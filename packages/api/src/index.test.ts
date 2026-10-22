@@ -1,6 +1,13 @@
 import type { JsonValue } from "@pond/schema/json";
 import { describe, expect, it, vi } from "vitest";
-import { type ApiSave, PondApi, PondApiError } from "./index";
+import {
+  type ApiSave,
+  hostToSource,
+  PondApi,
+  PondApiError,
+  SOURCES,
+  sourceLabel,
+} from "./index";
 
 const SAVE: ApiSave = {
   id: "save-1",
@@ -276,6 +283,17 @@ describe("PondApi", () => {
     ]);
   });
 
+  it("pins writes to the library they were read from", async () => {
+    const { calls, client } = recorder({ changed: 1 });
+    await client.trash(["a"], "lib");
+    await client.restore(["a"], "lib");
+    await client.setNote("a", "hi", "lib");
+    await client.setRating(["a"], 2, "lib");
+    expect(
+      calls.map((call) => JSON.parse(String(call.init.body)).libraryId),
+    ).toEqual(["lib", "lib", "lib", "lib"]);
+  });
+
   it("reads Library lists", async () => {
     const { calls, client } = recorder([
       { name: "design", count: 2, starred: true },
@@ -298,5 +316,14 @@ describe("PondApi", () => {
       bytes: new Uint8Array([7, 8]),
       etag: null,
     });
+  });
+});
+
+describe("sources", () => {
+  it("labels source ids and recognizes their hosts", () => {
+    expect(SOURCES).toContain("twitter");
+    expect(sourceLabel("arena")).toBe("Are.na");
+    expect(hostToSource("https://www.youtube.com/watch?v=1")).toBe("youtube");
+    expect(hostToSource("https://example.com")).toBeNull();
   });
 });

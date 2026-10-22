@@ -25,7 +25,15 @@
       "entry": ["entrypoints/**/*.{ts,tsx}", "scripts/*.mjs"],
       "project": ["**/*.{ts,tsx}"]
     },
-    "apps/raycast": { "project": ["src/**/*.{ts,tsx}"] },
+    "apps/raycast": {
+      "entry": [
+        "src/*.{ts,tsx}",
+        "src/tools/*.ts",
+        "scripts/*.mjs",
+        "tests/*.test.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "scripts/*.mjs", "tests/**/*.ts"]
+    },
     "packages/schema": {
       "entry": ["scripts/*.ts"]
     },

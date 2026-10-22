@@ -542,21 +542,18 @@ importers:
 
   apps/raycast:
     dependencies:
-      '@pond/schema':
-        specifier: workspace:*
-        version: link:../../packages/schema
       '@raycast/api':
-        specifier: ^2.4.1
-        version: 2.4.1(@types/node@22.19.17)(@types/react@19.0.10)(supports-color@8.1.1)
+        specifier: ^2.8.0
+        version: 2.8.2(@types/node@22.19.17)(@types/react@19.0.10)(supports-color@8.1.1)
+      '@raycast/utils':
+        specifier: ^2.3.2
+        version: 2.3.3(@raycast/api@2.8.2(@types/node@22.19.17)(@types/react@19.0.10)(supports-color@8.1.1))(react@19.0.0)
       pond-api:
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../packages/api
       react:
         specifier: 19.0.0
         version: 19.0.0
-      zod:
-        specifier: ^4.6.5
-        version: 4.6.5
     devDependencies:
       '@raycast/eslint-config':
         specifier: ^2.2.0
@@ -570,6 +567,12 @@ importers:
       eslint:
         specifier: ^10.10.0
         version: 10.10.0(jiti@2.7.0)(supports-color@8.1.1)
+      prettier:
+        specifier: ^3.8.5
+        version: 3.9.6
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -3108,8 +3111,8 @@ packages:
   '@quansync/fs@1.1.0':
     resolution: {integrity: sha512-qAPG/t3HqML1TlN7sY/pTbEjzFVAKsMjNNMGheyDosro+kT4iw2KCUoHcVdmliwWjorm4elZbgNQyU2eD97eDg==}
 
-  '@raycast/api@2.4.1':
-    resolution: {integrity: sha512-gXtrv6Ju4LV0b20/u9cTYte3OgFL2wXSBDG6E43Xo/sQDgkuJk4sRD6PRqOJoVo60F0SlyhD5yG9ysEF2PJJFA==}
+  '@raycast/api@2.8.2':
+    resolution: {integrity: sha512-lJ9586eWj0z+DRi9BiiR9d7FDuB1FhMwblfIl/yHl1hKwg8gZz+HtSPzw9XqnG7qytHULy2EqqweJRLvCQdzJA==}
     engines: {node: '>=22.22.2'}
     hasBin: true
     peerDependencies:
@@ -3135,6 +3138,15 @@ packages:
     resolution: {integrity: sha512-ixO3PoRAEAZZcSQeRPvvDS/vs09D47tXdyXrs7hctoxxPtweXgJ6I24kjCD5GuuuQS5hGTiuL+Uy6hIg6a/a4w==}
     peerDependencies:
       eslint: ^8.57.0 || ^9.0.0 || ^10.0.0
+
+  '@raycast/utils@2.3.3':
+    resolution: {integrity: sha512-qtnuoRijFD+NDC4XEgoAyrmuIuqwYtl73RYPwuk/drhRNp0ywktNbb7wI58ZM9vPj+253iF/F5tr0TYwTuz0Fg==}
+    peerDependencies:
+      '@raycast/api': '>=1.99.4'
+      react: '>=19.0.0'
+    peerDependenciesMeta:
+      react:
+        optional: true
 
   '@react-querybuilder/core@8.23.1':
     resolution: {integrity: sha512-cj9QC/xaxw/unNpGZ6dOuiUNUBU9SzccIbMAZTBF2Sb64OERA70HzmBEmn8e4+RwPe9U0zEiTz1mkhDLDmFnNw==}
@@ -10629,7 +10641,7 @@ snapshots:
     dependencies:
       quansync: 1.0.0
 
-  '@raycast/api@2.4.1(@types/node@22.19.17)(@types/react@19.0.10)(supports-color@8.1.1)':
+  '@raycast/api@2.8.2(@types/node@22.19.17)(@types/react@19.0.10)(supports-color@8.1.1)':
     dependencies:
       '@oclif/core': 4.14.0
       '@oclif/plugin-autocomplete': 3.3.0(supports-color@8.1.1)
@@ -10663,6 +10675,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - typescript
+
+  '@raycast/utils@2.3.3(@raycast/api@2.8.2(@types/node@22.19.17)(@types/react@19.0.10)(supports-color@8.1.1))(react@19.0.0)':
+    dependencies:
+      '@raycast/api': 2.8.2(@types/node@22.19.17)(@types/react@19.0.10)(supports-color@8.1.1)
+      dequal: 2.0.3
+    optionalDependencies:
+      react: 19.0.0
 
   '@react-querybuilder/core@8.23.1(chevrotain@11.1.2)(drizzle-orm@0.45.2(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))':
     dependencies:

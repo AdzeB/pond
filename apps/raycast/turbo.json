@@ -4,17 +4,14 @@
   "tasks": {
     "build": {
       "cache": false,
-      "inputs": [
-        "$TURBO_EXTENDS$",
-        "assets/**",
-        "package.json",
-        "src/**",
-        "tsconfig.json"
-      ],
+      "inputs": ["$TURBO_EXTENDS$", "ai.yaml", "assets/**", "package.json", "src/**", "tsconfig.json"],
       "outputs": []
     },
     "typecheck": {
-      "inputs": ["$TURBO_EXTENDS$", "package.json", "src/**", "tsconfig.json"]
+      "inputs": ["$TURBO_EXTENDS$", "package.json", "src/**", "tests/**", "tsconfig.json"]
+    },
+    "test": {
+      "inputs": ["$TURBO_EXTENDS$", "package.json", "src/**", "tests/**"]
     }
   }
 }

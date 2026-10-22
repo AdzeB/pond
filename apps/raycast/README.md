@@ -1,105 +1,115 @@
-# Pond for Raycast
+# Pond
 
-Search your active Pond Library, save URLs, open Saves, and switch recent
-Libraries from Raycast. Every request stays on your Mac and uses Pond's
-authenticated loopback API.
+Search, save, and organize your [Pond](https://github.com/raphaelsalaja/pond) library from Raycast. Pond is a personal archiver for macOS that keeps the posts, links, images, and videos you save on your Mac. This extension talks to the Pond app over its local API, so nothing leaves your machine.
 
-## Install for development
+## Set up
 
-You need macOS, [Raycast](https://www.raycast.com/) with a signed-in account,
-Node.js 24, pnpm 11.27.0, and a local Pond build.
+You need macOS, Raycast, and the latest version of Pond.
 
-From a clean checkout:
+1. [Install Pond](https://github.com/raphaelsalaja/pond/releases/latest), open it, and pick a library.
+2. In Pond, open **Settings → Preferences**, then choose **Copy Token** under **Integrations → Raycast**.
+3. Run any Pond command in Raycast and paste the token into **Local API Token**.
 
-```bash
-pnpm install
-pnpm --dir apps/raycast develop
-```
+Keep Pond running while you use the extension. **Launch at Login** and **Launch in Background** in Pond Settings keep it ready without a window. If something's off, the extension tells you what happened and offers the one action that fixes it: open Pond, copy a new token, or update Pond.
 
-Raycast opens and imports Pond into its Development section. Stop the command
-with `Ctrl+C` after the first successful build if you do not need live reload;
-the imported commands remain available in Raycast.
-
-## Connect to Pond
-
-1. Open Pond and keep it running. You can enable **Launch at Login** and
-   **Launch in Background** if you want the commands available after restart.
-2. Open **Pond Settings → General → Raycast**.
-3. Select **Copy Token**.
-4. Open Raycast, search for **Pond**, then open **Configure Extension**.
-5. Paste the token into **Local API Token**.
-
-The default API address is `http://127.0.0.1:41610/api/v2`. Update **Local API
-URL** if you changed Pond's local API port.
+Leave **Local API URL** at `http://127.0.0.1:41610/api/v2` unless you changed the port in Pond.
 
 ## Commands
 
-- **Search Library** finds Saves and opens them in Pond or at their original URL.
-- **Save URL** saves a URL you enter.
-- **Save Clipboard URL** saves an `http` or `https` URL from the clipboard.
-- **Switch Library** lists available recent Libraries and reopens Pond in one.
-- **Open Library** opens the active Library in Pond.
+| Command                | What it does                                                                                       |
+| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| **Search Saves**       | Search by keywords or by meaning, filter by source, folder, tag, saved view, or Trash, then act.   |
+| **Search Media**       | Browse your images and videos as a grid, with Quick Look.                                          |
+| **Search Tags**        | Find a tag, see its saves, or open it in Pond.                                                     |
+| **Search Folders**     | Find a folder by its full path and see what's inside.                                              |
+| **Search Saved Views** | Open a saved view or smart folder from Pond.                                                       |
+| **Open Random Save**   | Rediscover something you saved.                                                                    |
+| **Save URL**           | Save a URL with tags and a folder, then watch Pond capture it.                                     |
+| **Quick Save**         | Save without a form. Leave the URL empty to use your selection, browser tab, or clipboard.         |
+| **Save Current Tab**   | Save the page open in Safari, Chrome, Arc, Brave, Edge, Chromium, or Vivaldi.                      |
+| **Save Clipboard URL** | Save the URL on your clipboard.                                                                    |
+| **Switch Library**     | Switch Pond to one of your recent libraries.                                                       |
+| **Open Library**       | Bring Pond to the front.                                                                           |
+| **Menu Bar**           | Recent saves, capture progress, and quick actions. It hides itself while Pond is closed.          |
+
+### Search Saves
+
+Type to search titles, descriptions, authors, tags, notes, and URLs. Press **⌘⇧B** to search by meaning instead, for ideas you remember but can't quote. The dropdown filters by source, folder, tag, saved view, untagged saves, saves outside any folder, or the Trash, and Raycast remembers your choice. With an empty search, the saves you opened last sit at the top.
+
+Each save has a full action panel:
+
+| Shortcut | Action                          |
+| -------- | ------------------------------- |
+| ↵        | Open in Pond                    |
+| ⌘↵       | Open the original page          |
+| ⌘Y       | Quick Look                      |
+| ⌘⇧C      | Copy URL                        |
+| ⌘⇧L      | Copy Pond link                  |
+| ⌘⇧M      | Copy Markdown link              |
+| ⌘⇧F      | Copy the image or file          |
+| ⌘⇧T      | Copy the text Pond extracted    |
+| ⌘T       | Add or remove tags              |
+| ⌘L       | Add to or remove from a folder  |
+| ⌘E       | Add or edit a note              |
+| ⌃X       | Move to Trash                   |
+| ⌘⇧R      | Show related saves              |
+| ⌘⇧D      | Show or hide details            |
+| ⌘R       | Refresh                         |
+
+Edits show right away and roll back if Pond can't apply them. Moving to the Trash asks first, and you can restore from the Trash filter.
+
+### Save URL
+
+The form fills the URL from your selection, the page in your browser, or your clipboard, in that order. Pick existing tags, type new ones, and choose a folder. Drafts survive closing Raycast. **Create Quicklink with These Tags** turns your tag and folder choice into a one-keystroke Quick Save.
+
+After you save, the extension follows the capture and shows when Pond has the thumbnail, caption, text in images, and transcript. Saving a URL that's already in Pond adds your tags and folder to the existing save.
+
+The first time you save the current tab, macOS may ask to let Raycast control your browser. Allow it in **System Settings → Privacy & Security → Automation**. With the Raycast browser extension installed, the extension reads the tab from there instead.
+
+## Raycast AI
+
+Mention `@pond` in Raycast AI:
+
+- `@pond find my typography references from Are.na`
+- `@pond that article about software that feels calm`
+- `@pond what does the transcript of that talk say about color?`
+- `@pond save https://example.com/article and tag it reading`
+- `@pond put these in my Fonts folder`
+- `@pond switch to my Research library`
+
+| Tool             | What it does                                                               |
+| ---------------- | -------------------------------------------------------------------------- |
+| Search Saves     | Search by keywords or meaning, with source, tag, folder, type, and dates. |
+| Get Save         | Read one save's details.                                                   |
+| Read Save Text   | Read a save's caption, text in images, transcript, and note.               |
+| List Tags        | List your tags, most used first.                                           |
+| List Folders     | List folders with their full paths.                                        |
+| List Libraries   | List recent libraries.                                                     |
+| Get Library Info | Read the active library's counts and capture queue.                        |
+| Save URL         | Save a URL with tags and a folder.                                         |
+| Edit Tags        | Add or remove tags.                                                        |
+| Add to Folder    | Add saves to a folder or take them out.                                    |
+| Move to Trash    | Move saves to the Trash.                                                   |
+| Switch Library   | Switch Pond to another library.                                            |
+| Open Save        | Open a save in Pond or its original page.                                  |
+| Open Library     | Bring Pond to the front.                                                   |
+
+Every change asks you first and names the saves it touches. Save IDs belong to one library, so after a switch, search again before changing saves.
+
+The extension also registers Pond's built-in MCP server, which adds tools for exact text search, nested queries, and exports. Turn on the capabilities you want in **Pond Settings → Model Context Protocol**. If Pond isn't in `/Applications`, copy the path from **Pond Settings → Model Context Protocol → Advanced** into `ai.yaml`.
+
+## Privacy
+
+Commands and tools connect to Pond over `127.0.0.1`. Your token stays in Raycast's password storage and never appears in AI results. Thumbnails and Quick Look files are cached in the extension's support folder and trimmed automatically.
+
+When you use Raycast AI, tool results go to the AI model you chose in Raycast. That can include titles, notes, and extracted text from your saves.
 
 ## Troubleshooting
 
-| What you see | What to do |
-| --- | --- |
-| “Open Pond and check the Local API URL.” | Open Pond, then confirm **Local API URL** is `http://127.0.0.1:41610/api/v2` unless you changed Pond's port. |
-| “Copy a fresh Local API Token from Pond Settings.” | Copy the current token from **Pond Settings → General → Raycast** and replace the saved Raycast preference. Rotating the token invalidates the previous value immediately. |
-| “Enter an http or https URL.” | Enter or copy a complete URL beginning with `http://` or `https://`. |
-| A Save or file is unavailable | Refresh the command. If the Save was deleted or its file is missing, reopen Pond to inspect or repair it. |
-
-## Development
-
-`develop` is the only watch command. Use the finite checks below for validation:
-
-```bash
-pnpm --dir apps/raycast typecheck
-pnpm --dir apps/raycast lint
-pnpm --dir apps/raycast build
-```
-
-The root `pnpm check` and `pnpm build` commands also include this workspace
-package, so the normal repository CI covers its typecheck, lint, and production
-build.
-
-This is the one workspace package that does not use the `catalog:` protocol.
-`@raycast/api` pins `@types/node` and `@types/react` to exact versions as peer
-dependencies, and `ray build` validates against them, so `react` and both type
-packages stay on the versions Raycast requires rather than the catalog's.
-
-## Live validation
-
-With Pond and the development extension open, check the integration before a
-release-related change:
-
-1. Run **Search Library**, search for a known Save, open it in Pond, open its
-   source URL, and copy its first available file.
-2. Run **Save URL** with a valid URL and confirm the Save appears in the active
-   Library. Repeat with an invalid value and confirm Raycast explains the valid
-   schemes.
-3. Copy an `http` or `https` URL, run **Save Clipboard URL**, and confirm the
-   Save appears. Repeat with non-URL clipboard text.
-4. Run **Switch Library**, choose another recent Library, and confirm Pond
-   reopens it.
-5. Run **Open Library** and confirm Pond comes to the foreground with the active
-   Library.
-6. Quit Pond and confirm a command tells you to open it and check the Local API
-   URL.
-7. Reopen Pond, rotate the Local API token, and confirm the old token is
-   rejected. Paste the new token into Raycast and confirm access returns.
-8. Delete a test Save or remove its local file, then confirm Raycast reports the
-   unavailable item instead of failing silently.
-
-## Distribution
-
-The supported distribution path today is local development installation from
-this repository. `pnpm --dir apps/raycast build` validates the optimized bundle
-but does not publish it, and Pond's `vX.Y.Z` GitHub release workflow does not
-ship or update the Raycast extension.
-
-A future public Raycast Store submission is a separate release. It must follow
-Raycast's [publishing guide](https://developers.raycast.com/basics/publish-an-extension),
-including Store review and any required changelog, media, and npm lockfile in
-the submitted extension package. Do not run a Raycast publish command as part
-of the Pond desktop release.
+| What you see             | What to do                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------- |
+| Pond isn't running       | Open Pond. Turn on Launch at Login to keep it ready.                                        |
+| Token not accepted       | Copy the token again from Pond Settings. Rotating it in Pond replaces the old one.          |
+| Pond needs an update     | Install the latest Pond. This extension needs Local API 2.1.                                |
+| Save Current Tab fails   | Allow Raycast under Automation in System Settings, or use Save Clipboard URL.               |
+| MCP tools are missing    | Turn on the capability in Pond Settings → Model Context Protocol, then reconnect in Raycast. |
