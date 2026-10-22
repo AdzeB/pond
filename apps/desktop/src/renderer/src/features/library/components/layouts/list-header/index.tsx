@@ -25,6 +25,8 @@ function sortKeyFor(column: ListColumnKey): SortKey | null {
       return "fileSize";
     case "dateAdded":
       return "savedAt";
+    case "datePublished":
+      return "publishedAt";
     case "annotation":
       return null;
   }

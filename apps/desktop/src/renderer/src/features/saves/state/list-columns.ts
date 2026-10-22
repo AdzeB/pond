@@ -4,6 +4,7 @@ import { Store } from "@tanstack/store";
 export type ListColumnKey =
   | "name"
   | "dateAdded"
+  | "datePublished"
   | "tags"
   | "dimensions"
   | "rating"
@@ -14,6 +15,7 @@ export type ListColumnKey =
 export interface ListColumns {
   name: boolean;
   dateAdded: boolean;
+  datePublished: boolean;
   tags: boolean;
   dimensions: boolean;
   rating: boolean;
@@ -33,12 +35,14 @@ export const LIST_COLUMN_OPTIONS: ReadonlyArray<{
   { key: "extension", label: "Extension" },
   { key: "fileSize", label: "File Size" },
   { key: "dateAdded", label: "Date Added" },
+  { key: "datePublished", label: "Date Published" },
   { key: "annotation", label: "Annotation" },
 ];
 
 export const LIST_COLUMN_DEFAULTS: ListColumns = {
   name: true,
   dateAdded: true,
+  datePublished: false,
   tags: false,
   dimensions: false,
   rating: false,
@@ -50,6 +54,7 @@ export const LIST_COLUMN_DEFAULTS: ListColumns = {
 const STORAGE_KEYS = {
   name: "pond.list.name",
   dateAdded: "pond.list.dateAdded",
+  datePublished: "pond.list.datePublished",
   tags: "pond.list.tags",
   dimensions: "pond.list.dimensions",
   rating: "pond.list.rating",
@@ -73,6 +78,7 @@ function readAll(): ListColumns {
   return {
     name: readKey("name"),
     dateAdded: readKey("dateAdded"),
+    datePublished: readKey("datePublished"),
     tags: readKey("tags"),
     dimensions: readKey("dimensions"),
     rating: readKey("rating"),

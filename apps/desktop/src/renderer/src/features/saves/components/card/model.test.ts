@@ -71,10 +71,12 @@ describe("buildSaveCardModel", () => {
   it("puts the selected item info on the line under the title", () => {
     const savedAt = Date.UTC(2025, 8, 26, 11, 57);
     const createdAt = Date.UTC(2024, 0, 2, 8, 0);
+    const publishedAt = Date.UTC(2019, 4, 12, 18, 30);
     const sample = save({
       id: "info",
       savedAt,
       createdAt,
+      publishedAt,
       fileSize: 2048,
       rating: 4,
       tags: ["Lookbook", "Studio"],
@@ -92,6 +94,21 @@ describe("buildSaveCardModel", () => {
         visible: true,
       }).time,
     ).toBe(formatAbsolute(createdAt));
+    expect(
+      buildSaveCardModel(sample, {}, display, 1.5, {
+        field: "published",
+        visible: true,
+      }).time,
+    ).toBe(formatAbsolute(publishedAt));
+    expect(
+      buildSaveCardModel(
+        save({ id: "unpublished", publishedAt: null }),
+        {},
+        display,
+        1.5,
+        { field: "published", visible: true },
+      ).time,
+    ).toBe("—");
     expect(
       buildSaveCardModel(sample, {}, display, 1.5, {
         field: "dimensions",

@@ -99,6 +99,7 @@ const INFO_OPTIONS: Array<{ value: ItemInfoField; label: string }> = [
   { value: "rating", label: "Rating" },
   { value: "modified", label: "Date Modified" },
   { value: "created", label: "Date Created" },
+  { value: "published", label: "Date Published" },
 ];
 
 const DIRECTION_OPTIONS: Array<IconOption<SortDir>> = [

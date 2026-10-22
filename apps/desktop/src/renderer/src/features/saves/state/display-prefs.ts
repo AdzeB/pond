@@ -69,7 +69,8 @@ export type ItemInfoField =
   | "tags"
   | "rating"
   | "modified"
-  | "created";
+  | "created"
+  | "published";
 
 export interface ItemInfo {
   field: ItemInfoField;
@@ -85,6 +86,7 @@ const ITEM_INFO_FIELDS: ReadonlyArray<ItemInfoField> = [
   "rating",
   "modified",
   "created",
+  "published",
 ];
 
 function readItemInfoField(value: string | null): ItemInfoField {

@@ -78,6 +78,7 @@ function itemInfoLine(
   if (field === "tags") return save.tags.join(", ") || "—";
   if (field === "rating") return formatListRating(save.rating);
   if (field === "modified") return formatAbsolute(save.createdAt) || null;
+  if (field === "published") return formatAbsolute(save.publishedAt) || "—";
   return formatAbsolute(save.savedAt) || null;
 }
 
