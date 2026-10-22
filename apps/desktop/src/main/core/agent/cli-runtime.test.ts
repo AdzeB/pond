@@ -8,6 +8,7 @@ import {
   CodexSymlinkUnavailableError,
   cmdShimInvocation,
   pathEnvKey,
+  posixCliDirectories,
   prepareCodexRuntime,
   quoteCmdArg,
   scrubbedEnvironment,
@@ -108,6 +109,38 @@ describe("pathEnvKey", () => {
 
   it("defaults to PATH when none is set", () => {
     expect(pathEnvKey({ HOME: "x" })).toBe("PATH");
+  });
+});
+
+describe("posixCliDirectories", () => {
+  it("finds CLIs installed globally with Bun", () => {
+    expect(posixCliDirectories("/Users/a", {}, [])).toContain(
+      join("/Users/a", ".bun", "bin"),
+    );
+  });
+
+  it("follows a custom Bun install folder", () => {
+    const directories = posixCliDirectories(
+      "/Users/a",
+      { BUN_INSTALL: "/opt/bun" },
+      [],
+    );
+    expect(directories).toContain(join("/opt/bun", "bin"));
+    expect(directories).not.toContain(join("/Users/a", ".bun", "bin"));
+  });
+
+  it("prefers the newest nvm Node version", () => {
+    const directories = posixCliDirectories("/Users/a", {}, [
+      "v9.0.0",
+      "v22.1.0",
+      "v20.11.1",
+    ]);
+    const nvm = join("/Users/a", ".nvm/versions/node");
+    expect(directories.filter((entry) => entry.startsWith(nvm))).toEqual([
+      join(nvm, "v22.1.0", "bin"),
+      join(nvm, "v20.11.1", "bin"),
+      join(nvm, "v9.0.0", "bin"),
+    ]);
   });
 });
 
