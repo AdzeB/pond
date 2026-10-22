@@ -34,7 +34,8 @@
       "ignoreDependencies": ["tsx"]
     },
     "packages/api": {
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["zod"]
     },
     ".": {
       "entry": ["scripts/*.{mjs,cjs,ts}", "tools/**/*.{ts,mjs}"]
