@@ -36,6 +36,7 @@ import {
   detachedWindowChrome,
   detachedWindowTitle,
 } from "../lib/detached-window-chrome";
+import { followInterfaceZoom } from "../lib/follow-interface-zoom";
 import { openSavedFile } from "../lib/open-saved-file";
 import { resolveMainOut, resolvePreload } from "../lib/resolve-preload";
 import { mainWindowState } from "../window-state";
@@ -271,10 +272,8 @@ async function createPreviewWindow(
     if (presentation) window.setFullScreen(true);
     window.show();
   });
-  window.webContents.on("did-finish-load", () => {
-    window.webContents.setZoomFactor(prefs.window.interfaceZoom / 100);
-    sendState(entry);
-  });
+  followInterfaceZoom(window.webContents, { getPrefs, subscribePrefs });
+  window.webContents.on("did-finish-load", () => sendState(entry));
   window.webContents.on("context-menu", (event) => {
     event.preventDefault();
     showPreviewContextMenu(entry);
@@ -475,7 +474,6 @@ export function registerPreviewWindowHandlers(bus: IpcMain): void {
         ...entry.state,
         reduceMotion: prefs.preferences.reduceMotion,
       };
-      entry.window.webContents.setZoomFactor(prefs.window.interfaceZoom / 100);
       sendState(entry);
     }
   });

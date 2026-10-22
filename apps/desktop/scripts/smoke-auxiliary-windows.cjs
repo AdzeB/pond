@@ -120,6 +120,7 @@ async function run(contents) {
     "Preview preferences did not update",
   );
   assert.equal(video.webContents.getZoomFactor(), 1.1);
+  assert.equal(contents.getZoomFactor(), 1.1);
   assert.equal(
     await video.webContents.executeJavaScript(
       'document.querySelector("#close").textContent',

@@ -13,8 +13,10 @@ import {
   detachedWindowChrome,
   detachedWindowTitle,
 } from "../lib/detached-window-chrome";
+import { followInterfaceZoom } from "../lib/follow-interface-zoom";
 import { lockRendererZoom } from "../lib/lock-renderer-zoom";
 import { resolveMainOut, resolvePreload } from "../lib/resolve-preload";
+import { getPrefs, subscribePrefs } from "./prefs";
 import { resolveSaveDrop } from "./save-drag-session";
 
 let combineWindow: BrowserWindow | null = null;
@@ -86,6 +88,7 @@ async function createCombineImagesWindow(): Promise<void> {
   });
   combineWindow = win;
   lockRendererZoom(win.webContents);
+  followInterfaceZoom(win.webContents, { getPrefs, subscribePrefs });
   attachEditableContextMenu(win.webContents);
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.webContents.on("will-navigate", (event) => event.preventDefault());

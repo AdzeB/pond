@@ -6,8 +6,9 @@ import { IPC } from "../shared/constants";
 import { SHELL_HINT_ARG, type ShellHint } from "../shared/shell-hint";
 import { attachEditableContextMenu } from "./context-menu";
 import { hardenArchiveWebviews } from "./core/archive-viewer";
-import { getPrefs, setPrefs } from "./core/prefs";
+import { getPrefs, setPrefs, subscribePrefs } from "./core/prefs";
 import { consumePendingDeepLink } from "./deep-link";
+import { followInterfaceZoom } from "./lib/follow-interface-zoom";
 import { lockRendererZoom } from "./lib/lock-renderer-zoom";
 import { resolveMainOut, resolvePreload } from "./lib/resolve-preload";
 import { markStartup } from "./startup-timing";
@@ -153,6 +154,7 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
     if (mainWindowState.current === win) mainWindowState.current = null;
   });
   lockRendererZoom(win.webContents);
+  followInterfaceZoom(win.webContents, { getPrefs, subscribePrefs });
 
   hardenArchiveWebviews(win);
   attachEditableContextMenu(win.webContents);
