@@ -19,12 +19,24 @@ function frequencies(layer: Layer): number[] {
   const sweep = SweepSchema.safeParse(freq);
   if (hertz.success) values.push(hertz.data);
   else if (sweep.success) values.push(sweep.data.start, sweep.data.end);
-  const filter = Array.isArray(layer.filter) ? undefined : layer.filter;
-  if (filter && "frequency" in filter) values.push(filter.frequency);
-  const peak =
-    filter && "envelope" in filter ? filter.envelope?.peak : undefined;
-  if (peak !== undefined) values.push(peak);
+  const filters = [layer.filter ?? []].flat();
+  for (const filter of filters) {
+    if ("frequency" in filter) values.push(filter.frequency);
+    const peak = "envelope" in filter ? filter.envelope?.peak : undefined;
+    if (peak !== undefined) values.push(peak);
+  }
   return values;
+}
+
+function isNoise(layer: Layer): boolean {
+  return layer.source.type === "noise";
+}
+
+/** Band-passed noise renders far quieter than a sine at the same gain, so each kind gets its own budget. */
+function gainOf(sound: SoundDefinition | undefined, noise: boolean): number {
+  return layersOf(sound)
+    .filter((layer) => isNoise(layer) === noise)
+    .reduce((sum, layer) => sum + (layer.gain ?? 0.5), 0);
 }
 
 function durationMs(layer: Layer): number {
@@ -48,16 +60,15 @@ describe("interface sounds", () => {
     for (const name of UI_SOUND_NAMES) {
       const layers = layersOf(patch.sounds?.[name]);
       expect(layers.length).toBeGreaterThan(0);
-      expect(layers.length).toBeLessThanOrEqual(name === "success" ? 3 : 2);
+      expect(layers.length).toBeLessThanOrEqual(5);
 
-      let gain = 0;
       let longest = 0;
       for (const layer of layers) {
         expect(layer.envelope?.decay ?? 0).toBeGreaterThan(0);
         if ((layer.envelope?.sustain ?? 0) > 0) {
           expect(layer.envelope?.release ?? 0).toBeGreaterThan(0);
         }
-        gain += layer.gain ?? 0.5;
+        if (isNoise(layer)) expect(layer.gain ?? 0.5).toBeLessThanOrEqual(0.5);
         longest = Math.max(longest, durationMs(layer));
         for (const hz of frequencies(layer)) {
           expect(hz).toBeGreaterThanOrEqual(20);
@@ -65,9 +76,10 @@ describe("interface sounds", () => {
         }
       }
 
-      expect(gain).toBeLessThanOrEqual(0.6);
+      const sound = patch.sounds?.[name];
+      expect(gainOf(sound, false)).toBeLessThanOrEqual(0.6);
       if (name === "tap" || name === "soft") {
-        expect(gain).toBeLessThanOrEqual(0.2);
+        expect(gainOf(sound, false)).toBeLessThanOrEqual(0.2);
         expect(longest).toBeLessThanOrEqual(100);
       }
       if (name === "toggleOn" || name === "toggleOff") {
@@ -83,13 +95,22 @@ describe("interface sounds", () => {
   });
 
   it("keeps frequent cues quieter than rare ones", () => {
-    const gainOf = (name: (typeof UI_SOUND_NAMES)[number]) =>
-      layersOf(patch.sounds?.[name]).reduce(
-        (sum, layer) => sum + (layer.gain ?? 0.5),
-        0,
-      );
-    expect(gainOf("tap")).toBeLessThan(gainOf("success"));
-    expect(gainOf("soft")).toBeLessThan(gainOf("tap"));
-    expect(gainOf("toggleOn")).toBeLessThan(gainOf("success"));
+    const tone = (name: (typeof UI_SOUND_NAMES)[number]) =>
+      gainOf(patch.sounds?.[name], false);
+    const noise = (name: (typeof UI_SOUND_NAMES)[number]) =>
+      gainOf(patch.sounds?.[name], true);
+    expect(tone("tap")).toBeLessThan(tone("success"));
+    expect(tone("soft")).toBeLessThan(tone("tap"));
+    expect(noise("soft")).toBeLessThan(noise("tap"));
+    expect(tone("toggleOn")).toBeLessThan(tone("success"));
+  });
+
+  it("starts click cues on a contact transient", () => {
+    for (const name of ["tap", "soft", "toggleOn", "toggleOff"] as const) {
+      const [first] = layersOf(patch.sounds?.[name]);
+      expect(first && isNoise(first)).toBe(true);
+      expect(first?.envelope?.attack ?? 0).toBe(0);
+      expect(first?.envelope?.decay ?? 1).toBeLessThanOrEqual(0.002);
+    }
   });
 });
