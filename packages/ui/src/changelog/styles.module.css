@@ -1,37 +1,30 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 40px;
-  container: changelog / inline-size;
+  gap: 32px;
 }
 
 .entry {
   display: grid;
-  gap: 12px;
+  gap: 6px;
 
-  @container changelog (width >= 520px) {
-    grid-template-columns: 136px minmax(0, 1fr);
-    gap: 24px;
+  & + & {
+    padding-top: 32px;
+    border-top: 1px solid var(--ds-gray-a4);
   }
 }
 
 .meta {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-
-  @container changelog (width >= 520px) {
-    position: sticky;
-    top: 0;
-    align-self: start;
-  }
+  gap: 8px;
+  align-items: baseline;
 }
 
 .version {
   margin: 0;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-sm);
   font-weight: var(--ds-weight-xl);
-  line-height: 20px;
+  line-height: 18px;
   color: var(--ds-gray-12);
 }
 

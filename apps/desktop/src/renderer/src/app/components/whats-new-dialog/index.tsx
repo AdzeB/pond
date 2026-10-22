@@ -10,13 +10,6 @@ const RELEASES_URL = "https://github.com/raphaelsalaja/pond/releases";
 const SEEN_KEY = "pond:whatsNewSeenVersion";
 const CHECK_DELAY_MS = 1500;
 
-const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-  day: "numeric",
-  year: "numeric",
-  timeZone: "UTC",
-});
-
 function readSeen(): string | null {
   try {
     return localStorage.getItem(SEEN_KEY);
@@ -61,15 +54,20 @@ function useShowAfterUpdate(): void {
   }, []);
 }
 
-function Entry({ entry }: { entry: ChangelogEntry }) {
+function Entry({
+  entry,
+  showVersion,
+}: {
+  entry: ChangelogEntry;
+  showVersion: boolean;
+}) {
   return (
     <Changelog.Entry>
-      <Changelog.Meta>
-        <Changelog.Version>v{entry.version}</Changelog.Version>
-        <Changelog.Date dateTime={entry.date}>
-          {DATE_FORMAT.format(new Date(`${entry.date}T00:00:00Z`))}
-        </Changelog.Date>
-      </Changelog.Meta>
+      {showVersion ? (
+        <Changelog.Meta>
+          <Changelog.Version>v{entry.version}</Changelog.Version>
+        </Changelog.Meta>
+      ) : null}
       <Changelog.Body>
         <Changelog.Title>{entry.title}</Changelog.Title>
         <Changelog.Summary>{entry.summary}</Changelog.Summary>
@@ -97,6 +95,7 @@ export function WhatsNewDialog() {
     ? CHANGELOG.filter((entry) => versions.includes(entry.version))
     : CHANGELOG;
   const entries = filtered.length > 0 ? filtered : CHANGELOG;
+  const latest = entries[0];
 
   return (
     <Dialog.Root
@@ -108,14 +107,23 @@ export function WhatsNewDialog() {
       <Dialog.Portal>
         <Dialog.Backdrop />
         <Dialog.Popup className={styles.popup} initialFocus={doneRef}>
-          <Dialog.Header>
-            <Dialog.Title>What's New</Dialog.Title>
+          <Dialog.Header className={styles.header}>
+            <Dialog.Title className={styles.title}>
+              What's New
+              {latest ? (
+                <span className={styles.version}>v{latest.version}</span>
+              ) : null}
+            </Dialog.Title>
             <Dialog.Close />
           </Dialog.Header>
           <Dialog.Content className={styles.content}>
             <Changelog.Root>
               {entries.map((entry) => (
-                <Entry key={entry.version} entry={entry} />
+                <Entry
+                  key={entry.version}
+                  entry={entry}
+                  showVersion={entries.length > 1}
+                />
               ))}
             </Changelog.Root>
           </Dialog.Content>
