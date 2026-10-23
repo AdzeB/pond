@@ -75,7 +75,7 @@ export function createRequireAuth({
       return apiError(
         c,
         "rate_limited",
-        "Too many requests used a wrong token. Update the token in your client, then try again in 5 minutes.",
+        "Too many requests used a wrong token. Copy the current token into your client and try again.",
       );
     }
     if (!scoped) {
