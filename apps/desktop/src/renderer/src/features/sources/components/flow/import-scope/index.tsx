@@ -56,13 +56,12 @@ export function useImportScopeDraft(account: ImportScopeAccount): void {
   }, [flow, key]);
   const unsaved =
     draft.accountId === account.id &&
-    !draft.starts &&
     !draft.saving &&
     !draft.error &&
     draftChanged(draft) &&
     draftImportScope(draft) !== null;
   useEffect(() => {
-    if (unsaved) void confirmImportScope(flow);
+    if (unsaved) void confirmImportScope(flow, { start: false });
   }, [flow, unsaved]);
 }
 
@@ -148,7 +147,7 @@ export function ImportScopeStatus() {
               size="sm"
               variant="primary"
               disabled={!ready || draft.saving}
-              onClick={() => void confirmImportScope(flow)}
+              onClick={() => void confirmImportScope(flow, { start: true })}
             >
               Start Import
             </Button>
@@ -160,7 +159,10 @@ export function ImportScopeStatus() {
   );
 }
 
-async function confirmImportScope(flow: ImportScopeFlow): Promise<void> {
+async function confirmImportScope(
+  flow: ImportScopeFlow,
+  { start }: { start: boolean },
+): Promise<void> {
   const draft = flow.snapshot();
   const scope = draftImportScope(draft);
   if (!draft.accountId || !draft.source || !scope || draft.saving) return;
@@ -171,7 +173,7 @@ async function confirmImportScope(flow: ImportScopeFlow): Promise<void> {
       accountId: draft.accountId,
       source: draft.source,
       scope,
-      start: draft.starts,
+      start,
     });
   } catch {
     flow.fail("Pond couldn't save your choice. Try again.");
@@ -181,7 +183,7 @@ async function confirmImportScope(flow: ImportScopeFlow): Promise<void> {
     flow.fail(result.error);
     return;
   }
-  flow.markSaved(scope);
+  flow.markSaved(scope, { started: start });
 }
 
 function ListKindRows({

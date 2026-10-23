@@ -141,18 +141,38 @@ async function pick(field: string, option: string): Promise<void> {
   await act(async () => found.click());
 }
 
-it("holds a new Account's choices until you start the import", async () => {
+it("saves a new Account's choices without starting the import", async () => {
   await renderFor({
     id: "acc-instagram",
     source: "instagram",
     sync: { importPending: true },
   });
   expect(button("Start Import").disabled).toBe(false);
-  await act(async () => toggle("Liked Posts").click());
   expect(query).not.toHaveBeenCalledWith(
     "accounts.setImportScope",
     expect.anything(),
   );
+  await act(async () => toggle("Liked Posts").click());
+  await vi.waitFor(() =>
+    expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+      accountId: "acc-instagram",
+      scope: { listKinds: ["saved"] },
+      start: false,
+    }),
+  );
+  expect(syncRunNow).not.toHaveBeenCalled();
+  expect(button("Start Import")).toBeTruthy();
+});
+
+it("keeps a new Account's choices when you come back to them", async () => {
+  await renderFor({
+    id: "acc-twitter",
+    source: "twitter",
+    sync: { importPending: true, importScope: { listKinds: ["saved"] } },
+  });
+  expect(toggle("Bookmarks").getAttribute("aria-checked")).toBe("true");
+  expect(toggle("Likes").getAttribute("aria-checked")).toBe("false");
+  expect(button("Start Import")).toBeTruthy();
 });
 
 it("saves an active Account's choices as you change them", async () => {
@@ -171,6 +191,7 @@ it("saves an active Account's choices as you change them", async () => {
     expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
       accountId: "acc-instagram",
       scope: {},
+      start: false,
     }),
   );
   expect(syncRunNow).not.toHaveBeenCalled();
@@ -205,6 +226,7 @@ it("starts the first import with only the lists you keep", async () => {
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-instagram",
     scope: { listKinds: ["saved"] },
+    start: true,
   });
   expect(syncRunNow).toHaveBeenCalledWith("acc-instagram");
 });
@@ -247,6 +269,7 @@ it("imports chosen Pinterest boards into Folders", async () => {
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-pinterest",
     scope: { collections: [{ id: "915", name: "Design References" }] },
+    start: true,
   });
 });
 
@@ -261,6 +284,7 @@ it("files every board when you turn on Add to Folders without picking any", asyn
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-pinterest",
     scope: { addToFolders: true },
+    start: true,
   });
 });
 
@@ -278,6 +302,7 @@ it("keeps chosen boards out of Folders when you turn it off", async () => {
       collections: [{ id: "915", name: "Design" }],
       addToFolders: false,
     },
+    start: false,
   });
 });
 
@@ -347,6 +372,7 @@ it("saves a change for an active Account without starting a sync", async () => {
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-instagram",
     scope: {},
+    start: false,
   });
   expect(syncRunNow).not.toHaveBeenCalled();
 });
@@ -362,6 +388,7 @@ it("starts a TikTok import from Liked Videos alone", async () => {
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-tiktok",
     scope: { listKinds: ["liked"] },
+    start: true,
   });
 });
 
@@ -436,6 +463,7 @@ it("saves media and date filters with the scope", async () => {
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-reddit",
     scope: { mediaKinds: ["image", "video"], since: first },
+    start: true,
   });
 });
 
@@ -453,5 +481,6 @@ it("goes back to every post type when you remove the last chip", async () => {
   expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-reddit",
     scope: {},
+    start: false,
   });
 });

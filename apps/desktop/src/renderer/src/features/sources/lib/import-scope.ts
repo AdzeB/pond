@@ -193,6 +193,7 @@ export async function saveImportScope(input: {
   const result = await window.pond.query("accounts.setImportScope", {
     accountId: input.accountId,
     scope: input.scope,
+    start: input.start,
   });
   if (!result.ok) return result;
   if (input.start) {

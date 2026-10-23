@@ -92,15 +92,14 @@ export function importScopePatch(
   source: Source,
   current: Pick<SourceSyncPrefs, "importScope" | "syncLikes">,
   scope: ImportScope,
+  { start = true }: { start?: boolean } = {},
 ): Partial<SourceSyncPrefs> {
   const next =
     importsEverything(scope) && scope.addToFolders === undefined
       ? undefined
       : scope;
-  const patch: Partial<SourceSyncPrefs> = {
-    importScope: next,
-    importPending: false,
-  };
+  const patch: Partial<SourceSyncPrefs> = { importScope: next };
+  if (start) patch.importPending = false;
   if (current.syncLikes !== undefined) patch.syncLikes = undefined;
   /** Early stop ends a walk at ids already in the Library, so a new selection needs one full walk to reach its older items. */
   if (!sameScope(accountImportScope(source, current), next)) {

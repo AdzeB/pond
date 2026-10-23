@@ -13,7 +13,12 @@ export interface AccountQueryInputs {
   "accounts.setHandle": { accountId: string; handle: string | null };
   "accounts.setLabel": { accountId: string; label: string | null };
   "accounts.importOptions": { accountId: string };
-  "accounts.setImportScope": { accountId: string; scope: ImportScope };
+  "accounts.setImportScope": {
+    accountId: string;
+    scope: ImportScope;
+    /** False saves a pending Account's choices and leaves it waiting for Start Import. */
+    start?: boolean;
+  };
   "accounts.disconnect": { accountId: string };
   "sources.setSchedule": SourceTargetInput & {
     paused: boolean;

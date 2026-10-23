@@ -97,6 +97,7 @@ export function createSetImportScopeQuery(
     z.strictObject({
       accountId: z.string().trim().min(1),
       scope: ImportScopeParam,
+      start: z.boolean().optional(),
     }),
     async (params) => {
       const account = await dependencies.getAccount(params.accountId);
@@ -115,6 +116,7 @@ export function createSetImportScopeQuery(
         account.source,
         account.sync,
         normalized.scope,
+        { start: params.start },
       );
       await dependencies.patchAccountSync(params.accountId, patch);
       if (patch.lastFullSyncAt === null) {

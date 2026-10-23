@@ -53,6 +53,31 @@ describe("accounts.setImportScope", () => {
     expect(releaseFilteredSaves).toHaveBeenCalledWith("pinterest:123");
   });
 
+  it("keeps a pending Account waiting when the save doesn't start it", async () => {
+    const pending = account("twitter");
+    pending.sync.importPending = true;
+    const patchAccountSync = vi.fn(async () => pending.sync);
+    const operation = createSetImportScopeQuery({
+      getAccount: vi.fn(async () => pending),
+      patchAccountSync,
+      releaseFilteredSaves: vi.fn(async () => 0),
+    });
+
+    await operation({
+      accountId: "twitter:123",
+      scope: { listKinds: ["saved"] },
+      start: false,
+    });
+    expect(patchAccountSync).toHaveBeenCalledWith(
+      "twitter:123",
+      expect.not.objectContaining({ importPending: expect.anything() }),
+    );
+    expect(patchAccountSync).toHaveBeenCalledWith(
+      "twitter:123",
+      expect.objectContaining({ importScope: { listKinds: ["saved"] } }),
+    );
+  });
+
   it("stores everything for options the Source can't honor", async () => {
     const patchAccountSync = vi.fn(async () => account("threads").sync);
     const releaseFilteredSaves = vi.fn(async () => 0);
