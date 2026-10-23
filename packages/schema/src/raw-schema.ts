@@ -147,7 +147,7 @@ export const RawJsonSchema = z.object({
   ytdlp: z.looseObject({}).optional(),
   captureTweetVersion: z.number().optional(),
   renderTextCoverVersion: z.number().optional(),
-  importFilter: z.enum(["media", "since"]).optional().catch(undefined),
+  importFilter: z.enum(["list", "media", "since"]).optional().catch(undefined),
 });
 
 /**
@@ -161,7 +161,7 @@ export const StoredRawJsonSchema = z.object({
   ytdlp: z.looseObject({ duration: z.number().optional() }).optional(),
   captureTweetVersion: z.number().optional(),
   renderTextCoverVersion: z.number().optional(),
-  importFilter: z.enum(["media", "since"]).optional().catch(undefined),
+  importFilter: z.enum(["list", "media", "since"]).optional().catch(undefined),
 });
 
 export type StoredRawJson = z.infer<typeof StoredRawJsonSchema>;

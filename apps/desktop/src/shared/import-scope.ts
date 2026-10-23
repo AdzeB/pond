@@ -228,13 +228,30 @@ export function collectionFiling(
     : "off";
 }
 
-export type ImportFilterReason = "media" | "since";
+export type ImportFilterReason = "list" | "media" | "since";
+
+/** Skips a save only from lists the scope leaves out; a save on no known list is kept. */
+export function listFilterReason(
+  scope: ImportScope | undefined,
+  listKinds: readonly ListKind[],
+): "list" | null {
+  if (!scope?.listKinds || listKinds.length === 0) return null;
+  return listKinds.some((kind) => scope.listKinds?.includes(kind))
+    ? null
+    : "list";
+}
 
 /** Why the scope skips a captured save, or null to keep it. A missing publish date keeps the save. */
 export function importFilterReason(
   scope: ImportScope | undefined,
-  save: { mediaType: MediaType | null; publishedAt: Date | null },
+  save: {
+    listKinds: readonly ListKind[];
+    mediaType: MediaType | null;
+    publishedAt: Date | null;
+  },
 ): ImportFilterReason | null {
+  const list = listFilterReason(scope, save.listKinds);
+  if (list) return list;
   if (scope?.mediaKinds) {
     const kind =
       save.mediaType === "image" || save.mediaType === "video"

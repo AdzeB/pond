@@ -5,6 +5,7 @@ import {
   importFilterReason,
   importsEverything,
   importsListKind,
+  listFilterReason,
   normalizeImportScope,
   sinceStart,
   sourcesSkippingLikes,
@@ -212,17 +213,19 @@ describe("scope readers", () => {
   it("skips captures outside the media or date filter", () => {
     const scope = { mediaKinds: ["image" as const], since: "2024-01-01" };
     const recent = new Date(2024, 5, 1);
+    const save = { listKinds: [], publishedAt: recent };
     expect(
-      importFilterReason(scope, { mediaType: "image", publishedAt: recent }),
+      importFilterReason(scope, { ...save, mediaType: "image" }),
     ).toBeNull();
-    expect(
-      importFilterReason(scope, { mediaType: "video", publishedAt: recent }),
-    ).toBe("media");
-    expect(
-      importFilterReason(scope, { mediaType: null, publishedAt: recent }),
-    ).toBe("media");
+    expect(importFilterReason(scope, { ...save, mediaType: "video" })).toBe(
+      "media",
+    );
+    expect(importFilterReason(scope, { ...save, mediaType: null })).toBe(
+      "media",
+    );
     expect(
       importFilterReason(scope, {
+        ...save,
         mediaType: "image",
         publishedAt: new Date(2023, 11, 31, 23, 59),
       }),
@@ -230,15 +233,37 @@ describe("scope readers", () => {
   });
 
   it("keeps a capture whose publish date is unknown", () => {
+    const save = { listKinds: [], publishedAt: null };
     expect(
       importFilterReason(
         { since: "2024-01-01" },
-        { mediaType: "image", publishedAt: null },
+        { ...save, mediaType: "image" },
       ),
     ).toBeNull();
     expect(
-      importFilterReason(undefined, { mediaType: "video", publishedAt: null }),
+      importFilterReason(undefined, { ...save, mediaType: "video" }),
     ).toBeNull();
+  });
+
+  it("skips a save only on lists the scope leaves out", () => {
+    const scope = { listKinds: ["saved" as const] };
+    const save = { mediaType: "image" as const, publishedAt: null };
+    expect(importFilterReason(scope, { ...save, listKinds: ["liked"] })).toBe(
+      "list",
+    );
+    expect(
+      importFilterReason(scope, { ...save, listKinds: ["liked", "saved"] }),
+    ).toBeNull();
+    expect(importFilterReason(scope, { ...save, listKinds: [] })).toBeNull();
+    expect(
+      importFilterReason(undefined, { ...save, listKinds: ["liked"] }),
+    ).toBeNull();
+  });
+
+  it("checks lists without a capture", () => {
+    expect(listFilterReason({ listKinds: ["saved"] }, ["liked"])).toBe("list");
+    expect(listFilterReason({ listKinds: ["liked"] }, ["liked"])).toBeNull();
+    expect(listFilterReason({ mediaKinds: ["image"] }, ["liked"])).toBeNull();
   });
 
   it("starts the since day at local midnight", () => {

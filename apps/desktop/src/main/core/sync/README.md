@@ -102,6 +102,13 @@ marks a filtered save `skipped` with `rawJson.importFilter`, and cancels its
 remaining tasks. Skipped saves stay in the sync baseline, so they aren't
 fetched again. A post with no publish date is kept.
 
+Lists are also checked there, for saves queued before you turned a list off.
+A save on none of the scope's lists is skipped, and one that is both liked and
+saved is kept. `applyListFilter` checks this before capture, so a queued like
+is skipped without waiting on a rate-limited lookup. When a run finds a
+list-skipped save on a list you still import, `mergeListKindsOntoExisting`
+purges it and the run queues it as new.
+
 A newly connected Account is created with `importPending: true`, and
 `syncAccount` returns idle without harvesting until you pick a scope through
 `accounts.setImportScope`. A save with `start: false` stores the scope and
