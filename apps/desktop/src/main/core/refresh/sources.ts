@@ -12,7 +12,7 @@ export function homeUrlForSource(source: Source): string {
     case "pinterest":
       return "https://www.pinterest.com/login/";
     case "arena":
-      return "https://www.are.na/log-in";
+      return "https://www.are.na/login";
     case "youtube":
       return "https://accounts.google.com/ServiceLogin?service=youtube";
     case "reddit":

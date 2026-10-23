@@ -110,10 +110,6 @@ async function pushSession(source: Source): Promise<PushSessionResult> {
     };
   }
 
-  if (raw.length === 0) {
-    return { ok: false, reason: "no_cookies" };
-  }
-
   const result = await nativeCall({
     type: "session.import",
     source,

@@ -146,4 +146,21 @@ describe("dispatchNative", () => {
       dispatchNative({ type: "capture.status", id: "../x" }, ports()),
     ).resolves.toEqual({ ok: false, error: "invalid" });
   });
+
+  it("forwards a session import with no cookies so Pond can report it signed out", async () => {
+    const rejected = {
+      ok: false,
+      imported: 0,
+      connected: false,
+      reason: "no_cookies_for_source_domain",
+    };
+    const sessionImport = vi.fn().mockResolvedValue(rejected);
+    await expect(
+      dispatchNative(
+        { type: "session.import", source: "arena", cookies: [] },
+        ports({ sessionImport }),
+      ),
+    ).resolves.toEqual({ ok: true, data: rejected });
+    expect(sessionImport).toHaveBeenCalledWith("arena", []);
+  });
 });

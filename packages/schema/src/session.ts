@@ -18,7 +18,8 @@ export type ExtensionCookie = z.infer<typeof extensionCookieSchema>;
 
 export const sessionImportPayloadSchema = z.object({
   source: z.enum(SOURCES),
-  cookies: z.array(extensionCookieSchema).min(1).max(500),
+  /** Empty when the browser holds no cookies for the source, so Pond can report it signed out. */
+  cookies: z.array(extensionCookieSchema).max(500),
 });
 export type SessionImportPayload = z.infer<typeof sessionImportPayloadSchema>;
 
