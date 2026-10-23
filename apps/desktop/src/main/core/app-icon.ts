@@ -1,4 +1,5 @@
 import { existsSync, readdirSync } from "node:fs";
+import { rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { app, type NativeImage, nativeImage } from "electron";
 import log from "electron-log/main.js";
@@ -10,6 +11,11 @@ import {
 } from "../../shared/app-icons";
 import { resolveMainOut } from "../lib/resolve-preload";
 import { mainWindowState } from "../window-state";
+import {
+  appBundlePath,
+  hasCustomBundleIcon,
+  setBundleIcon,
+} from "./bundle-icon";
 import { getPrefs } from "./prefs";
 
 const DOCK_CONTENT_SCALE = 0.8;
@@ -17,6 +23,8 @@ const DOCK_CONTENT_SCALE = 0.8;
 const dockCache = new Map<string, NativeImage>();
 let lastAppliedPath: string | null = null;
 let warming = false;
+let bundleIconQueue: Promise<void> = Promise.resolve();
+let bundleIconChecked = false;
 
 function tintsRoot(): string {
   if (app.isPackaged) return join(process.resourcesPath, "app-icons");
@@ -126,9 +134,42 @@ export async function applyAppIcon(id?: string): Promise<void> {
       if (win && !win.isDestroyed()) win.setIcon(image);
     } else {
       app.dock?.setIcon(image);
+      bundleIconQueue = bundleIconQueue.then(() =>
+        applyBundleIcon(path, image),
+      );
     }
     warmDockCache();
   } catch (err) {
     log.warn("[pond] apply app icon failed", err);
+  }
+}
+
+async function applyBundleIcon(
+  path: string,
+  image: NativeImage,
+): Promise<void> {
+  const bundle = appBundlePath({
+    platform: process.platform,
+    packaged: app.isPackaged,
+    exePath: app.getPath("exe"),
+  });
+  if (!bundle) return;
+  const launching = !bundleIconChecked;
+  bundleIconChecked = true;
+  if (path === iconFile(DEFAULT_APP_ICON)) {
+    await setBundleIcon(bundle, null).catch((err) =>
+      log.warn("[pond] reset bundle icon failed", err),
+    );
+    return;
+  }
+  if (launching && hasCustomBundleIcon(bundle)) return;
+  const imagePath = join(app.getPath("temp"), "pond-bundle-icon.png");
+  try {
+    await writeFile(imagePath, image.toPNG());
+    await setBundleIcon(bundle, imagePath);
+  } catch (err) {
+    log.warn("[pond] set bundle icon failed", err);
+  } finally {
+    await rm(imagePath, { force: true }).catch(() => undefined);
   }
 }
