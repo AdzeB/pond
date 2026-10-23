@@ -76,7 +76,7 @@ Branch on `code`, never on `message`. Messages may change between releases.
 | `invalid_request` | 422 | The body or query failed validation. The message names the field. |
 | `operation_failed` | 422 | An operation ran and refused the input. |
 | `unsupported_url` | 422 | `/enqueue` can't save that URL. |
-| `rate_limited` | 429 | Too many failed sign-ins. |
+| `rate_limited` | 429 | Too many requests from this address used a wrong token in the last 5 minutes. Valid tokens still work. |
 | `internal` | 500 | Pond hit an unexpected error. |
 
 New codes may appear in minor versions. Treat an unknown code by its HTTP status.
