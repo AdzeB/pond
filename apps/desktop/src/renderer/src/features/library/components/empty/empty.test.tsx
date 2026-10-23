@@ -29,4 +29,21 @@ describe("FolderEmpty", () => {
     expect(text).not.toContain("No results found");
     expect(text).not.toContain("Clear Search and Filters");
   });
+
+  it("says saves are downloading when the folder is waiting on them", async () => {
+    await act(async () => root.render(<FolderEmpty downloading={3} />));
+    const text = host.textContent ?? "";
+    expect(text).toContain("Downloading 3 saves");
+    expect(text).toContain(
+      "They appear in this folder as each download finishes.",
+    );
+    expect(text).toContain("Open Downloads");
+    expect(text).not.toContain("This folder is empty");
+  });
+
+  it("uses the singular for one download", async () => {
+    await act(async () => root.render(<FolderEmpty downloading={1} />));
+    expect(host.textContent).toContain("Downloading 1 save");
+    expect(host.textContent).not.toContain("1 saves");
+  });
 });

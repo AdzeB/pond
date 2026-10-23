@@ -1,6 +1,15 @@
 import { saves } from "@pond/schema/db";
 import { EMPTY_QUERY } from "@pond/schema/filters";
-import { and, count, inArray, isNotNull, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  type SQL,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import { recentlyAddedSince } from "../../shared/recently-added";
 import type { LibrarySidebarCounts } from "../../shared/sidebar-counts";
@@ -25,25 +34,28 @@ export function querySidebarCounts(
       .from(saves)
       .where(live)
       .get();
-    const folderRows = z
-      .array(z.object({ id: z.string(), n: z.number() }))
-      .parse(
+    const folderCounts = (where: SQL | undefined) =>
+      z.array(z.object({ id: z.string(), n: z.number() })).parse(
         db.all(
           sql`with recursive folder_tree(root_id,folder_id) as (
-            select id,id from folders
-            union
-            select folder_tree.root_id,folders.id
+              select id,id from folders
+              union
+              select folder_tree.root_id,folders.id
+              from folder_tree
+              join folders on folders.parent_id=folder_tree.folder_id
+            )
+            select folder_tree.root_id as id,count(distinct save_folders.save_id) as n
             from folder_tree
-            join folders on folders.parent_id=folder_tree.folder_id
-          )
-          select folder_tree.root_id as id,count(distinct save_folders.save_id) as n
-          from folder_tree
-          join save_folders on save_folders.folder_id=folder_tree.folder_id
-          join saves on saves.id=save_folders.save_id
-          where ${live}
-          group by folder_tree.root_id`,
+            join save_folders on save_folders.folder_id=folder_tree.folder_id
+            join saves on saves.id=save_folders.save_id
+            where ${where}
+            group by folder_tree.root_id`,
         ),
       );
+    const folderRows = folderCounts(live);
+    const downloadingRows = folderCounts(
+      and(isNull(saves.deletedAt), eq(saves.status, "ingesting")),
+    );
     return {
       library: rows?.library ?? 0,
       untagged: rows?.untagged ?? 0,
@@ -64,6 +76,9 @@ export function querySidebarCounts(
           .where(isNotNull(saves.deletedAt))
           .get()?.n ?? 0,
       folders: Object.fromEntries(folderRows.map((row) => [row.id, row.n])),
+      foldersDownloading: Object.fromEntries(
+        downloadingRows.map((row) => [row.id, row.n]),
+      ),
     };
   })();
 }

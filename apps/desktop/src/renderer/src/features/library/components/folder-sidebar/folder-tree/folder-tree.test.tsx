@@ -533,6 +533,7 @@ describe("folder sidebar tree", () => {
         Archive: 5800,
         Empty: 0,
       },
+      foldersDownloading: {},
     };
     await folders.refresh();
     await harness.mount();
@@ -555,5 +556,39 @@ describe("folder sidebar tree", () => {
     expect(() => harness.button("Runway Year")).toThrow(
       "Missing sidebar button: Runway Year",
     );
+  });
+
+  it("marks folders whose saves are still downloading", async () => {
+    folderList.current = [
+      folder("Pinterest"),
+      folder("Kitchens", "Pinterest"),
+      folder("Gardens", "Pinterest"),
+    ];
+    sidebarCounts.current = {
+      library: 3,
+      uncategorized: 0,
+      untagged: 0,
+      recentlyAdded: 0,
+      recentlyUsed: 0,
+      trash: 0,
+      folders: { Pinterest: 3, Gardens: 3 },
+      foldersDownloading: { Pinterest: 12, Kitchens: 12 },
+    };
+    await folders.refresh();
+    await harness.mount();
+    const row = (label: string) =>
+      [...document.querySelectorAll("button")].find((node) =>
+        node.textContent?.startsWith(label),
+      );
+
+    expect(row("Kitchens")?.textContent).toBe("Kitchens12 downloading");
+    expect(
+      row("Kitchens")?.querySelector("[title]")?.getAttribute("title"),
+    ).toBe("12 downloading");
+    expect(row("Gardens")?.textContent).toBe("Gardens3");
+    expect(row("Pinterest")?.textContent).toBe("Pinterest");
+
+    await act(async () => harness.iconButton("Collapse Pinterest").click());
+    expect(row("Pinterest")?.textContent).toBe("Pinterest12 downloading3");
   });
 });

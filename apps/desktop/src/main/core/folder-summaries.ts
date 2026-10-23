@@ -1,5 +1,13 @@
 import { folders, saveFolders, saves } from "@pond/schema/db";
-import { and, count, eq, inArray, isNull, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  countDistinct,
+  eq,
+  inArray,
+  isNull,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import type { FolderSummary } from "../../shared/folder-contracts";
 import type { Db } from "../database/client";
@@ -9,6 +17,32 @@ export async function folderSummaries(
   parentId: string,
 ): Promise<FolderSummary[]> {
   return queryFolderSummaries(await getDb(), parentId);
+}
+
+export async function folderDownloadingCount(
+  folderIds: string[],
+): Promise<number> {
+  return queryFolderDownloadingCount(await getDb(), folderIds);
+}
+
+/** Folder views only list complete saves, so this counts the members still on their way in. */
+export async function queryFolderDownloadingCount(
+  db: Db,
+  folderIds: string[],
+): Promise<number> {
+  if (folderIds.length === 0) return 0;
+  const [row] = await db
+    .select({ value: countDistinct(saveFolders.saveId) })
+    .from(saveFolders)
+    .innerJoin(saves, eq(saveFolders.saveId, saves.id))
+    .where(
+      and(
+        inArray(saveFolders.folderId, folderIds),
+        isNull(saves.deletedAt),
+        eq(saves.status, "ingesting"),
+      ),
+    );
+  return row?.value ?? 0;
 }
 
 export async function queryFolderSummaries(
@@ -23,7 +57,7 @@ export async function queryFolderSummaries(
   const ids = children.map((folder) => folder.id);
   if (ids.length === 0) return [];
 
-  const [saveCounts, childCounts, coverCandidates] = await Promise.all([
+  const directCounts = (status: "complete" | "ingesting") =>
     db
       .select({
         id: saveFolders.folderId,
@@ -35,18 +69,22 @@ export async function queryFolderSummaries(
         and(
           inArray(saveFolders.folderId, ids),
           isNull(saves.deletedAt),
-          eq(saves.status, "complete"),
+          eq(saves.status, status),
         ),
       )
-      .groupBy(saveFolders.folderId),
-    db
-      .select({ id: folders.parentId, value: count(folders.id) })
-      .from(folders)
-      .where(inArray(folders.parentId, ids))
-      .groupBy(folders.parentId),
-    z.array(z.object({ id: z.string(), saveId: z.string() })).parse(
-      db.all(
-        sql`with recursive folder_tree(root_id,folder_id) as (
+      .groupBy(saveFolders.folderId);
+  const [saveCounts, downloadingCounts, childCounts, coverCandidates] =
+    await Promise.all([
+      directCounts("complete"),
+      directCounts("ingesting"),
+      db
+        .select({ id: folders.parentId, value: count(folders.id) })
+        .from(folders)
+        .where(inArray(folders.parentId, ids))
+        .groupBy(folders.parentId),
+      z.array(z.object({ id: z.string(), saveId: z.string() })).parse(
+        db.all(
+          sql`with recursive folder_tree(root_id,folder_id) as (
               select id,id from folders where parent_id=${parentId}
               union all
               select folder_tree.root_id,folders.id
@@ -72,11 +110,14 @@ export async function queryFolderSummaries(
             from ranked
             where rank<=4
             order by root_id,rank`,
+        ),
       ),
-    ),
-  ]);
+    ]);
 
   const saveCountById = new Map(saveCounts.map((row) => [row.id, row.value]));
+  const downloadingById = new Map(
+    downloadingCounts.map((row) => [row.id, row.value]),
+  );
   const childCountById = new Map(
     childCounts.flatMap((row) => (row.id ? [[row.id, row.value]] : [])),
   );
@@ -90,6 +131,7 @@ export async function queryFolderSummaries(
   return children.map((folder) => ({
     id: folder.id,
     directSaveCount: saveCountById.get(folder.id) ?? 0,
+    downloadingCount: downloadingById.get(folder.id) ?? 0,
     childFolderCount: childCountById.get(folder.id) ?? 0,
     previewSaveIds: coversById.get(folder.id) ?? [],
   }));

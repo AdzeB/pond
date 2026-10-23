@@ -6,4 +6,5 @@ export interface LibrarySidebarCounts {
   recentlyUsed: number;
   trash: number;
   folders: Record<string, number>;
+  foldersDownloading: Record<string, number>;
 }

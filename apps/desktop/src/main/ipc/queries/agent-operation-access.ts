@@ -67,6 +67,7 @@ export const queryOperationAccess = {
   "folders.createBatch": "review",
   "folders.createWithSaves": "review",
   "folders.delete": "review",
+  "folders.downloading": "read",
   "folders.list": "read",
   "folders.memberships": "read",
   "folders.metadata.get": "read",

@@ -38,6 +38,7 @@ interface QuickAccessProps {
   quickFolders: Folder[];
   folderViews: Prefs["folderViews"];
   folderCounts: Record<string, number>;
+  folderDownloading: Record<string, number>;
   badgeStyle: Prefs["sidebar"]["badgeStyle"];
   includeSubfolders: boolean;
   libraryPage: boolean;
@@ -49,6 +50,7 @@ export function QuickAccess({
   quickFolders,
   folderViews,
   folderCounts,
+  folderDownloading,
   badgeStyle,
   includeSubfolders,
   libraryPage,
@@ -261,6 +263,7 @@ export function QuickAccess({
             label={folder.name}
             icon={<FolderIcon name={folderViews[folder.id]?.icon} />}
             count={folderCounts[folder.id] ?? 0}
+            downloading={folderDownloading[folder.id] ?? 0}
             badgeStyle={badgeStyle}
             active={
               libraryPage && nav.kind === "folder" && nav.id === folder.id

@@ -7,6 +7,7 @@ import {
   IconHistory,
   IconNodes3Fill,
   IconTrashXmarkFill,
+  IconWindowDownloadFill,
 } from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
 import { libraryChrome } from "@/features/library/state/library-chrome";
@@ -99,7 +100,31 @@ export function UncategorizedEmpty() {
   );
 }
 
-export function FolderEmpty() {
+export function FolderEmpty({ downloading = 0 }: { downloading?: number }) {
+  if (downloading > 0) {
+    return (
+      <Empty.Root role="status" aria-live="polite">
+        <Empty.Media>
+          <IconWindowDownloadFill />
+        </Empty.Media>
+        <Empty.Title>
+          Downloading {downloading} {downloading === 1 ? "save" : "saves"}
+        </Empty.Title>
+        <Empty.Description>
+          They appear in this folder as each download finishes.
+        </Empty.Description>
+        <Empty.Action>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => getAppRouter()?.history.push("/downloads")}
+          >
+            Open Downloads
+          </Button>
+        </Empty.Action>
+      </Empty.Root>
+    );
+  }
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>

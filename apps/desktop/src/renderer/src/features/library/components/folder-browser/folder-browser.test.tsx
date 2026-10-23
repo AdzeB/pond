@@ -212,6 +212,69 @@ describe("folder browser", () => {
     expect(button?.textContent).not.toContain("Empty");
   });
 
+  it("labels a folder whose saves are still downloading", async () => {
+    query.mockImplementation(async (name: string) => {
+      if (name === "folders.list") {
+        return [
+          {
+            id: "board",
+            parentId: "root",
+            name: "Kitchens",
+            color: null,
+            sortOrder: 0,
+            createdAt: new Date(0),
+          },
+        ];
+      }
+      if (name === "folders.memberships") return [];
+      if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "folders.summaries") {
+        return [
+          {
+            id: "board",
+            directSaveCount: 0,
+            downloadingCount: 12,
+            childFolderCount: 0,
+            previewSaveIds: [],
+          },
+        ];
+      }
+      if (name === "saves.getMany") return [];
+      return null;
+    });
+    await folders.refresh();
+    await act(async () => {
+      root.render(
+        <FolderBrowser parentId="root" contentCount={0} downloading={12} />,
+      );
+    });
+    const button = await vi.waitFor(() => {
+      const candidate = host.querySelector<HTMLButtonElement>(
+        'button[aria-label="Open Kitchens, 12 downloading"]',
+      );
+      expect(candidate).not.toBeNull();
+      return candidate;
+    });
+    expect(button?.textContent).not.toContain("0 items");
+    const status = host.querySelector('[role="status"]');
+    expect(status?.textContent).toContain("Downloading 12 saves");
+    expect(status?.textContent).toContain("Open Downloads");
+    expect(host.textContent).toContain("Contents (0)");
+  });
+
+  it("leaves the contents header alone when nothing is downloading", async () => {
+    await act(async () => {
+      root.render(
+        <FolderBrowser parentId="root" contentCount={3}>
+          <div>Save grid</div>
+        </FolderBrowser>,
+      );
+    });
+    await vi.waitFor(() => expect(host.textContent).toContain("Contents (3)"));
+    expect(host.querySelector('[role="status"]')).toBeNull();
+    expect(host.textContent).not.toContain("Downloading");
+  });
+
   it("opens a child folder with the keyboard-accessible card button", async () => {
     await act(async () => {
       root.render(<FolderBrowser parentId="root" contentCount={0} />);

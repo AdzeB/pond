@@ -102,6 +102,15 @@ export const foldersQueries = {
       return folderSummaries(parentId);
     },
   ),
+  "folders.downloading": query(
+    z.object({ folderIds: StringListParam }),
+    async ({ folderIds }) => {
+      const { folderDownloadingCount } = await import(
+        "../../core/folder-summaries"
+      );
+      return { count: await folderDownloadingCount(folderIds) };
+    },
+  ),
   "folders.metadata.get": query(
     z.object({ folderId: StringParam }),
     async ({ folderId }) => {
