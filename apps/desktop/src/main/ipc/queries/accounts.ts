@@ -10,7 +10,9 @@ import {
 } from "../../../shared/import-scope";
 import type { OkFailure } from "../../../shared/query-contracts-shared";
 import { releaseFilteredSaves } from "../../core/pipeline/import-filter";
+import type { CollectionFailureReason } from "../../core/refresh/harvest/lib/collections-reply";
 import {
+  collectionsNeedHandle,
   isAccountConnected,
   listSourceCollections,
 } from "../../core/refresh/harvest-window";
@@ -123,6 +125,23 @@ export function createSetImportScopeQuery(
   );
 }
 
+function collectionsProblem(
+  reason: CollectionFailureReason,
+  label: string,
+  nouns: string,
+): string {
+  switch (reason) {
+    case "auth_required":
+      return `${label} signed you out. Reconnect the Account to load your ${nouns}.`;
+    case "checkpoint":
+      return `${label} wants you to confirm your account. Open ${label} in your browser, then try again.`;
+    case "rate_limited":
+      return `${label} asked Pond to slow down. Try again in a few minutes.`;
+    case "unknown":
+      return `Pond couldn't load your ${nouns}. Try again.`;
+  }
+}
+
 interface ImportOptionsDependencies {
   getAccount: typeof getAccount;
   resolveAccountHandle: typeof resolveAccountHandle;
@@ -145,8 +164,11 @@ export function createImportOptionsQuery(
       if (!kind) return { ok: true as const, collections: null };
       const label = sourceLabel(account.source);
       const nouns = COLLECTION_NOUNS[kind];
-      const handle = await dependencies.resolveAccountHandle(account);
-      if (!handle && kind === "board") {
+      const needsHandle = collectionsNeedHandle(account.source);
+      const handle = needsHandle
+        ? await dependencies.resolveAccountHandle(account)
+        : null;
+      if (needsHandle && !handle) {
         return {
           ok: false as const,
           error: `Pond couldn't find your ${label} username. Reconnect the Account and try again.`,
@@ -159,12 +181,7 @@ export function createImportOptionsQuery(
       if (!result.ok) {
         return {
           ok: false as const,
-          error:
-            result.reason === "auth_required"
-              ? `${label} signed you out. Reconnect the Account to load your ${nouns}.`
-              : result.reason === "rate_limited"
-                ? `${label} asked Pond to slow down. Try again in a few minutes.`
-                : `Pond couldn't load your ${nouns}. Try again.`,
+          error: collectionsProblem(result.reason, label, nouns),
         };
       }
       return { ok: true as const, collections: result.collections };

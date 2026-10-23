@@ -1,4 +1,5 @@
 export {
+  collectionsNeedHandle,
   harvestInstagramLikedList,
   harvestSourceCollections,
   harvestSourceList,

@@ -25,6 +25,21 @@ describe("readCollectionsReply", () => {
     expect(readCollectionsReply("nope")).toEqual({
       ok: false,
       reason: "unknown",
+      detail: "malformed reply",
+    });
+  });
+
+  it("keeps the page's failure detail for the log", () => {
+    expect(
+      readCollectionsReply({
+        ok: false,
+        reason: "checkpoint",
+        detail: "checkpoint_required",
+      }),
+    ).toEqual({
+      ok: false,
+      reason: "checkpoint",
+      detail: "checkpoint_required",
     });
   });
 });
