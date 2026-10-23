@@ -1,5 +1,5 @@
-.options {
-  max-height: min(320px, calc(var(--available-height) - 72px));
+.list {
+  max-height: min(360px, calc(var(--available-height) - 72px));
 }
 
 .excluded {

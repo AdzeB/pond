@@ -9,14 +9,25 @@ import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { applyNavFilter } from "@/features/saves";
 import { useSaves } from "@/features/saves/pool";
 
-export function useChoiceCounts(field: FieldId) {
+export interface ChoiceCounts {
+  counts: Map<string, number>;
+  empty: number;
+}
+
+export function useFieldCounts(
+  fields: readonly FieldId[],
+): Map<FieldId, ChoiceCounts> {
   const saves = useSaves();
   const nav = useLibraryNav();
   const memberships = useFolderMemberships();
   const folders = useFolders();
+  const key = fields.join(",");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `key` stands in for `fields`, which callers rebuild every render.
   return useMemo(() => {
-    const counts = new Map<string, number>();
-    let empty = 0;
+    const result = new Map<FieldId, ChoiceCounts>(
+      fields.map((field) => [field, { counts: new Map(), empty: 0 }]),
+    );
+    if (!fields.length) return result;
     const scoped = applyNavFilter(
       saves.filter((save) =>
         nav.kind === "trash" ? !!save.deletedAt : !save.deletedAt,
@@ -26,21 +37,26 @@ export function useChoiceCounts(field: FieldId) {
       folders,
     );
     for (const save of scoped) {
-      const projected = FIELD_DESCRIPTORS[field].project({
-        ...save,
-        folderIds: memberships[save.id] ?? [],
-      });
-      const values = Array.isArray(projected)
-        ? projected
-        : projected == null || projected === ""
-          ? []
-          : [projected];
-      if (!values.length) empty++;
-      for (const value of new Set(
-        values.map((value) => String(value).toLowerCase()),
-      ))
-        counts.set(value, (counts.get(value) ?? 0) + 1);
+      const record = { ...save, folderIds: memberships[save.id] ?? [] };
+      for (const [field, tally] of result) {
+        const projected = FIELD_DESCRIPTORS[field].project(record);
+        const values = Array.isArray(projected)
+          ? projected
+          : projected == null || projected === ""
+            ? []
+            : [projected];
+        if (!values.length) tally.empty++;
+        for (const value of new Set(
+          values.map((value) => String(value).toLowerCase()),
+        ))
+          tally.counts.set(value, (tally.counts.get(value) ?? 0) + 1);
+      }
     }
-    return { counts, empty };
-  }, [saves, nav, memberships, folders, field]);
+    return result;
+  }, [saves, nav, memberships, folders, key]);
+}
+
+export function useChoiceCounts(field: FieldId): ChoiceCounts {
+  const counts = useFieldCounts([field]);
+  return counts.get(field) ?? { counts: new Map(), empty: 0 };
 }

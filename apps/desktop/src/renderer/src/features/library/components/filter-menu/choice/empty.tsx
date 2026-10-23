@@ -1,5 +1,6 @@
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { Menu } from "@pond/ui";
+import type { ReactNode } from "react";
 import { excludeGestures } from "./exclude";
 import { ChoiceIndicator } from "./indicator";
 
@@ -7,12 +8,14 @@ export function EmptyChoice({
   field,
   label,
   count,
+  icon,
   rows,
   onChange,
 }: {
   field: FieldId;
   label: string;
-  count: number;
+  count: ReactNode;
+  icon?: ReactNode;
   rows: Predicate[];
   onChange: (rows: Predicate[]) => void;
 }) {
@@ -38,8 +41,11 @@ export function EmptyChoice({
       {...excludeGestures(() => change(!current, true))}
     >
       <ChoiceIndicator excluded={current?.negate} />
+      {icon ? <Menu.ItemIcon>{icon}</Menu.ItemIcon> : null}
       <Menu.ItemLabel>{label}</Menu.ItemLabel>
-      <Menu.SecondaryLabel>{count}</Menu.SecondaryLabel>
+      {count === null ? null : (
+        <Menu.SecondaryLabel>{count}</Menu.SecondaryLabel>
+      )}
     </Menu.CheckboxItem>
   );
 }

@@ -139,7 +139,9 @@ export function LibraryView() {
             </Button>
           </div>
         ) : !data.bootReady ||
-          (data.paging.loading && data.filtered.length === 0) ? (
+          (data.paging.loading &&
+            data.filtered.length === 0 &&
+            !data.paging.settledEmpty) ? (
           <LibraryLoading />
         ) : data.filtered.length === 0 && (!hasChildFolders || filtering) ? (
           <LibraryEmptyState

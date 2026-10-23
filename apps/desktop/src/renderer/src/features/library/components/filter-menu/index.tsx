@@ -14,18 +14,26 @@ import {
   useVisualProbe,
 } from "@/features/library/state/view-store";
 import { useNlFacets } from "@/features/search";
-import { accountChipLabel, accountRefsFromSync } from "@/features/search/query";
+import {
+  accountChipLabel,
+  accountDisplayName,
+  accountRefsFromSync,
+} from "@/features/search/query";
+import { BrandTile } from "@/features/sources";
 import { useTagGroups, useTags } from "@/features/tags";
 import { FilterToolbar } from "@/shared/components/filter-toolbar";
 import { errorCopy } from "@/shared/lib/error-copy";
+import { FolderIcon } from "@/shared/lib/folder-icons";
 import { notify } from "@/shared/lib/toast";
 import { usePrefs } from "@/shared/state/prefs";
+import { AddFilter } from "./add";
 import { FilterCategory } from "./category";
 import { CustomizeFilters } from "./customize";
 import { choiceOptions, type FilterOption, presetOptions } from "./options";
 import { SemanticChip, VisualChip } from "./overlay";
 import { sourceOptions } from "./source-options";
 import {
+  type FilterChipId,
   filterToolbar,
   type OverlayId,
   useFilterToolbar,
@@ -62,8 +70,14 @@ export function FilterToggle() {
 
 interface FilterBarData {
   tags: readonly { name: string }[];
-  tagGroups: ReturnType<typeof useTagGroups>;
-  folders: readonly { id: string; name: string }[];
+  tagGroups: readonly { name: string; tagNames: readonly string[] }[];
+  folders: readonly {
+    id: string;
+    name: string;
+    parentId?: string | null;
+    color?: string | null;
+    icon?: string;
+  }[];
   facets: ReturnType<typeof useNlFacets>;
   refs: ReturnType<typeof accountRefsFromSync>;
 }
@@ -74,11 +88,15 @@ export function FilterBar() {
   const folders = useFolders();
   const facets = useNlFacets();
   const [sync] = usePrefs("sync");
+  const [folderViews] = usePrefs("folderViews");
   return (
     <FilterBarView
       tags={tags}
       tagGroups={tagGroups}
-      folders={folders}
+      folders={folders.map((folder) => ({
+        ...folder,
+        icon: folderViews[folder.id]?.icon,
+      }))}
       facets={facets}
       refs={accountRefsFromSync(sync)}
     />
@@ -92,7 +110,7 @@ export function FilterBarView({
   facets,
   refs,
 }: FilterBarData) {
-  const { open, pinned, overlays } = useFilterToolbar();
+  const { open, layout, pinned, overlays } = useFilterToolbar();
   const query = useFilterQuery();
   const semantic = useSemanticQuery();
   const visual = useVisualProbe();
@@ -101,41 +119,72 @@ export function FilterBarView({
   const activeFields = rows.map((row) =>
     row.field === "height" ? "width" : row.field,
   );
+  const appliedLayout = layout === "applied";
   const fields = [
     ...new Set(
-      [...pinned, ...activeFields].map((field) =>
-        field === "height" ? "width" : field,
+      (appliedLayout ? activeFields : [...pinned, ...activeFields]).map(
+        (field) => (field === "height" ? "width" : field),
       ),
     ),
   ];
-  const shownOverlays: OverlayId[] = [
-    ...(overlays.includes("visual") || visual ? (["visual"] as const) : []),
-    ...(overlays.includes("semantic") || semantic
-      ? (["semantic"] as const)
-      : []),
-  ];
-  const chips = [
-    ...fields.filter((field) => field === "color"),
-    ...shownOverlays,
-    ...fields.filter((field) => field !== "color"),
+  const shownOverlays: OverlayId[] = appliedLayout
+    ? [
+        ...(visual ? (["visual"] as const) : []),
+        ...(semantic ? (["semantic"] as const) : []),
+      ]
+    : [
+        ...(overlays.includes("visual") || visual ? (["visual"] as const) : []),
+        ...(overlays.includes("semantic") || semantic
+          ? (["semantic"] as const)
+          : []),
+      ];
+  const chips: FilterChipId[] = appliedLayout
+    ? [...shownOverlays, ...fields]
+    : [
+        ...fields.filter((field) => field === "color"),
+        ...shownOverlays,
+        ...fields.filter((field) => field !== "color"),
+      ];
+  const appliedChips: FilterChipId[] = [
+    ...activeFields,
+    ...(visual ? (["visual"] as const) : []),
+    ...(semantic ? (["semantic"] as const) : []),
   ];
   const selectedSources = rows
     .filter((row) => row.field === "source")
     .flatMap((row) =>
       (Array.isArray(row.value) ? row.value : [row.value]).map(String),
     );
+  const tagGroupOf = new Map<string, string>();
+  for (const group of tagGroups)
+    for (const name of group.tagNames)
+      if (!tagGroupOf.has(name.toLowerCase()))
+        tagGroupOf.set(name.toLowerCase(), group.name);
+  const folderNames = new Map(
+    folders.map((folder) => [folder.id, folder.name]),
+  );
   const choices: FilterChoices = {
     tags: choiceOptions(
       "tags",
       tags.map((tag) => ({ label: tag.name, value: tag.name.toLowerCase() })),
-    ),
+    ).map((option) => ({
+      ...option,
+      crumb: tagGroupOf.get(option.label.toLowerCase()),
+    })),
     folder: choiceOptions(
       "folder",
       folders.map((folder) => ({
         label: folder.name,
         value: folder.id.toLowerCase(),
       })),
-    ),
+    ).map((option, index) => {
+      const folder = folders[index];
+      return {
+        ...option,
+        crumb: folder?.parentId ? folderNames.get(folder.parentId) : undefined,
+        icon: <FolderIcon name={folder?.icon} color={folder?.color} />,
+      };
+    }),
     source: sourceOptions([
       ...new Set([...facets.sources, ...selectedSources]),
     ]),
@@ -149,7 +198,16 @@ export function FilterBarView({
         label: accountChipLabel(ref.id, refs),
         value: ref.id.toLowerCase(),
       })),
-    ),
+    ).map((option, index) => {
+      const ref = refs[index];
+      return ref
+        ? {
+            ...option,
+            shortLabel: accountDisplayName(ref),
+            icon: <BrandTile source={ref.source} size={16} />,
+          }
+        : option;
+    }),
   };
 
   const apply = (next: Predicate[]) => {
@@ -157,81 +215,83 @@ export function FilterBarView({
   };
   const hasActiveFilters =
     rows.length > 0 || Boolean(semantic) || Boolean(visual);
-
+  const saveView = () => {
+    if (activeViewId) {
+      void savedViews.updateCurrent(activeViewId).catch((error) =>
+        notify({
+          id: "save-filter-view",
+          title: "Couldn't Update Saved View",
+          description: errorCopy(error, "Try again."),
+        }),
+      );
+      return;
+    }
+    void savedViews
+      .create({ kind: "saved_view", name: "Untitled" })
+      .then((view) => savedViews.startEditing(view.id))
+      .catch((error) =>
+        notify({
+          id: "save-filter-view",
+          title: "Couldn't Save View",
+          description: errorCopy(error, "Try again."),
+        }),
+      );
+  };
+  const clearAll = () => {
+    updateLocalFilters([]);
+    setSemanticQuery(null);
+    setVisualProbe(null);
+  };
+  const saveLabel = activeViewId ? "Update View" : "Save View";
+  const viewActions = (
+    <>
+      <Tooltip label={saveLabel} side="bottom">
+        <Button
+          icon
+          size="sm"
+          variant="ghost"
+          aria-label={saveLabel}
+          onClick={saveView}
+        >
+          <IconBookmark />
+        </Button>
+      </Tooltip>
+      <Tooltip label="Clear Filters" side="bottom">
+        <Button
+          icon
+          size="sm"
+          variant="ghost"
+          aria-label="Clear Filters"
+          disabled={!hasActiveFilters}
+          onClick={clearAll}
+        >
+          <IconFilterOff />
+        </Button>
+      </Tooltip>
+    </>
+  );
   return (
     <FilterToolbar.Bar
       open={open}
       id="library-filter-toolbar"
       label="Library Filters"
+      wrap={appliedLayout}
       actions={
-        <>
-          <CustomizeFilters
-            choices={choices}
-            activeFields={activeFields}
-            semanticActive={Boolean(semantic)}
-            visualActive={Boolean(visual)}
-          />
-          {activeViewId ? (
-            <Tooltip label="Update View" side="bottom">
-              <Button
-                icon
-                size="sm"
-                variant="ghost"
-                aria-label="Update View"
-                onClick={() =>
-                  void savedViews.updateCurrent(activeViewId).catch((error) =>
-                    notify({
-                      id: "save-filter-view",
-                      title: "Couldn't Update Saved View",
-                      description: errorCopy(error, "Try again."),
-                    }),
-                  )
-                }
-              >
-                <IconBookmark />
-              </Button>
-            </Tooltip>
-          ) : (
-            <Tooltip label="Save" side="bottom">
-              <Button
-                icon
-                size="sm"
-                variant="ghost"
-                aria-label="Save"
-                onClick={() =>
-                  void savedViews
-                    .create({ kind: "saved_view", name: "Untitled" })
-                    .then((view) => savedViews.startEditing(view.id))
-                    .catch((error) =>
-                      notify({
-                        id: "save-filter-view",
-                        title: "Couldn't Save View",
-                        description: errorCopy(error, "Try again."),
-                      }),
-                    )
-                }
-              >
-                <IconBookmark />
-              </Button>
-            </Tooltip>
-          )}
-          <Tooltip label="Clear Filters" side="bottom">
-            <Button
-              icon
-              size="sm"
-              variant="ghost"
-              aria-label="Clear Filters"
-              disabled={!hasActiveFilters}
-              onClick={() => {
-                updateLocalFilters([]);
-                setSemanticQuery(null);
-                setVisualProbe(null);
-              }}
-            >
-              <IconFilterOff />
-            </Button>
-          </Tooltip>
-        </>
+        appliedLayout ? (
+          hasActiveFilters ? (
+            viewActions
+          ) : null
+        ) : (
+          <>
+            <CustomizeFilters
+              choices={choices}
+              activeFields={activeFields}
+              semanticActive={Boolean(semantic)}
+              visualActive={Boolean(visual)}
+            />
+            {viewActions}
+          </>
+        )
       }
     >
       {chips.map((chip) =>
@@ -247,12 +307,20 @@ export function FilterBarView({
               Object.entries(choices).find(([field]) => field === chip)?.[1] ??
               presetOptions(chip)
             }
-            tagGroups={chip === "tags" ? tagGroups : undefined}
             rows={rows}
             onChange={apply}
           />
         ),
       )}
+      {appliedLayout ? (
+        <AddFilter
+          choices={choices}
+          rows={rows}
+          onChange={apply}
+          applied={appliedChips}
+          compact={chips.length > 0}
+        />
+      ) : null}
     </FilterToolbar.Bar>
   );
 }

@@ -9,6 +9,10 @@ const OverlayIdSchema = z.enum(["semantic", "visual"]);
 
 export type OverlayId = z.infer<typeof OverlayIdSchema>;
 
+export type FilterChipId = FieldId | OverlayId;
+
+export type FilterLayout = "applied" | "pinned";
+
 const DEFAULT_FILTER_FIELDS: readonly FieldId[] = [
   "color",
   "tags",
@@ -121,8 +125,16 @@ function readPinnedOverlays(): OverlayId[] {
   return [...DEFAULT_FILTER_OVERLAYS];
 }
 
-const store = new Store({
+interface ToolbarState {
+  open: boolean;
+  layout: FilterLayout;
+  pinned: FieldId[];
+  overlays: OverlayId[];
+}
+
+const store = new Store<ToolbarState>({
   open: readViewPref("filters") !== "0",
+  layout: readViewPref("filterLayout") === "pinned" ? "pinned" : "applied",
   pinned: readPinnedFields(),
   overlays: readPinnedOverlays(),
 });
@@ -149,6 +161,10 @@ export const filterToolbar = {
     if (pinned) overlays.push(overlay);
     writeViewPref("filterOverlays", JSON.stringify(overlays));
     store.setState((state) => ({ ...state, overlays }));
+  },
+  setLayout(layout: FilterLayout): void {
+    writeViewPref("filterLayout", layout);
+    store.setState((state) => ({ ...state, layout }));
   },
   restoreDefaults(): void {
     const pinned = [...DEFAULT_FILTER_FIELDS];

@@ -1,10 +1,12 @@
 import type { SavedView } from "@pond/schema/db";
+import { PredicateSchema } from "@pond/schema/filters";
 import { FIELD_IDS } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate, Query } from "@pond/schema/filters/types";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useMemo } from "react";
+import { z } from "zod";
 import type { SortDir } from "@/features/library/hooks/use-filtered-saves";
 import { combineQueries } from "@/features/library/lib/smart-folders";
 import {
@@ -93,13 +95,52 @@ function readInitialZoom(): number {
   }
 }
 
+const PersistedFilters = z.object({
+  rows: z.array(PredicateSchema),
+  combinator: z.enum(["and", "or"]),
+  semanticQuery: z.string().nullable(),
+});
+
+type PersistedFilters = z.infer<typeof PersistedFilters>;
+
+function readPersistedFilters(): PersistedFilters {
+  const empty: PersistedFilters = {
+    rows: [],
+    combinator: "and",
+    semanticQuery: null,
+  };
+  const raw = readViewPref("filterRules");
+  if (!raw) return empty;
+  try {
+    const parsed = PersistedFilters.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : empty;
+  } catch {
+    return empty;
+  }
+}
+
+/** Saved views own their rules, so only ad-hoc filters survive a reload. */
+function persistedFiltersKey(state: ViewStoreState): string {
+  return JSON.stringify(
+    state.activeViewId
+      ? { rows: [], combinator: "and", semanticQuery: null }
+      : {
+          rows: state.rows.filter(predicateIsActive),
+          combinator: state.combinator,
+          semanticQuery: state.semanticQuery,
+        },
+  );
+}
+
+const initialFilters = readPersistedFilters();
+
 const store = new Store<ViewStoreState>({
   q: "",
   searchInput: "",
   searchScope: "all",
-  rows: [],
-  combinator: "and",
-  query: EMPTY_QUERY,
+  rows: initialFilters.rows,
+  combinator: initialFilters.combinator,
+  query: deriveQuery(initialFilters.rows, initialFilters.combinator),
   inheritedQuery: EMPTY_QUERY,
   presentationFolderId: null,
   randomSeed: readViewPref("seed") ?? "pond",
@@ -110,11 +151,19 @@ const store = new Store<ViewStoreState>({
   capture: false,
   activeViewId: null,
   includeSubfolders: readViewPref("subfolders") !== "0",
-  semanticQuery: null,
+  semanticQuery: initialFilters.semanticQuery,
   visualProbe: null,
 });
 
 applyZoomVar(store.state.zoom);
+
+let persistedFilters = persistedFiltersKey(store.state);
+store.subscribe(() => {
+  const next = persistedFiltersKey(store.state);
+  if (next === persistedFilters) return;
+  persistedFilters = next;
+  writeViewPref("filterRules", next);
+});
 
 export function useViewStore(): ViewStoreState {
   return useSelector(store, (s) => s);

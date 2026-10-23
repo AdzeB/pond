@@ -11,6 +11,6 @@ export function ChoiceIndicator({ excluded }: { excluded?: boolean }) {
       <IconXmark size={12} />
     </Menu.CheckboxItemIndicator>
   ) : (
-    <Menu.CheckboxItemIndicator />
+    <Menu.CheckboxItemIndicator reveal="active" />
   );
 }

@@ -123,10 +123,12 @@
 }
 
 .secondary-label {
+  flex: none;
   margin-left: auto;
   font-size: var(--ds-text-xs);
   font-weight: var(--ds-weight-md);
   color: var(--ds-gray-10);
+  white-space: nowrap;
 }
 
 .input {

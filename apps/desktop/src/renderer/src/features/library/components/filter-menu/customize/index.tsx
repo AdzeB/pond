@@ -123,7 +123,7 @@ export function CustomizeFilters({
           <Menu.Positioner
             side="inline-end"
             align="start"
-            sideOffset={-2}
+            sideOffset={4}
             alignOffset={-4}
           >
             <FilterPopup>{items}</FilterPopup>
@@ -197,6 +197,9 @@ export function CustomizeFilters({
                     <IconRefresh />
                   </Menu.ItemIcon>
                   <Menu.ItemLabel>Reset Filters</Menu.ItemLabel>
+                </Menu.Item>
+                <Menu.Item onClick={() => filterToolbar.setLayout("applied")}>
+                  <Menu.ItemLabel>Use Applied Filters</Menu.ItemLabel>
                 </Menu.Item>
               </Menu.FilterList>
             </FilterPopup>

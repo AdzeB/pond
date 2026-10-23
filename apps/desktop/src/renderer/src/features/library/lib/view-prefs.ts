@@ -6,8 +6,10 @@ type ViewPrefKey =
   | "inspector"
   | "sidebar"
   | "filters"
+  | "filterRules"
   | "filterFields"
   | "filterOverlays"
+  | "filterLayout"
   | "subfolders";
 
 const STORAGE_KEYS = {
@@ -18,8 +20,10 @@ const STORAGE_KEYS = {
   inspector: "pond.inspector",
   sidebar: "pond.sidebar",
   filters: "pond.filters",
+  filterRules: "pond.filterRules",
   filterFields: "pond.filterFields",
   filterOverlays: "pond.filterOverlays",
+  filterLayout: "pond.filterLayout",
   subfolders: "pond.subfolders",
 } satisfies Record<ViewPrefKey, string>;
 

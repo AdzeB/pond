@@ -180,6 +180,7 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
     loadedIds: () => session.snapshot().page?.ids ?? [],
     filtered: ranked,
     loading,
+    settledEmpty: page !== null && page.ids.length === 0,
     error,
     total: ranked === filtered ? (page?.total ?? 0) : ranked.length,
     hasMore: ranked === filtered && !!page?.nextCursor,
