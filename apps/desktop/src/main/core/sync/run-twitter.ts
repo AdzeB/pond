@@ -189,13 +189,14 @@ export async function syncTwitter(
     : NO_COLLECTION_PASS;
   if (collectionPass.gap) gaps.push(collectionPass.gap);
 
-  await mergeListKindsOntoExisting(
+  const relisted = await mergeListKindsOntoExisting(
     source,
     entries.map((e) => ({
       sourceId: e.tweetId,
       listKinds: e.listKinds,
     })),
   );
+  for (const id of relisted) knownIds.delete(id);
 
   const allFresh = entries.filter((e) => !knownIds.has(e.tweetId));
   const recovery = entries.filter((e) => failedSourceIds.has(e.tweetId));

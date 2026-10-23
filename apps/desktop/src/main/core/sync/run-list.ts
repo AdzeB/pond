@@ -258,7 +258,9 @@ export async function syncListSource(
   if (collectionPass.gap) gaps.push(collectionPass.gap);
   const filing = [...combined, ...collectionPass.entries];
 
-  await mergeListKindsOntoExisting(source, combined);
+  for (const id of await mergeListKindsOntoExisting(source, combined)) {
+    knownIds.delete(id);
+  }
 
   const allFresh = combined.filter((e) => !knownIds.has(e.sourceId));
   const fresh =

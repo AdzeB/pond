@@ -1,11 +1,14 @@
-import { type Save, saves, tasks } from "@pond/schema/db";
+import { type ImportScope, type Save, saves, tasks } from "@pond/schema/db";
 import { majorityMediaType } from "@pond/schema/media-type";
+import { storedAsRawJson } from "@pond/schema/raw-schema";
 import type { Transaction } from "@pond/schema/tx";
 import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import {
   accountImportScope,
+  type ImportFilterReason,
   importFilterReason,
+  listFilterReason,
 } from "../../../shared/import-scope";
 import { getDb } from "../../db";
 import { executeBatch } from "../executor";
@@ -13,20 +16,33 @@ import { persistSave } from "../persist-save";
 import { getAccount } from "../sync/accounts";
 
 /** Skips a save its Account's scope filters out. Only a sync's first pass is checked, so a manual refresh keeps the save. */
-export async function applyImportFilter(save: Save): Promise<boolean> {
+export function applyImportFilter(save: Save): Promise<boolean> {
+  return skipFiltered(save, (scope) =>
+    importFilterReason(scope, capturedTraits(save)),
+  );
+}
+
+/** Skips a save from a list the scope leaves out before its capture waits on a rate-limited lookup. */
+export function applyListFilter(save: Save): Promise<boolean> {
+  return skipFiltered(save, (scope) => listFilterReason(scope, save.listKinds));
+}
+
+async function skipFiltered(
+  save: Save,
+  reasonFor: (scope: ImportScope | undefined) => ImportFilterReason | null,
+): Promise<boolean> {
   if (!save.accountId || save.status !== "ingesting") return false;
   const account = await getAccount(save.accountId);
   if (!account) return false;
-  const reason = importFilterReason(
-    accountImportScope(account.source, account.sync),
-    capturedTraits(save),
-  );
+  const reason = reasonFor(accountImportScope(account.source, account.sync));
   if (!reason) return false;
   await persistSave(
     save.id,
     {
       status: "skipped",
-      rawJson: save.rawJson ? { ...save.rawJson, importFilter: reason } : null,
+      rawJson: save.rawJson
+        ? { ...save.rawJson, importFilter: reason }
+        : storedAsRawJson({ importFilter: reason }),
     },
     { actorReason: `sync:import-filter:${reason}` },
   );
@@ -55,16 +71,21 @@ export async function applyImportFilter(save: Save): Promise<boolean> {
 
 /** Reads media and date from the capture, since a seeded save's columns can lag behind it. */
 export function capturedTraits(
-  save: Pick<Save, "mediaType" | "publishedAt" | "rawJson">,
+  save: Pick<Save, "listKinds" | "mediaType" | "publishedAt" | "rawJson">,
 ) {
   const capture = save.rawJson?.capture;
   if (!capture) {
-    return { mediaType: save.mediaType, publishedAt: save.publishedAt };
+    return {
+      listKinds: save.listKinds,
+      mediaType: save.mediaType,
+      publishedAt: save.publishedAt,
+    };
   }
   const published = capture.publishedAt
     ? Date.parse(capture.publishedAt)
     : Number.NaN;
   return {
+    listKinds: save.listKinds,
     mediaType: majorityMediaType(
       capture.media.flatMap((m) => (m.type === "link" ? [] : [m.type])),
     ),
@@ -91,6 +112,35 @@ export async function releaseFilteredSaves(accountId: string): Promise<number> {
       ),
     );
   if (rows.length === 0) return 0;
+  await purgeReleased(rows);
+  log.info("[pond pipeline:import-filter] released", {
+    accountId,
+    count: rows.length,
+  });
+  return rows.length;
+}
+
+/** Purges saves skipped for their list, so the walk that found them on another list queues them again. */
+export async function releaseListFilteredSaves(
+  ids: readonly string[],
+): Promise<void> {
+  if (ids.length === 0) return;
+  const db = await getDb();
+  const rows = await db
+    .select()
+    .from(saves)
+    .where(
+      and(
+        inArray(saves.id, [...ids]),
+        eq(saves.status, "skipped"),
+        eq(sql`json_extract(${saves.rawJson}, '$.importFilter')`, "list"),
+      ),
+    );
+  await purgeReleased(rows);
+}
+
+async function purgeReleased(rows: Save[]): Promise<void> {
+  if (rows.length === 0) return;
   const transactions = rows.map(
     (row): Transaction => ({
       kind: "purge",
@@ -101,9 +151,4 @@ export async function releaseFilteredSaves(accountId: string): Promise<number> {
     }),
   );
   await executeBatch(transactions);
-  log.info("[pond pipeline:import-filter] released", {
-    accountId,
-    count: rows.length,
-  });
-  return rows.length;
 }

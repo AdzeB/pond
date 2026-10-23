@@ -166,7 +166,7 @@ export interface RawJson {
   captureTweetVersion?: number;
   renderTextCoverVersion?: number;
   /** Set when the Account's import filters skipped this save, so a scope change can release it. */
-  importFilter?: "media" | "since";
+  importFilter?: "list" | "media" | "since";
 }
 
 export function walkCaptureMedia(

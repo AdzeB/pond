@@ -4,9 +4,10 @@ import {
   mergeListKinds,
   normalizeListKinds,
 } from "@pond/schema/list-kinds";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
+import { releaseListFilteredSaves } from "./import-filter";
 
 const EXPLICIT_SAVED = new Set([
   "toolbar",
@@ -39,10 +40,12 @@ function chunk<T>(rows: T[], size: number): T[][] {
   return out;
 }
 
+/** Returns the source ids of list-filtered saves found on another list; they're purged so the run queues them as new. */
 export async function mergeListKindsOntoExisting(
   source: Source,
   entries: ReadonlyArray<{ sourceId: string; listKinds?: ListKind[] }>,
-): Promise<void> {
+): Promise<Set<string>> {
+  const relisted = new Set<string>();
   const incoming = new Map<string, ListKind[]>();
   for (const entry of entries) {
     const next = normalizeListKinds(entry.listKinds);
@@ -52,15 +55,20 @@ export async function mergeListKindsOntoExisting(
       mergeListKinds(incoming.get(entry.sourceId), next),
     );
   }
-  if (incoming.size === 0) return;
+  if (incoming.size === 0) return relisted;
 
   const db = await getDb();
+  const released: string[] = [];
   for (const idChunk of chunk([...incoming.keys()], 400)) {
     const rows = db
       .select({
         id: saves.id,
         sourceId: saves.sourceId,
         listKinds: saves.listKinds,
+        status: saves.status,
+        importFilter: sql<
+          string | null
+        >`json_extract(${saves.rawJson}, '$.importFilter')`,
       })
       .from(saves)
       .where(and(eq(saves.source, source), inArray(saves.sourceId, idChunk)))
@@ -70,6 +78,11 @@ export async function mergeListKindsOntoExisting(
       if (!extra) continue;
       const merged = mergeListKinds(row.listKinds, extra);
       if (listKindsEqual(row.listKinds, merged)) continue;
+      if (row.status === "skipped" && row.importFilter === "list") {
+        released.push(row.id);
+        relisted.add(row.sourceId);
+        continue;
+      }
       await persistSave(
         row.id,
         { listKinds: merged },
@@ -77,4 +90,6 @@ export async function mergeListKindsOntoExisting(
       );
     }
   }
+  await releaseListFilteredSaves(released);
+  return relisted;
 }

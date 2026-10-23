@@ -108,7 +108,7 @@ function readSaves(accountId, since) {
   const db = new Database(file, { readonly: true, fileMustExist: true });
   try {
     const live = "account_id = ? and deleted_at is null";
-    const saves = { ...empty, filtered: { media: 0, since: 0 } };
+    const saves = { ...empty, filtered: { list: 0, media: 0, since: 0 } };
     for (const row of db
       .prepare(
         `select status, json_extract(raw_json, '$.importFilter') as filter, count(*) as n

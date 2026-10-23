@@ -10,7 +10,7 @@ import { isPartitionSignedIn } from "../../refresh/harvest-window/session";
 import { extractorFor, resolveExtractor } from "../extractors";
 import type { Capture, RawJson } from "../extractors/types";
 import { isFreshHarvest } from "../harvest-freshness";
-import { applyImportFilter } from "../import-filter";
+import { applyImportFilter, applyListFilter } from "../import-filter";
 import { saveAuthorFrom, withYtdlpAuthor } from "../ytdlp-author";
 import { readSave } from "./apply";
 
@@ -34,6 +34,7 @@ export async function runHarvestMetadata(
     await applyImportFilter(save);
     return;
   }
+  if (await applyListFilter(save)) return;
 
   const extractor = extractorFor(save.source) ?? resolveExtractor(save.url);
   const harvested =

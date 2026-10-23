@@ -135,13 +135,14 @@ export async function syncThreads(
       )
     : stampListKind(harvest.entries, "saved");
 
-  await mergeListKindsOntoExisting(
+  const relisted = await mergeListKindsOntoExisting(
     source,
     entries.map((e) => ({
       sourceId: e.postId,
       listKinds: e.listKinds,
     })),
   );
+  for (const id of relisted) knownIds.delete(id);
 
   const allFresh = entries.filter((e) => !knownIds.has(e.postId));
   const recovery = entries.filter((e) => failedSourceIds.has(e.postId));

@@ -4,6 +4,7 @@ import { capturedTraits } from "./import-filter";
 
 function withCapture(capture: Partial<Capture>) {
   return {
+    listKinds: [],
     mediaType: null,
     publishedAt: null,
     rawJson: {
@@ -44,6 +45,7 @@ describe("capturedTraits", () => {
         }),
       ),
     ).toEqual({
+      listKinds: [],
       mediaType: "video",
       publishedAt: new Date("2026-01-02T03:04:05.000Z"),
     });
@@ -52,7 +54,19 @@ describe("capturedTraits", () => {
   it("falls back to the save's columns without a capture", () => {
     const publishedAt = new Date("2025-05-05T00:00:00.000Z");
     expect(
-      capturedTraits({ mediaType: "image", publishedAt, rawJson: null }),
-    ).toEqual({ mediaType: "image", publishedAt });
+      capturedTraits({
+        listKinds: ["liked"],
+        mediaType: "image",
+        publishedAt,
+        rawJson: null,
+      }),
+    ).toEqual({ listKinds: ["liked"], mediaType: "image", publishedAt });
+  });
+
+  it("carries the save's lists with a capture", () => {
+    expect(
+      capturedTraits({ ...withCapture({}), listKinds: ["liked", "saved"] })
+        .listKinds,
+    ).toEqual(["liked", "saved"]);
   });
 });
