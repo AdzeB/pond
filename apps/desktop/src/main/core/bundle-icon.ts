@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, posix } from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
@@ -15,7 +15,7 @@ export interface BundleHost {
 
 export function appBundlePath(host: BundleHost): string | null {
   if (host.platform !== "darwin" || !host.packaged) return null;
-  return resolve(host.exePath, "../../..");
+  return posix.resolve(host.exePath, "../../..");
 }
 
 export function hasCustomBundleIcon(bundle: string): boolean {

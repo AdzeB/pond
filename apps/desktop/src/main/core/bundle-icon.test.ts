@@ -51,21 +51,28 @@ describe("appBundlePath", () => {
   });
 });
 
-describe.skipIf(process.platform !== "darwin")("setBundleIcon", () => {
-  it("keeps the chosen icon on the bundle until it is reset", async () => {
-    const bundle = fakeBundle();
+/** Each case runs osascript up to twice, and each run may take the full 8s exec timeout under load. */
+describe.skipIf(process.platform !== "darwin")(
+  "setBundleIcon",
+  {
+    timeout: 20_000,
+  },
+  () => {
+    it("keeps the chosen icon on the bundle until it is reset", async () => {
+      const bundle = fakeBundle();
 
-    await setBundleIcon(bundle, ICON);
-    expect(hasCustomBundleIcon(bundle)).toBe(true);
+      await setBundleIcon(bundle, ICON);
+      expect(hasCustomBundleIcon(bundle)).toBe(true);
 
-    await setBundleIcon(bundle, null);
-    expect(hasCustomBundleIcon(bundle)).toBe(false);
-  });
+      await setBundleIcon(bundle, null);
+      expect(hasCustomBundleIcon(bundle)).toBe(false);
+    });
 
-  it("does nothing when resetting a bundle that has no custom icon", async () => {
-    const bundle = fakeBundle();
+    it("does nothing when resetting a bundle that has no custom icon", async () => {
+      const bundle = fakeBundle();
 
-    await setBundleIcon(bundle, null);
-    expect(hasCustomBundleIcon(bundle)).toBe(false);
-  });
-});
+      await setBundleIcon(bundle, null);
+      expect(hasCustomBundleIcon(bundle)).toBe(false);
+    });
+  },
+);
