@@ -328,8 +328,8 @@ it("runs one retry at a time while the list loads", async () => {
   await openCombobox("Collections");
   await vi.waitFor(() => expect(button("Try Again")).toBeTruthy());
   await act(async () => button("Try Again").click());
+  await vi.waitFor(() => expect(button("Try Again").disabled).toBe(true));
   await act(async () => button("Try Again").click());
-  expect(button("Try Again").disabled).toBe(true);
   expect(attempts).toBe(2);
   await act(async () => finish({ ok: true, collections: [] }));
 });
