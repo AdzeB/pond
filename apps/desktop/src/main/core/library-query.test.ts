@@ -62,6 +62,7 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
       recentlyUsed: 0,
       trash: 1,
       folders: { all: 1199 },
+      foldersDownloading: {},
     });
   });
   it("counts distinct saves across each folder subtree", () => {
@@ -139,12 +140,14 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
       {
         id: "first",
         directSaveCount: 3,
+        downloadingCount: 1,
         childFolderCount: 1,
         previewSaveIds: ["0006", "0005", "0002", "0001"],
       },
       {
         id: "second",
         directSaveCount: 0,
+        downloadingCount: 0,
         childFolderCount: 0,
         previewSaveIds: [],
       },

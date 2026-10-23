@@ -58,6 +58,7 @@ function emptySidebarCounts(): LibrarySidebarCounts {
     recentlyUsed: 0,
     trash: 0,
     folders: {},
+    foldersDownloading: {},
   };
 }
 

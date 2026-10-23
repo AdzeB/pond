@@ -4,12 +4,14 @@ import type { OkResult } from "./query-contracts-shared";
 export interface FolderSummary {
   id: string;
   directSaveCount: number;
+  downloadingCount: number;
   childFolderCount: number;
   previewSaveIds: string[];
 }
 
 export interface FolderQueryInputs {
   "folders.summaries": { parentId: string };
+  "folders.downloading": { folderIds: string[] };
   "folders.metadata.get": { folderId: string };
   "folders.metadata.set": {
     folderId: string;
@@ -20,6 +22,7 @@ export interface FolderQueryInputs {
 
 export interface FolderQueryResults {
   "folders.summaries": FolderSummary[];
+  "folders.downloading": { count: number };
   "folders.metadata.get": FolderMetadata;
   "folders.metadata.set": OkResult;
 }

@@ -31,6 +31,7 @@ interface FolderTreeRowProps {
   badgeStyle: SidebarBadgeStyle;
   collapsed: boolean;
   count: number;
+  downloading: number;
   coverSaveId?: string | null;
   creating: boolean;
   depth: number;
@@ -75,10 +76,8 @@ export function FolderTreeRow(props: FolderTreeRowProps) {
     transition,
   } = useSortable({ id: folder.id, disabled: props.editing });
   const colorCss = folderColorCss(folder.color);
-  const count =
-    props.count > 0 && (props.collapsed || !props.hasChildren)
-      ? props.count
-      : undefined;
+  const showsBadge = props.collapsed || !props.hasChildren;
+  const count = props.count > 0 && showsBadge ? props.count : undefined;
   const saveDropCount =
     props.folderDrop?.id === folder.id ? props.folderDrop.saveCount : undefined;
   const saveDropLabel = saveDropCount
@@ -176,6 +175,7 @@ export function FolderTreeRow(props: FolderTreeRowProps) {
             }
             depth={props.depth}
             count={count}
+            downloading={showsBadge ? props.downloading : 0}
             badgeStyle={props.badgeStyle}
             status={saveDropLabel}
             active={props.viewing}

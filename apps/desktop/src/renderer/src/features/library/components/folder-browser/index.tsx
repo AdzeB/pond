@@ -19,6 +19,7 @@ import {
   SpecMenu,
 } from "@/shared/components/spec-context-menu";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
+import { getAppRouter } from "@/shared/lib/app-router";
 import {
   FOLDER_MENU_ICONS,
   FOLDER_SWATCHES,
@@ -86,8 +87,12 @@ function FolderCard({
   const itemInfo = useItemInfo();
   const directSaveCount = summary?.directSaveCount ?? 0;
   const childFolderCount = summary?.childFolderCount ?? 0;
+  const downloadingCount = summary?.downloadingCount ?? 0;
   const empty =
-    summary !== undefined && directSaveCount === 0 && childFolderCount === 0;
+    summary !== undefined &&
+    directSaveCount === 0 &&
+    childFolderCount === 0 &&
+    downloadingCount === 0;
   const metadata = !summary
     ? ""
     : empty
@@ -95,6 +100,9 @@ function FolderCard({
       : [
           directSaveCount > 0
             ? countLabel(directSaveCount, "item", "items")
+            : null,
+          downloadingCount > 0
+            ? `${downloadingCount.toLocaleString()} downloading`
             : null,
           childFolderCount > 0
             ? countLabel(childFolderCount, "subfolder", "subfolders")
@@ -232,10 +240,12 @@ function FolderCard({
 export function FolderBrowser({
   parentId,
   contentCount,
+  downloading = 0,
   children: content,
 }: {
   parentId: string;
   contentCount: number;
+  downloading?: number;
   children?: ReactNode;
 }) {
   const folders = useFolders();
@@ -366,12 +376,24 @@ export function FolderBrowser({
           </div>
         </section>
       ) : null}
-      {content ? (
+      {content || downloading > 0 ? (
         <section className={styles.section} aria-labelledby="contents-title">
           <div className={styles.header}>
             <h2 id="contents-title">
               Contents ({contentCount.toLocaleString()})
             </h2>
+            {downloading > 0 ? (
+              <span className={styles.downloading} role="status">
+                Downloading {countLabel(downloading, "save", "saves")}
+                <Button
+                  size="xs"
+                  variant="text"
+                  onClick={() => getAppRouter()?.history.push("/downloads")}
+                >
+                  Open Downloads
+                </Button>
+              </span>
+            ) : null}
           </div>
           {content}
         </section>

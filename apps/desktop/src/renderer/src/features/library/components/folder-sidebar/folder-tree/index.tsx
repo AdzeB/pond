@@ -190,6 +190,7 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
         quickFolders={quickFolders}
         folderViews={folderViews}
         folderCounts={counts.folders}
+        folderDownloading={counts.foldersDownloading}
         badgeStyle={sidebar.badgeStyle}
         includeSubfolders={includeSubfolders}
         libraryPage={libraryPage}
@@ -296,6 +297,7 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
                     }
                     collapsed={tree.collapsed.has(folder.id)}
                     count={counts.folders[folder.id] ?? 0}
+                    downloading={counts.foldersDownloading[folder.id] ?? 0}
                     badgeStyle={sidebar.badgeStyle}
                     creating={creatingFolder}
                     depth={depth}

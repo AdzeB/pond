@@ -13,6 +13,7 @@ import { FolderBrowser } from "@/features/library/components/folder-browser";
 import { HoverPreview } from "@/features/library/components/hover-preview";
 import { LibraryGrid } from "@/features/library/components/layouts/grid";
 import { LayoutSwitcher } from "@/features/library/components/layouts/switcher";
+import { useFolderDownloading } from "@/features/library/hooks/use-folder-downloading";
 import { useGridHotkeys } from "@/features/library/hooks/use-grid-hotkeys";
 import { useLibraryState } from "@/features/library/hooks/use-library-state";
 import { useRectangleSelection } from "@/features/library/hooks/use-rectangle-selection";
@@ -37,12 +38,14 @@ function LibraryEmptyState({
   hasActiveSearch,
   hasActiveFilter,
   libraryTotal,
+  downloading,
 }: {
   mode: ReturnType<typeof useLibraryState>["mode"];
   navKind: ReturnType<typeof useLibraryNav>["kind"];
   hasActiveSearch: boolean;
   hasActiveFilter: boolean;
   libraryTotal: number;
+  downloading: number;
 }) {
   const kind = libraryEmptyKind({
     mode,
@@ -52,7 +55,7 @@ function LibraryEmptyState({
     libraryTotal,
   });
   if (kind === "trash") return <TrashEmpty />;
-  if (kind === "folder") return <FolderEmpty />;
+  if (kind === "folder") return <FolderEmpty downloading={downloading} />;
   if (kind === "library") return <LibraryEmpty />;
   if (kind === "uncategorized") return <UncategorizedEmpty />;
   if (kind === "section" && mode !== "library" && mode !== "trash") {
@@ -79,6 +82,9 @@ export function LibraryView() {
     nav.kind === "folder" &&
     folders.some((folder) => folder.parentId === nav.id);
   const filtering = data.hasActiveSearch || data.hasActiveFilter;
+  const downloading = useFolderDownloading(
+    nav.kind === "folder" ? nav.id : null,
+  );
   const onEndReached = useCallback(() => {
     void data.paging.loadMore();
   }, [data.paging.loadMore]);
@@ -150,9 +156,14 @@ export function LibraryView() {
             hasActiveSearch={data.hasActiveSearch}
             hasActiveFilter={data.hasActiveFilter}
             libraryTotal={paging.total}
+            downloading={downloading}
           />
         ) : nav.kind === "folder" ? (
-          <FolderBrowser parentId={nav.id} contentCount={data.paging.total}>
+          <FolderBrowser
+            parentId={nav.id}
+            contentCount={data.paging.total}
+            downloading={filtering ? 0 : downloading}
+          >
             {data.filtered.length > 0 ? (
               <LayoutSwitcher
                 viewMode={data.viewMode}

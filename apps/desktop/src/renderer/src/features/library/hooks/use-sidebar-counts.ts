@@ -10,6 +10,7 @@ const EMPTY: LibrarySidebarCounts = {
   recentlyUsed: 0,
   trash: 0,
   folders: {},
+  foldersDownloading: {},
 };
 export function useSidebarCounts(): LibrarySidebarCounts {
   const recentKey = useRecents()
