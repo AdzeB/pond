@@ -13,6 +13,7 @@ export interface SyncStatusUpdate {
 
 const GAP_TEXT = new Map<string, string>([
   ["auth_required", "sign-in needed"],
+  ["checkpoint", "confirmation needed"],
   ["rate_limited", "rate limited"],
   ["timeout", "timed out"],
   ["no_match", "not available"],

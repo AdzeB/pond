@@ -16,6 +16,7 @@ export {
   harvestTwitterLikes,
 } from "./harvest-bookmarks";
 export {
+  collectionsNeedHandle,
   harvestInstagramLikedList,
   harvestSourceCollections,
   harvestSourceList,

@@ -307,6 +307,33 @@ it("explains a board list Pond couldn't load", async () => {
   expect(button("Try Again")).toBeTruthy();
 });
 
+it("runs one retry at a time while the list loads", async () => {
+  let finish: (value: { ok: true; collections: never[] }) => void = () => {};
+  let attempts = 0;
+  query.mockImplementation(async (name: string) => {
+    if (name !== "accounts.importOptions") return { ok: true };
+    attempts += 1;
+    if (attempts === 1) {
+      return { ok: false, error: "Pond couldn't load your collections." };
+    }
+    return new Promise((resolve) => {
+      finish = resolve;
+    });
+  });
+  await renderFor({
+    id: "acc-instagram",
+    source: "instagram",
+    sync: { importScope: { listKinds: ["saved"] } },
+  });
+  await openCombobox("Collections");
+  await vi.waitFor(() => expect(button("Try Again")).toBeTruthy());
+  await act(async () => button("Try Again").click());
+  await act(async () => button("Try Again").click());
+  expect(button("Try Again").disabled).toBe(true);
+  expect(attempts).toBe(2);
+  await act(async () => finish({ ok: true, collections: [] }));
+});
+
 it("saves a change for an active Account without starting a sync", async () => {
   await renderFor({
     id: "acc-instagram",

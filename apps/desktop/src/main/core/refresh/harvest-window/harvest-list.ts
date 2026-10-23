@@ -19,7 +19,10 @@ import {
   INSTAGRAM_LIKES_TIMEOUT_MS,
   INSTAGRAM_LIKES_URL,
 } from "../harvest/instagram";
-import { readCollectionsReply } from "../harvest/lib/collections-reply";
+import {
+  type CollectionFailureReason,
+  readCollectionsReply,
+} from "../harvest/lib/collections-reply";
 import type {
   ListEntry,
   ListHarvestArgs,
@@ -447,9 +450,30 @@ export async function settleInstagramLikesFailure(
 
 type CollectionListResult =
   | { ok: true; collections: ImportCollectionOption[] }
-  | { ok: false; reason: "auth_required" | "rate_limited" | "unknown" };
+  | { ok: false; reason: CollectionFailureReason; detail?: string };
+
+/** Pinterest and TikTok read collections off your profile, so they need the username first. */
+export function collectionsNeedHandle(source: Source): boolean {
+  return source === "pinterest" || source === "tiktok";
+}
 
 export async function listSourceCollections(
+  source: Source,
+  opts: { partition: string; accountKey?: string | undefined },
+): Promise<CollectionListResult> {
+  const result = await readSourceCollections(source, opts);
+  if (!result.ok) {
+    log.warn(
+      `[pond collections] ${source} list failed: ${result.reason}${result.detail ? ` (${result.detail})` : ""}`,
+    );
+    if (result.reason === "checkpoint") {
+      markAtRisk(source, "checkpoint", "collection list hit a checkpoint");
+    }
+  }
+  return result;
+}
+
+async function readSourceCollections(
   source: Source,
   opts: { partition: string; accountKey?: string | undefined },
 ): Promise<CollectionListResult> {
@@ -522,7 +546,8 @@ export async function listSourceCollections(
 function pageRunFailure(
   reason: "auth_required" | "timeout" | "unknown",
 ): Extract<CollectionListResult, { ok: false }> {
-  return { ok: false, reason: reason === "auth_required" ? reason : "unknown" };
+  if (reason === "auth_required") return { ok: false, reason };
+  return { ok: false, reason: "unknown", detail: `page run ${reason}` };
 }
 
 function parseJsonText(value: JsonValue): JsonValue {

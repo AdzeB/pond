@@ -18,7 +18,7 @@ interface CollectionsPage {
 export function buildInstagramCollectionsExpression(): string {
   return `(async () => {
     try { return await (${inPageInstagramCollections.toString()})(); }
-    catch (e) { return { ok: false, reason: 'unknown' }; }
+    catch (e) { return { ok: false, reason: 'unknown', detail: String((e && e.message) || e).slice(0, 200) }; }
   })()`;
 }
 
@@ -42,14 +42,28 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
         accept: "*/*",
       },
     });
-    if (res.status === 401 || res.status === 403) {
+    const json: CollectionsPage | null = await res.json().catch(() => null);
+    const message = json?.message ?? "";
+    /** Instagram answers 400 with one of these until you clear the prompt on instagram.com. */
+    if (/^(checkpoint|challenge|consent)_required$/.test(message)) {
+      return { ok: false, reason: "checkpoint", detail: message };
+    }
+    if (
+      res.status === 401 ||
+      res.status === 403 ||
+      json?.require_login ||
+      message === "login_required"
+    ) {
       return { ok: false, reason: "auth_required" };
     }
     if (res.status === 429) return { ok: false, reason: "rate_limited" };
-    if (!res.ok) return { ok: false, reason: "unknown" };
-    const json: CollectionsPage = await res.json();
-    if (json.require_login || json.message === "login_required") {
-      return { ok: false, reason: "auth_required" };
+    if (!res.ok || !json) {
+      const type = res.headers.get("content-type") ?? "";
+      return {
+        ok: false,
+        reason: "unknown",
+        detail: `${res.status} ${message || type}`.trim().slice(0, 200),
+      };
     }
     for (const item of json.items ?? []) {
       if (item.collection_id === undefined) continue;

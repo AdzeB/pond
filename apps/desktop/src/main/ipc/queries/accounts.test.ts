@@ -197,14 +197,15 @@ describe("accounts.importOptions", () => {
     });
   });
 
-  it("lists Instagram collections without a username", async () => {
+  it("lists Instagram collections without looking up the username", async () => {
     const listSourceCollections = vi.fn(async () => ({
       ok: true as const,
       collections: [{ id: "c1", name: "Recipes", itemCount: 3 }],
     }));
+    const resolveAccountHandle = vi.fn(async () => null);
     const operation = createImportOptionsQuery({
       getAccount: vi.fn(async () => account("instagram")),
-      resolveAccountHandle: vi.fn(async () => null),
+      resolveAccountHandle,
       listSourceCollections,
     });
 
@@ -212,9 +213,43 @@ describe("accounts.importOptions", () => {
       ok: true,
       collections: [{ id: "c1", name: "Recipes", itemCount: 3 }],
     });
+    expect(resolveAccountHandle).not.toHaveBeenCalled();
     expect(listSourceCollections).toHaveBeenCalledWith("instagram", {
       partition: "persist:pond-acct-instagram:123",
       accountKey: undefined,
+    });
+  });
+
+  it("asks for a TikTok username before reading collections", async () => {
+    const listSourceCollections = vi.fn();
+    const operation = createImportOptionsQuery({
+      getAccount: vi.fn(async () => account("tiktok")),
+      resolveAccountHandle: vi.fn(async () => null),
+      listSourceCollections,
+    });
+
+    await expect(operation({ accountId: "tiktok:123" })).resolves.toEqual({
+      ok: false,
+      error:
+        "Pond couldn't find your TikTok username. Reconnect the Account and try again.",
+    });
+    expect(listSourceCollections).not.toHaveBeenCalled();
+  });
+
+  it("explains an Instagram checkpoint", async () => {
+    const operation = createImportOptionsQuery({
+      getAccount: vi.fn(async () => account("instagram")),
+      resolveAccountHandle: vi.fn(async () => null),
+      listSourceCollections: vi.fn(async () => ({
+        ok: false as const,
+        reason: "checkpoint" as const,
+      })),
+    });
+
+    await expect(operation({ accountId: "instagram:123" })).resolves.toEqual({
+      ok: false,
+      error:
+        "Instagram wants you to confirm your account. Open Instagram in your browser, then try again.",
     });
   });
 });

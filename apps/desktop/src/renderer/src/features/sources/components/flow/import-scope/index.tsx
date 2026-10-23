@@ -281,7 +281,8 @@ function CollectionRows({
               size="sm"
               variant="secondary"
               disabled={savedOff}
-              onClick={() => void query.refetch()}
+              loading={query.isFetching}
+              onClick={() => void query.refetch({ cancelRefetch: false })}
             >
               Try Again
             </Button>
