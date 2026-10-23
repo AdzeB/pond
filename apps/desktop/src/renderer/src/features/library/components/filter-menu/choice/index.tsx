@@ -14,20 +14,20 @@ import { EmptyChoice } from "./empty";
 import { ChoiceOption } from "./option";
 import styles from "./styles.module.css";
 
-const NOUNS: Partial<Record<FieldId, readonly [string, string]>> = {
-  tags: ["tag", "tags"],
-  folder: ["folder", "folders"],
-  list: ["list", "lists"],
-  format: ["format", "formats"],
-  source: ["source", "sources"],
-  creator: ["creator", "creators"],
-  account: ["account", "accounts"],
-};
+const NOUNS = new Map<FieldId, readonly [string, string]>([
+  ["tags", ["tag", "tags"]],
+  ["folder", ["folder", "folders"]],
+  ["list", ["list", "lists"]],
+  ["format", ["format", "formats"]],
+  ["source", ["source", "sources"]],
+  ["creator", ["creator", "creators"]],
+  ["account", ["account", "accounts"]],
+]);
 
-const EMPTY_ICONS: Partial<Record<FieldId, IconComponent>> = {
-  tags: IconBookmarkSlash,
-  folder: IconFolderBan,
-};
+const EMPTY_ICONS = new Map<FieldId, IconComponent>([
+  ["tags", IconBookmarkSlash],
+  ["folder", IconFolderBan],
+]);
 
 /** Preset values read in a deliberate order; values that come from saves sort by name. */
 const PRESET_ORDER = new Set<FieldId>([
@@ -71,7 +71,7 @@ export function ChoiceFilter({
   const { counts, empty } = useChoiceCounts(field);
   const needle = search.trim().toLowerCase();
   const FieldIcon = fieldIcon(field);
-  const EmptyIcon = EMPTY_ICONS[field] ?? FieldIcon;
+  const EmptyIcon = EMPTY_ICONS.get(field) ?? FieldIcon;
   const emptyLabel = emptyChoiceLabel(field);
   const showEmpty =
     meta.type === "stringArray" && emptyLabel.toLowerCase().includes(needle);
@@ -135,7 +135,7 @@ export function ChoiceFilter({
   const shown = collapsed
     ? matches.filter((option) => !unused.includes(option))
     : matches;
-  const [one, many] = NOUNS[field] ?? ["option", "options"];
+  const [one, many] = NOUNS.get(field) ?? ["option", "options"];
 
   return (
     <>

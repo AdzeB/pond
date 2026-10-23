@@ -1,12 +1,13 @@
 import { FIELD_DESCRIPTORS } from "@pond/schema/filters/fields";
+import { FIELD_IDS } from "@pond/schema/filters/meta";
 import type { FieldId } from "@pond/schema/filters/types";
 import { useMemo } from "react";
 import { useSavePaging, useSaves } from "@/features/saves/pool";
 import { DATA_GATED_FIELDS } from "./options";
 
-const GATED = Object.entries(DATA_GATED_FIELDS) as [FieldId, FieldId][];
+type FieldValue = ReturnType<(typeof FIELD_DESCRIPTORS)[FieldId]["project"]>;
 
-function hasValue(value: unknown): boolean {
+function hasValue(value: FieldValue): boolean {
   if (Array.isArray(value)) return value.length > 0;
   return value != null && value !== "" && value !== false;
 }
@@ -19,7 +20,7 @@ export function usePresentFields(
   const { hasMore } = useSavePaging();
   return useMemo(() => {
     if (!enabled || hasMore) return null;
-    const probes = new Set(GATED.map(([, probe]) => probe));
+    const probes = new Set(DATA_GATED_FIELDS.values());
     const found = new Set<FieldId>();
     for (const save of saves) {
       if (found.size === probes.size) break;
@@ -34,11 +35,9 @@ export function usePresentFields(
       }
     }
     const present = new Set<FieldId>(
-      (Object.keys(FIELD_DESCRIPTORS) as FieldId[]).filter(
-        (field) => !(field in DATA_GATED_FIELDS),
-      ),
+      FIELD_IDS.filter((field) => !DATA_GATED_FIELDS.has(field)),
     );
-    for (const [field, probe] of GATED)
+    for (const [field, probe] of DATA_GATED_FIELDS)
       if (found.has(probe)) present.add(field);
     return present;
   }, [enabled, hasMore, saves]);

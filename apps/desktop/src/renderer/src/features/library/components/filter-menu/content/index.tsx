@@ -19,7 +19,7 @@ export function ContentFilter({
   const Icon = fieldIcon(field);
   const rules = rows.filter((row) => row.field === field);
   const contains = rules.find((row) => row.operator === "contains")?.value;
-  const phrase = typeof contains === "string" ? contains : null;
+  const phrase = contains == null ? null : String(contains);
   const draft = search.trim();
   const apply = (rule?: Predicate) =>
     onChange([

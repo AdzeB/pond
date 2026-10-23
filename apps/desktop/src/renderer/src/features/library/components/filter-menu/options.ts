@@ -16,7 +16,7 @@ import {
 } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import { COLOR_PRESETS } from "@pond/schema/filters/color";
-import { FIELD_META } from "@pond/schema/filters/meta";
+import { FIELD_IDS, FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { createElement, type ReactNode } from "react";
 import { z } from "zod";
@@ -93,6 +93,16 @@ export interface FilterMenuGroup {
 
 export type FilterMenuEntry = FieldId | FilterMenuGroup;
 
+const FIELD_ENTRIES = new Set<FilterMenuEntry>(FIELD_IDS);
+
+export function isFieldEntry(entry: FilterMenuEntry): entry is FieldId {
+  return FIELD_ENTRIES.has(entry);
+}
+
+export function entryFields(entry: FilterMenuEntry): readonly FieldId[] {
+  return isFieldEntry(entry) ? [entry] : entry.fields;
+}
+
 /** Sections are split by dividers; a group shows as a submenu once two or more of its fields apply. */
 export const FILTER_MENU: readonly (readonly FilterMenuEntry[])[] = [
   [
@@ -149,20 +159,20 @@ export const FILTER_MENU: readonly (readonly FilterMenuEntry[])[] = [
 ];
 
 /** Media fields hide when no save carries their metadata; each maps to the field whose value proves it. */
-export const DATA_GATED_FIELDS: Partial<Record<FieldId, FieldId>> = {
-  cameraMake: "cameraMake",
-  cameraModel: "cameraModel",
-  lensModel: "lensModel",
-  focalLength: "focalLength",
-  aperture: "aperture",
-  iso: "iso",
-  takenAt: "takenAt",
-  duration: "duration",
-  bpm: "bpm",
-  fontFamily: "fontFamily",
-  fontActivated: "fontFamily",
-  transcript: "transcript",
-};
+export const DATA_GATED_FIELDS = new Map<FieldId, FieldId>([
+  ["cameraMake", "cameraMake"],
+  ["cameraModel", "cameraModel"],
+  ["lensModel", "lensModel"],
+  ["focalLength", "focalLength"],
+  ["aperture", "aperture"],
+  ["iso", "iso"],
+  ["takenAt", "takenAt"],
+  ["duration", "duration"],
+  ["bpm", "bpm"],
+  ["fontFamily", "fontFamily"],
+  ["fontActivated", "fontFamily"],
+  ["transcript", "transcript"],
+]);
 
 export function fieldMatchesQuery(
   field: FieldId,

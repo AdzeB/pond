@@ -21,7 +21,7 @@ import { normalise } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
 import { pagingStore } from "@/features/saves/state/bootstrap";
 import { FilterBarView, FilterToggle } from "./";
-import { FILTER_MENU, FILTER_SECTIONS } from "./options";
+import { entryFields, FILTER_MENU, FILTER_SECTIONS } from "./options";
 import { filterToolbar } from "./toolbar-state";
 
 function State() {
@@ -363,9 +363,7 @@ describe("filter toolbar", () => {
     });
 
     it("lays out every filter field exactly once", () => {
-      const fields = FILTER_MENU.flat().flatMap((entry) =>
-        typeof entry === "string" ? [entry] : entry.fields,
-      );
+      const fields = FILTER_MENU.flat().flatMap(entryFields);
       expect([...fields].sort()).toEqual(
         FILTER_SECTIONS.flatMap((section) => [...section.fields]).sort(),
       );

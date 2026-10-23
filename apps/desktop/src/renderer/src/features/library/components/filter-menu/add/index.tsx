@@ -16,10 +16,12 @@ import { FilterEditor } from "../category";
 import { FilterPopup } from "../chip";
 import { editorIsSearchable, filterLayout } from "../layout";
 import {
+  entryFields,
   FILTER_MENU,
   type FilterMenuEntry,
   type FilterMenuGroup,
   type FilterOption,
+  isFieldEntry,
   presetOptions,
 } from "../options";
 import { SemanticPanel, VisualPanel } from "../overlay";
@@ -87,7 +89,7 @@ export function AddFilter({
     />
   );
   const entryItems = (entry: FilterMenuEntry): ReactNode[] => {
-    if (typeof entry === "string") {
+    if (isFieldEntry(entry)) {
       return applies(entry) && matchesName(FIELD_META[entry].label)
         ? [fieldItem(entry)]
         : [];
@@ -117,11 +119,7 @@ export function AddFilter({
   const searchedFields: FieldId[] =
     needle.length < VALUE_SEARCH_MIN
       ? []
-      : FILTER_MENU.flat()
-          .flatMap((entry) =>
-            typeof entry === "string" ? [entry] : entry.fields,
-          )
-          .filter(hasData);
+      : FILTER_MENU.flat().flatMap(entryFields).filter(hasData);
   const fieldCounts = useFieldCounts(searchedFields.filter(isChoiceField));
   const values = searchedFields
     .map((field) => {
@@ -232,7 +230,7 @@ export function AddFilter({
 
 function entryKey(entry: FilterMenuEntry | undefined): string {
   if (entry === undefined) return "empty";
-  return typeof entry === "string" ? entry : entry.label;
+  return isFieldEntry(entry) ? entry : entry.label;
 }
 
 function Submenu({

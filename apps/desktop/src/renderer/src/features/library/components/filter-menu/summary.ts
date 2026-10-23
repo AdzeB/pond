@@ -32,22 +32,22 @@ const DATE_COMPARATOR_WORDS = new Map<ComparatorId, string>([
   ["eq", "On"],
 ]);
 
-const NOUNS: Partial<Record<FieldId, readonly [string, string]>> = {
-  rating: ["Star", "Stars"],
-  fileCount: ["File", "Files"],
-};
+const NOUNS = new Map<FieldId, readonly [string, string]>([
+  ["rating", ["Star", "Stars"]],
+  ["fileCount", ["File", "Files"]],
+]);
 
-const SUFFIXES: Partial<Record<FieldId, string>> = {
-  width: "px",
-  height: "px",
-  bpm: " BPM",
-  focalLength: "mm",
-};
+const SUFFIXES = new Map<FieldId, string>([
+  ["width", "px"],
+  ["height", "px"],
+  ["bpm", " BPM"],
+  ["focalLength", "mm"],
+]);
 
-const PREFIXES: Partial<Record<FieldId, string>> = {
-  aperture: "ƒ/",
-  iso: "ISO ",
-};
+const PREFIXES = new Map<FieldId, string>([
+  ["aperture", "ƒ/"],
+  ["iso", "ISO "],
+]);
 
 const DURATION_UNITS = new Map([
   ["D", "Day"],
@@ -85,12 +85,12 @@ function seconds(value: number): string {
 function bare(field: FieldId, value: number): string {
   if (field === "fileSize") return bytes(value);
   if (field === "duration") return seconds(value);
-  return `${PREFIXES[field] ?? ""}${integer.format(value)}${SUFFIXES[field] ?? ""}`;
+  return `${PREFIXES.get(field) ?? ""}${integer.format(value)}${SUFFIXES.get(field) ?? ""}`;
 }
 
 function quantity(field: FieldId, value: number): string {
   if (field === "rating" && value === 0) return "Unrated";
-  const noun = NOUNS[field];
+  const noun = NOUNS.get(field);
   if (!noun) return bare(field, value);
   return `${integer.format(value)} ${value === 1 ? noun[0] : noun[1]}`;
 }
@@ -99,7 +99,7 @@ function numberSummary(rule: Predicate): string {
   const { field, operator, value } = rule;
   if (operator === "between" && Array.isArray(value)) {
     const [low, high] = value.map(Number);
-    const noun = NOUNS[field];
+    const noun = NOUNS.get(field);
     return noun
       ? `${integer.format(low ?? 0)}–${integer.format(high ?? 0)} ${noun[1]}`
       : `${bare(field, low ?? 0)}–${bare(field, high ?? 0)}`;
