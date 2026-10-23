@@ -3,7 +3,6 @@ import type { ApiSaveState } from "pond-api";
 import { useEffect, useState } from "react";
 import { pond } from "../api/client";
 import type { EnqueueResult } from "../lib/capture";
-import { escapeMarkdown } from "../lib/display";
 import { hostname, saveLink } from "../lib/links";
 
 const POLL_MS = 1500;
@@ -56,7 +55,7 @@ export function CaptureProgress({ result, url, title }: { result: EnqueueResult;
     <Detail
       navigationTitle={title}
       isLoading={!state || (state.pendingTasks > 0 && state.status !== "failed" && !timedOut)}
-      markdown={`## ${title}\n\n${escapeMarkdown(url)}`}
+      markdown={`## ${title}\n\n<${url}>`}
       metadata={
         <Detail.Metadata>
           <Detail.Metadata.TagList title="Status">

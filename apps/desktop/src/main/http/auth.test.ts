@@ -87,6 +87,25 @@ describe("createRequireAuth", () => {
       expect(await errorCode(response)).toBe("forbidden");
     }
   });
+
+  it("blocks wrong tokens after repeated failures but still lets valid ones through", async () => {
+    const call = server({ reader: ["search"] });
+    for (let attempt = 0; attempt < 11; attempt++) {
+      await call("GET", "/api/v2/library/info", "stale");
+    }
+    const blocked = await call("GET", "/api/v2/library/info", "stale");
+    expect(blocked.status).toBe(429);
+    expect(await errorCode(blocked)).toBe("rate_limited");
+    expect((await call("GET", "/api/v2/library/info", "local")).status).toBe(
+      200,
+    );
+    expect((await call("GET", "/api/v2/library/info", "reader")).status).toBe(
+      200,
+    );
+    expect((await call("GET", "/api/v2/library/info", "stale")).status).toBe(
+      429,
+    );
+  });
 });
 
 describe("tokensMatch", () => {
@@ -113,14 +132,5 @@ describe("createAuthLimiter", () => {
 
     time += 5 * 60_000 + 1;
     expect(limiter.isBlocked("127.0.0.1")).toBe(false);
-  });
-
-  it("forgets failures after a success", () => {
-    const limiter = createAuthLimiter();
-    for (let attempt = 0; attempt < 11; attempt++) {
-      limiter.recordFailure("::1");
-    }
-    limiter.clear("::1");
-    expect(limiter.isBlocked("::1")).toBe(false);
   });
 });

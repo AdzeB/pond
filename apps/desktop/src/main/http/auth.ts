@@ -39,9 +39,6 @@ export function createAuthLimiter(now: () => number = Date.now) {
       entry.count += 1;
       return entry.count > AUTH_MAX_FAILURES;
     },
-    clear(key: string): void {
-      failures.delete(key);
-    },
   };
 }
 
@@ -52,7 +49,10 @@ interface RequireAuthOptions {
   remoteAddress: (c: Context) => string | undefined;
 }
 
-/** The Local API Token reaches every route; a scoped token reaches only the public routes its scopes cover. */
+/**
+ * The Local API Token reaches every route; a scoped token reaches only the public routes its scopes cover.
+ * @remarks Every local client shares 127.0.0.1, so a block only stops wrong tokens and never a valid one.
+ */
 export function createRequireAuth({
   localToken,
   scopedToken,
@@ -61,24 +61,23 @@ export function createRequireAuth({
 }: RequireAuthOptions): MiddlewareHandler {
   return async (c, next) => {
     const ip = remoteAddress(c) || "unknown";
-    if (limiter.isBlocked(ip)) {
-      return apiError(
-        c,
-        "rate_limited",
-        "Too many failed sign-ins. Wait a minute, then try again.",
-      );
-    }
     const presented = (c.req.header("authorization") ?? "").replace(
       /^Bearer\s+/i,
       "",
     );
     const expected = await localToken();
     if (expected && presented && tokensMatch(expected, presented)) {
-      limiter.clear(ip);
       await next();
       return;
     }
     const scoped = presented ? await scopedToken(presented) : null;
+    if (!scoped && limiter.isBlocked(ip)) {
+      return apiError(
+        c,
+        "rate_limited",
+        "Too many requests used a wrong token. Copy the current token into your client and try again.",
+      );
+    }
     if (!scoped) {
       if (limiter.recordFailure(ip)) {
         log.warn("[pond http] rate limited after repeated auth failures", ip);
@@ -89,7 +88,6 @@ export function createRequireAuth({
         "The token is missing, wrong, or revoked. Copy the Local API Token from Settings > General, or create one in Settings > Local API.",
       );
     }
-    limiter.clear(ip);
     const access = routeAccess(c.req.method, c.req.path);
     if (access === "internal") {
       return apiError(
