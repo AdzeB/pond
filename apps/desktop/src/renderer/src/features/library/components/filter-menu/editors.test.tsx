@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { normalise } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
 import { FilterCategory } from "./category";
-import { choiceOptions, presetOptions } from "./options";
+import { choiceOptions, type FilterOption, presetOptions } from "./options";
 
 describe("filter editors", () => {
   let root: Root;
@@ -49,21 +49,23 @@ describe("filter editors", () => {
     pool.clear();
     vi.unstubAllGlobals();
   });
-  async function render(field: Predicate["field"], initial: Predicate[] = []) {
+  async function render(
+    field: Predicate["field"],
+    initial: Predicate[] = [],
+    options: FilterOption[] = field === "tags"
+      ? choiceOptions(field, [
+          { label: "Design", value: "design" },
+          { label: "Motion", value: "motion" },
+        ])
+      : presetOptions(field),
+  ) {
     function Harness() {
       const [value, setValue] = useState(initial);
       rows = value;
       return (
         <FilterCategory
           field={field}
-          options={
-            field === "tags"
-              ? choiceOptions(field, [
-                  { label: "Design", value: "design" },
-                  { label: "Motion", value: "motion" },
-                ])
-              : presetOptions(field)
-          }
+          options={options}
           rows={value}
           onChange={setValue}
         />
@@ -133,6 +135,14 @@ describe("filter editors", () => {
     });
   }
 
+  it("opens text fields such as font family with a search input", async () => {
+    await render("fontFamily");
+    const label = FIELD_META.fontFamily.label;
+    expect(
+      document.querySelector(`input[aria-label="Search ${label}"]`),
+    ).not.toBeNull();
+  });
+
   it("selects tags without a matching selector", async () => {
     await render("tags");
     await click("menuitemcheckbox", "Design2");
@@ -170,6 +180,44 @@ describe("filter editors", () => {
     expect(rows).toEqual([
       { field: "tags", operator: "every", value: ["motion", "design"] },
     ]);
+  });
+
+  it("lists tags in one column with their group as a breadcrumb", async () => {
+    await render(
+      "tags",
+      [],
+      choiceOptions("tags", [
+        { label: "Design", value: "design" },
+        { label: "Motion", value: "motion" },
+      ]).map((option) =>
+        option.label === "Motion" ? { ...option, crumb: "Craft" } : option,
+      ),
+    );
+    expect(
+      [...document.querySelectorAll('[role="menuitemcheckbox"]')].map(
+        (node) => node.textContent,
+      ),
+    ).toEqual(["Untagged1", "Craft›Motion1", "Design2"]);
+    expect(document.querySelector('[aria-label="Tag Group"]')).toBeNull();
+  });
+
+  it("folds tags with no matching saves behind one row until opened", async () => {
+    const unused = Array.from({ length: 9 }, (_, index) => ({
+      label: `Unused ${index}`,
+      value: `unused-${index}`,
+    }));
+    await render(
+      "tags",
+      [{ field: "tags", operator: "some", value: ["unused-0"] }],
+      choiceOptions("tags", [{ label: "Design", value: "design" }, ...unused]),
+    );
+    const labels = () =>
+      [...document.querySelectorAll('[role="menuitemcheckbox"]')].map(
+        (node) => node.textContent,
+      );
+    expect(labels()).toEqual(["Untagged1", "Design2", "Unused 0"]);
+    await click("menuitem", "8 tags with no matching Saves");
+    expect(labels()).toHaveLength(11);
   });
 
   it("has no generic matching control or range presets for duration", async () => {
@@ -268,6 +316,31 @@ describe("filter editors", () => {
     expect(rows).toEqual([
       { field: "format", operator: "some", value: ["design"] },
     ]);
+  });
+
+  it("sorts values from saves by name", async () => {
+    await render(
+      "creator",
+      [],
+      choiceOptions("creator", [
+        { label: "Zed", value: "zed" },
+        { label: "Amy", value: "amy" },
+      ]),
+    );
+    expect(
+      [...document.querySelectorAll('[role="menuitemcheckbox"]')].map(
+        (node) => node.textContent,
+      ),
+    ).toEqual(["Amy", "Zed"]);
+  });
+
+  it("keeps preset values in their own order", async () => {
+    await render("type");
+    expect(
+      [...document.querySelectorAll('[role="menuitemcheckbox"]')].map((node) =>
+        node.textContent?.replace(/\d+$/, ""),
+      ),
+    ).toEqual(presetOptions("type").map((option) => option.label));
   });
 
   it("opens rating with a custom range and no star presets", async () => {
@@ -383,19 +456,20 @@ describe("filter editors", () => {
     ]);
   });
 
-  it("replaces missing-content filtering with phrase matching, and clears the text when selecting presence", async () => {
+  it("replaces missing-content filtering with phrase matching, and presence replaces the phrase", async () => {
     await render("note", [{ field: "note", operator: "exists", value: false }]);
     await fill("Search Note", "Design details");
-    await apply();
+    expect(rows).toEqual([{ field: "note", operator: "exists", value: false }]);
+    await click("menuitem", "Contains “Design details”");
     expect(rows).toEqual([
       { field: "note", operator: "contains", value: "Design details" },
     ]);
+    expect(
+      element("menuitemcheckbox", "Contains “Design details”").getAttribute(
+        "aria-checked",
+      ),
+    ).toBe("true");
     await click("menuitemcheckbox", "With Note");
     expect(rows).toEqual([{ field: "note", operator: "exists", value: true }]);
-    expect(
-      document.querySelector<HTMLTextAreaElement>(
-        'textarea[aria-label="Search Note"]',
-      )?.value,
-    ).toBe("");
   });
 });

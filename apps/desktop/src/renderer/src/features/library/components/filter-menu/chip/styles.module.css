@@ -1,13 +1,37 @@
+.icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+
+  & > svg,
+  & > span {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.icons {
+  display: inline-flex;
+  align-items: center;
+
+  & > .icon + .icon {
+    margin-left: -4px;
+  }
+
+  /* Cut the next 16px tile's rounded outline plus a 1px gap, so the gap shows the chip fill. */
+  & > .icon:not(:last-child) {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect width='16' height='16' fill='white'/%3E%3Crect x='11' y='-1' width='18' height='18' rx='4.5' fill='black'/%3E%3C/svg%3E");
+    mask-mode: luminance;
+  }
+}
+
 .popup {
   &[data-layout="searchable"] {
     --ds-popup-min-width: 300px;
     width: min(320px, var(--available-width));
-  }
-
-  &[data-layout="tags"] {
-    --ds-popup-min-width: 360px;
-    width: min(380px, var(--available-width));
-    overflow: hidden;
   }
 
   &[data-layout="range"] {
@@ -24,11 +48,5 @@
   &[data-layout="content"] {
     --ds-popup-min-width: 300px;
     width: min(320px, var(--available-width));
-  }
-}
-
-@media (max-width: 520px) {
-  .popup[data-layout="tags"] {
-    --ds-popup-min-width: 300px;
   }
 }

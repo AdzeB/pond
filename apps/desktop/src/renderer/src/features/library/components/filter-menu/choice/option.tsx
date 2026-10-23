@@ -1,5 +1,6 @@
 import type { Predicate } from "@pond/schema/filters/types";
 import { Menu } from "@pond/ui";
+import type { ReactNode } from "react";
 import type { FilterOption } from "../options";
 import { isChoiceSelected, selectChoice } from "../selection";
 import { excludeGestures } from "./exclude";
@@ -10,12 +11,14 @@ export function ChoiceOption({
   rows,
   matching,
   count,
+  icon,
   onChange,
 }: {
   option: FilterOption;
   rows: Predicate[];
   matching: "any" | "all";
-  count: number;
+  count: ReactNode;
+  icon?: ReactNode;
   onChange: (rows: Predicate[]) => void;
 }) {
   const excluded = isChoiceSelected(rows, option.predicate, "exclude");
@@ -48,8 +51,27 @@ export function ChoiceOption({
       }
     >
       <ChoiceIndicator excluded={excluded} />
-      <Menu.ItemLabel>{option.label}</Menu.ItemLabel>
-      <Menu.SecondaryLabel>{count}</Menu.SecondaryLabel>
+      {icon ? <Menu.ItemIcon>{icon}</Menu.ItemIcon> : null}
+      <Menu.ItemLabel
+        title={
+          option.crumb ? `${option.crumb} › ${option.label}` : option.label
+        }
+      >
+        {option.crumb ? (
+          <>
+            <span data-menu-breadcrumb="">{option.crumb}</span>
+            <span aria-hidden data-menu-breadcrumb-separator="">
+              ›
+            </span>
+            <span data-menu-breadcrumb-current="">{option.label}</span>
+          </>
+        ) : (
+          option.label
+        )}
+      </Menu.ItemLabel>
+      {count === null ? null : (
+        <Menu.SecondaryLabel>{count}</Menu.SecondaryLabel>
+      )}
     </Menu.CheckboxItem>
   );
 }

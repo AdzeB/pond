@@ -17,7 +17,11 @@ import {
   useFilterQuery,
   useSearchText,
 } from "@/features/library/state/view-store";
+import { normalise } from "@/features/saves";
+import { pool } from "@/features/saves/pool";
+import { pagingStore } from "@/features/saves/state/bootstrap";
 import { FilterBarView, FilterToggle } from "./";
+import { entryFields, FILTER_MENU, FILTER_SECTIONS } from "./options";
 import { filterToolbar } from "./toolbar-state";
 
 function State() {
@@ -47,6 +51,7 @@ describe("filter toolbar", () => {
     );
     resetFilters();
     filterToolbar.setOpen(true);
+    filterToolbar.setLayout("pinned");
     filterToolbar.restoreDefaults();
     host = document.createElement("div");
     document.body.append(host);
@@ -121,14 +126,14 @@ describe("filter toolbar", () => {
       "Date Saved",
       "Date Modified",
       "Customize Filters",
-      "Save",
+      "Save View",
       "Clear Filters",
     ]);
     expect(button("Color").querySelector("[data-spectrum]")).not.toBeNull();
-    for (const label of ["Customize Filters", "Save", "Clear Filters"]) {
+    for (const label of ["Customize Filters", "Save View", "Clear Filters"]) {
       expect(button(label).querySelector("svg")).not.toBeNull();
     }
-    expect(button("Save").textContent).toBe("");
+    expect(button("Save View").textContent).toBe("");
     expect(button("Clear Filters").textContent).toBe("");
   });
 
@@ -167,7 +172,9 @@ describe("filter toolbar", () => {
       "source:youtube.com cats",
     );
     await render();
-    expect(button("Source: YouTube").textContent).toBe("YouTube");
+    expect(button("Source: YouTube").lastElementChild?.textContent).toBe(
+      "YouTube",
+    );
     expect(button("Tags")).toBeTruthy();
     const toggle = button("Filter");
     const before = state();
@@ -208,7 +215,7 @@ describe("filter toolbar", () => {
     });
     await render();
 
-    await act(async () => button("Save").click());
+    await act(async () => button("Save View").click());
 
     expect(created).toEqual([
       expect.objectContaining({ kind: "saved_view", name: "Untitled" }),
@@ -228,14 +235,13 @@ describe("filter toolbar", () => {
     );
     await render();
     const source = button("Source: Twitter");
-    expect(source.textContent).toBe("Twitter");
-
+    expect(source.lastElementChild?.textContent).toBe("Twitter");
     expect(state().query.rules).toEqual([
       { field: "source", operator: "eq", value: "x.com" },
     ]);
   });
 
-  it("shows the selected color as the chip icon instead of its hex value", async () => {
+  it("shows the selected color as the chip icon and its name as the label", async () => {
     setSearchInput(
       [
         {
@@ -248,7 +254,7 @@ describe("filter toolbar", () => {
     );
     await render();
     const color = button("Color: Blue");
-    expect(color.textContent).toBe("Color");
+    expect(color.textContent).toBe("Blue");
     expect(color.querySelector('[data-swatch="#2b76e7"]')).not.toBeNull();
     expect(color.querySelector("[data-spectrum]")).toBeNull();
   });
@@ -336,5 +342,132 @@ describe("filter toolbar", () => {
     expect(getOverlays().semanticQuery).toBe("black cat");
     await act(async () => button("Clear Semantic Filter").click());
     expect(getOverlays().semanticQuery).toBeNull();
+  });
+
+  describe("applied layout", () => {
+    beforeEach(() => {
+      filterToolbar.setLayout("applied");
+      pagingStore.setState((state) => ({ ...state, hasMore: false }));
+      pool.clear();
+      const save = normalise({
+        id: "clip",
+        source: "web",
+        url: "https://www.youtube.com/watch?v=1",
+      });
+      if (!save) throw new Error("Invalid save fixture");
+      pool.upsert(save);
+    });
+    afterEach(() => {
+      pool.clear();
+      pagingStore.setState((state) => ({ ...state, hasMore: true }));
+    });
+
+    it("lays out every filter field exactly once", () => {
+      const fields = FILTER_MENU.flat().flatMap(entryFields);
+      expect([...fields].sort()).toEqual(
+        FILTER_SECTIONS.flatMap((section) => [...section.fields]).sort(),
+      );
+    });
+
+    it("groups the long tail and hides media fields the library lacks", async () => {
+      await render();
+      await act(async () => button("Add Filter").click());
+      const labels = menuItems().map((node) => node.textContent);
+      expect(labels).toEqual(
+        expect.arrayContaining(["Tags", "Dates", "Image", "File", "Text"]),
+      );
+      for (const absent of ["Camera", "Fonts", "Audio & Video", "Date Saved"]) {
+        expect(labels).not.toContain(absent);
+      }
+    });
+
+    it("lifts grouped fields into the root search with their group", async () => {
+      await render();
+      await act(async () => button("Add Filter").click());
+      await type("aspe");
+      expect(menuItems().map((node) => node.textContent)).toEqual([
+        "Image›Aspect",
+      ]);
+    });
+
+    it("keeps every field while the library is still loading", async () => {
+      pagingStore.setState((state) => ({ ...state, hasMore: true }));
+      await render();
+      await act(async () => button("Add Filter").click());
+      expect(menuItems().map((node) => node.textContent)).toContain("Camera");
+    });
+
+    function menuItems() {
+      return [
+        ...document.querySelectorAll<HTMLElement>(
+          '[role="menuitem"], [role="menuitemcheckbox"]',
+        ),
+      ];
+    }
+
+    async function type(text: string) {
+      const input = document.querySelector<HTMLInputElement>(
+        'input[aria-label="Add Filter"]',
+      );
+      if (!input) throw new Error("Missing Add Filter input");
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          "value",
+        )?.set?.call(input, text);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    }
+
+    it("lists fields directly and hides ones already applied", async () => {
+      setSearchInput(
+        [{ field: "type", operator: "eq", value: "video" }],
+        "",
+        "type:video",
+      );
+      await render();
+      expect(button("Type: Video")).toBeTruthy();
+      await act(async () => button("Add Another Filter").click());
+      const labels = menuItems().map((node) => node.textContent);
+      expect(labels).toContain("Tags");
+      expect(labels).toContain("Visual Match");
+      expect(labels).not.toContain("Type");
+      const tags = menuItems().find((node) => node.textContent === "Tags");
+      expect(tags?.hasAttribute("aria-haspopup")).toBe(true);
+    });
+
+    it("finds values across fields and applies them from the root search", async () => {
+      await render();
+      await act(async () => button("Add Filter").click());
+      await type("you");
+      const youtube = menuItems().find((node) =>
+        node.textContent?.includes("YouTube"),
+      );
+      expect(youtube?.textContent).toBe("Source›YouTube1");
+      await act(async () => youtube?.click());
+      expect(state().query.rules).toEqual([
+        { field: "source", operator: "eq", value: "youtube.com" },
+      ]);
+    });
+
+    it("skips mid-word matches and values with no saves", async () => {
+      await render();
+      await act(async () => button("Add Filter").click());
+      await type("tube");
+      expect(
+        menuItems().some((node) => node.textContent?.includes("YouTube")),
+      ).toBe(false);
+      await type("vim");
+      expect(
+        menuItems().some((node) => node.textContent?.includes("Vimeo")),
+      ).toBe(false);
+    });
+
+    it("matches field names by letters in order", async () => {
+      await render();
+      await act(async () => button("Add Filter").click());
+      await type("sor");
+      expect(menuItems().map((node) => node.textContent)).toEqual(["Source"]);
+    });
   });
 });

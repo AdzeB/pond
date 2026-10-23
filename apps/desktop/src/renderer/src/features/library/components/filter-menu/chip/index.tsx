@@ -1,6 +1,6 @@
 import { Chip } from "@pond/ui";
 import { clsx as cn } from "clsx";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { libraryHeader } from "@/features/library/state/library-header";
 import type { FilterLayout } from "../layout";
 import styles from "./styles.module.css";
@@ -20,6 +20,24 @@ export function FilterChip({ onOpen, ...props }: FilterChipProps) {
       }}
       {...props}
     />
+  );
+}
+
+export function FilterIcons({
+  icons,
+  className,
+  ...props
+}: Omit<ComponentProps<"span">, "children"> & {
+  icons: readonly { key: string; icon: ReactNode }[];
+}) {
+  return (
+    <span className={cn(styles.icons, className)} {...props}>
+      {icons.map(({ key, icon }) => (
+        <span key={key} className={styles.icon}>
+          {icon}
+        </span>
+      ))}
+    </span>
   );
 }
 

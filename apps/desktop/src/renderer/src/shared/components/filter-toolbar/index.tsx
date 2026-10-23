@@ -49,6 +49,7 @@ export interface BarProps
   label: string;
   children: ReactNode;
   actions?: ReactNode;
+  wrap?: boolean;
 }
 
 function Bar({
@@ -57,6 +58,7 @@ function Bar({
   label,
   children,
   actions,
+  wrap,
   className,
   ...props
 }: BarProps) {
@@ -76,7 +78,7 @@ function Bar({
           transition={transition}
           {...props}
         >
-          <div className={styles.bar}>
+          <div className={styles.bar} data-wrap={wrap || undefined}>
             <div className={styles["filters-viewport"]}>
               <div className={styles.filters}>{children}</div>
             </div>

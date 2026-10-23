@@ -79,10 +79,19 @@ export const FOLDER_ICONS: readonly {
 /** Context menus list only the first icons; the full set lives in Customize Folder. */
 export const FOLDER_MENU_ICONS = FOLDER_ICONS.slice(0, 6);
 
-export function FolderIcon({ name, size }: { name?: string; size?: number }) {
+export function FolderIcon({
+  name,
+  size,
+  color,
+}: {
+  name?: string;
+  size?: number;
+  color?: string | null;
+}) {
   const Icon =
     FOLDER_ICONS.find((item) => item.id === name)?.Icon ?? IconFolder;
-  return <Icon size={size} />;
+  const css = folderColorCss(color);
+  return <Icon size={size} style={css ? { color: css } : undefined} />;
 }
 
 export const FOLDER_SWATCHES = [

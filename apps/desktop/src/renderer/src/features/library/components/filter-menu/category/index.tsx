@@ -2,31 +2,32 @@ import { readColorMatch } from "@pond/schema/filters/color";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { Chip } from "@pond/ui";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { fieldIcon } from "@/features/search/query";
 import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";
-import { FilterChip, FilterPopup } from "../chip";
+import { FilterChip, FilterIcons, FilterPopup } from "../chip";
 import { ChoiceFilter } from "../choice";
 import { ColorFilter } from "../color";
 import { ContentFilter } from "../content";
-import { choiceIsSearchable, filterLayout } from "../layout";
+import { editorIsSearchable, filterLayout } from "../layout";
 import type { FilterOption } from "../options";
 import { CustomFilter, type RangeUnit } from "../range";
 import { DimensionsFilter } from "../range/dimensions";
-import { selectedChoiceMode, selectFilter } from "../selection";
+import {
+  isFilterSelected,
+  selectedChoiceMode,
+  selectFilter,
+} from "../selection";
 import { filterSummary } from "../summary";
-import { type FilterTagGroup, TagChoiceFilter } from "../tags";
 
 export function FilterCategory({
   field,
   options,
-  tagGroups = [],
   rows,
   onChange,
 }: {
   field: FieldId;
   options: FilterOption[];
-  tagGroups?: readonly FilterTagGroup[];
   rows: Predicate[];
   onChange: (rows: Predicate[]) => void;
 }) {
@@ -46,7 +47,7 @@ export function FilterCategory({
       ? activeRules
           .map(
             (row) =>
-              `${row.field === "width" ? "W" : "H"} ${filterSummary([row], [])}`,
+              `${row.field === "width" ? "Width" : "Height"} ${filterSummary([row], [])}`,
           )
           .join(" · ")
       : filterSummary(activeRules, options);
@@ -59,27 +60,35 @@ export function FilterCategory({
   const matching = selectedChoiceMode(rows, field);
   const [editorVersion, setEditorVersion] = useState(0);
   const { query, onValueChange, reset } = useMenuFilterQuery();
-  const searchable =
-    field === "tags" ||
-    ((meta.type === "enum" || meta.type === "stringArray") &&
-      choiceIsSearchable(field, options.length));
+  const searchable = editorIsSearchable(field, options.length);
   const clear = () => {
     setEditorVersion((version) => version + 1);
     onChange(rows.filter((row) => !categoryFields.has(row.field)));
   };
+  const icons = selectedOptionIcons(activeRules, options);
   return (
     <FilterChip
       icon={
-        field === "color" ? <Chip.Swatch color={selectedColor} /> : <Icon />
+        field === "color" ? (
+          <Chip.Swatch color={selectedColor} />
+        ) : TILE_FIELDS.has(field) && icons.length > 0 ? (
+          <FilterIcons icons={icons} />
+        ) : icons.length === 1 ? (
+          icons[0]?.icon
+        ) : (
+          <Icon />
+        )
       }
-      label={selectedColor ? meta.label : summary || meta.label}
+      label={summary || meta.label}
       title={label}
       active={active}
       ariaLabel={label}
       onClear={active ? clear : undefined}
       clearLabel={`Clear ${meta.label} Filter`}
       search={
-        searchable ? { filter: null, value: query, onValueChange } : undefined
+        searchable
+          ? { filter: null, value: query, onValueChange, autoHighlight: true }
+          : undefined
       }
       onOpen={reset}
     >
@@ -88,7 +97,6 @@ export function FilterCategory({
           key={editorVersion}
           field={field}
           options={options}
-          tagGroups={tagGroups}
           matching={matching}
           rows={rows}
           search={query}
@@ -99,10 +107,32 @@ export function FilterCategory({
   );
 }
 
-function FilterEditor({
+const MAX_CHIP_ICONS = 3;
+
+/** Brand tiles are solid, so several can overlap; outline glyphs show only when one value is picked. */
+const TILE_FIELDS = new Set<FieldId>(["source", "account"]);
+
+function selectedOptionIcons(
+  rules: readonly Predicate[],
+  options: readonly FilterOption[],
+): { key: string; icon: ReactNode }[] {
+  const [rule] = rules;
+  if (rules.length !== 1 || !rule || rule.negate) return [];
+  if (!["eq", "in", "some", "every"].includes(rule.operator)) return [];
+  const values = Array.isArray(rule.value) ? rule.value : [rule.value];
+  const entries = values.map((value) => ({
+    key: String(value),
+    icon: options.find((option) =>
+      isFilterSelected([{ ...rule, operator: "eq", value }], option.predicate),
+    )?.icon,
+  }));
+  if (!entries.every((entry) => entry.icon)) return [];
+  return entries.slice(0, MAX_CHIP_ICONS);
+}
+
+export function FilterEditor({
   field,
   options,
-  tagGroups,
   matching = "any",
   rows,
   search,
@@ -110,7 +140,6 @@ function FilterEditor({
 }: {
   field: FieldId;
   options: FilterOption[];
-  tagGroups: readonly FilterTagGroup[];
   matching?: "any" | "all";
   rows: Predicate[];
   search: string;
@@ -126,17 +155,6 @@ function FilterEditor({
   const clearField = () => onChange(rows.filter((row) => row.field !== field));
   if (field === "width")
     return <DimensionsFilter rows={rows} onChange={onChange} />;
-  if (field === "tags")
-    return (
-      <TagChoiceFilter
-        options={options}
-        groups={tagGroups}
-        matching={matching}
-        rows={rows}
-        search={search}
-        onChange={onChange}
-      />
-    );
   if (type === "enum" || type === "stringArray")
     return (
       <ChoiceFilter
@@ -149,7 +167,14 @@ function FilterEditor({
       />
     );
   if (type === "optional" || type === "string")
-    return <ContentFilter field={field} rows={rows} onChange={onChange} />;
+    return (
+      <ContentFilter
+        field={field}
+        rows={rows}
+        search={search}
+        onChange={onChange}
+      />
+    );
   if (type === "color")
     return (
       <ColorFilter current={current} onApply={apply} onClear={clearField} />

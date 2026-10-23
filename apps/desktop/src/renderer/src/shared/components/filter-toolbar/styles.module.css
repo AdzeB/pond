@@ -56,6 +56,19 @@
   display: none;
 }
 
+.bar[data-wrap] {
+  & .filters {
+    flex-wrap: wrap;
+    height: auto;
+    margin-block: 0;
+    overflow: visible;
+  }
+
+  & .filters::after {
+    display: none;
+  }
+}
+
 .actions {
   display: flex;
   flex: none;

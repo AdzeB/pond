@@ -264,9 +264,12 @@ function CheckboxItemIndicator({
   className,
   keepMounted = true,
   variant = "checkbox",
+  reveal = "always",
   ...props
 }: Base.CheckboxItemIndicator.Props & {
   variant?: "checkbox" | "check";
+  /** `active` hides an unchecked box until its row is hovered or highlighted. */
+  reveal?: "always" | "active";
 }) {
   if (variant === "check") {
     return (
@@ -284,6 +287,7 @@ function CheckboxItemIndicator({
     <Base.CheckboxItemIndicator
       keepMounted={keepMounted}
       className={cn(styles.indicator, className)}
+      data-reveal={reveal === "active" ? reveal : undefined}
       render={(renderProps, state) => (
         <Checkbox.Root
           size="sm"
