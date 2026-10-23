@@ -104,7 +104,9 @@ fetched again. A post with no publish date is kept.
 
 A newly connected Account is created with `importPending: true`, and
 `syncAccount` returns idle without harvesting until you pick a scope through
-`accounts.setImportScope`. Changing the scope clears `lastFullSyncAt` and
+`accounts.setImportScope`. A save with `start: false` stores the scope and
+keeps the Account pending, so choices made before Start Import persist.
+Changing the scope clears `lastFullSyncAt` and
 `resumeCursor`, so the next run is a full walk and early stop can't skip older
 items in a newly added list. It also purges saves the old filters skipped
 (`releaseFilteredSaves`), so that walk judges them again under the new scope.

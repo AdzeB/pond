@@ -30,7 +30,7 @@ export interface ImportScopeAccount {
 interface ImportScopeFlowState {
   accountId: string | null;
   source: Source | null;
-  /** A pending Account holds its draft until Start Import; an active one saves each change. */
+  /** A pending Account saves each change but fetches nothing until Start Import. */
   starts: boolean;
   listKinds: readonly ListKind[];
   /** Empty imports the whole saved list. */
@@ -129,11 +129,11 @@ function createImportScopeFlow() {
     setSaving(saving: boolean): void {
       store.setState((s) => ({ ...s, saving, error: saving ? null : s.error }));
     },
-    markSaved(scope: ImportScope): void {
+    markSaved(scope: ImportScope, { started }: { started: boolean }): void {
       store.setState((s) => ({
         ...s,
         saving: false,
-        starts: false,
+        starts: started ? false : s.starts,
         saved: JSON.stringify(scope),
       }));
     },
