@@ -9,6 +9,7 @@ import type {
   AssistantToolStep,
 } from "@shared/assistant";
 import { assistantMessages, assistantSources } from "@shared/assistant";
+import { DEFAULT_FISH_ID } from "@shared/fish-contracts";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
@@ -41,6 +42,7 @@ interface DraftSnapshot {
   keepDraft?: boolean;
 }
 export interface AssistantState {
+  fishId: string;
   chatId: string | null;
   chats: z.infer<typeof ChatsSchema>;
   referenceMessageId: string | null;
@@ -62,6 +64,7 @@ type AssistantWorkspace = Omit<AssistantState, "busy"> & {
   sending: boolean;
 };
 const store = new Store<AssistantWorkspace>({
+  fishId: DEFAULT_FISH_ID,
   chatId: null,
   chats: [],
   referenceMessageId: null,
@@ -92,9 +95,11 @@ function setMessages(messages: AssistantMessage[]) {
 }
 
 async function refreshChats() {
-  patch({
-    chats: ChatsSchema.parse(await window.pond.query("agent.chats", {})),
-  });
+  const { fishId } = store.state;
+  const chats = ChatsSchema.parse(
+    await window.pond.query("agent.chats", { fishId }),
+  );
+  if (store.state.fishId === fishId) patch({ chats });
 }
 async function loadMessages(chatId: string) {
   return assistantMessages.parse(
@@ -113,16 +118,31 @@ type ComposerSnapshot = Pick<
   AssistantWorkspace,
   "draft" | "attachments" | "files" | "failed" | "error"
 >;
-const composers = new Map<string | null, ComposerSnapshot>();
+const composers = new Map<string, ComposerSnapshot>();
+const lastChats = new Map<string, string>();
+let fishSelected = false;
+
+function composerKey(chatId: string | null, fishId = store.state.fishId) {
+  return chatId ?? `new:${fishId}`;
+}
 
 function saveComposer() {
   const { chatId, draft, attachments, files, failed, error } = store.state;
-  composers.set(chatId, { draft, attachments, files, failed, error });
+  composers.set(composerKey(chatId), {
+    draft,
+    attachments,
+    files,
+    failed,
+    error,
+  });
 }
 
-function composerFor(chatId: string | null): ComposerSnapshot {
+function composerFor(
+  chatId: string | null,
+  fishId = store.state.fishId,
+): ComposerSnapshot {
   return (
-    composers.get(chatId) ?? {
+    composers.get(composerKey(chatId, fishId)) ?? {
       draft: "",
       attachments: [],
       files: [],
@@ -249,8 +269,56 @@ export const assistant = {
       patch({ error: "Could not load these Saves. Try again." });
     }
   },
+  fishId() {
+    return store.state.fishId;
+  },
+  selectFish(fishId: string) {
+    if (fishSelected && store.state.fishId === fishId) return;
+    fishSelected = true;
+    if (isBusy()) {
+      patch({ fishId, chats: [] });
+      void refreshChats().catch(() =>
+        patch({ error: "Could not load recent chats." }),
+      );
+      return;
+    }
+    saveComposer();
+    const version = ++historyVersion;
+    patch({
+      fishId,
+      chats: [],
+      chatId: null,
+      messages: [],
+      referenceMessageId: null,
+      ...composerFor(null, fishId),
+      sources: [],
+      results: [],
+      steps: [],
+      loading: true,
+    });
+    const settle = () => {
+      if (version === historyVersion) patch({ loading: false });
+    };
+    void refreshChats()
+      .then(() => {
+        if (version !== historyVersion || isBusy()) return;
+        const { chats, draft, attachments, files } = store.state;
+        const remembered = lastChats.get(fishId);
+        const chatId = chats.some((chat) => chat.id === remembered)
+          ? remembered
+          : chats[0]?.id;
+        if (!chatId || draft || attachments.length || files.length)
+          return settle();
+        void assistant.openChat(chatId);
+      })
+      .catch(() => {
+        settle();
+        patch({ error: "Could not load recent chats." });
+      });
+  },
   newChat() {
     if (isBusy()) return;
+    lastChats.delete(store.state.fishId);
     saveComposer();
     historyVersion++;
     patch({
@@ -291,6 +359,7 @@ export const assistant = {
     try {
       const messages = await loadMessages(chatId);
       if (version !== historyVersion) return;
+      lastChats.set(store.state.fishId, chatId);
       hydratePondChat(chatId, messages);
       patch({
         chatId,
@@ -353,10 +422,13 @@ export const assistant = {
     try {
       if (!chatId) {
         const chat = ChatSchema.parse(
-          await window.pond.query("agent.newChat", {}),
+          await window.pond.query("agent.newChat", {
+            fishId: store.state.fishId,
+          }),
         );
         chatId = chat.id;
-        composers.delete(null);
+        lastChats.set(store.state.fishId, chatId);
+        composers.delete(composerKey(null));
         patch({ chatId });
       }
       if (!chatId || cancelledRequest === requestId) {

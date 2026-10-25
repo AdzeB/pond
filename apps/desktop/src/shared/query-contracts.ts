@@ -29,6 +29,7 @@ import type {
 } from "./conversion-contracts";
 import type { DownloadActivity } from "./download-activity";
 import type { FeedbackEvent } from "./feedback";
+import type { FishQueryInputs, FishQueryResults } from "./fish-contracts";
 import type { FolderQueryInputs, FolderQueryResults } from "./folder-contracts";
 import type { GlobalShortcutStatus } from "./global-shortcuts";
 import type {
@@ -132,6 +133,7 @@ export interface QueryInputs
     FolderQueryInputs,
     InspectQueryInputs,
     CanvasQueryInputs,
+    FishQueryInputs,
     ConversionQueryInputs,
     SavesReadQueryInputs,
     SavesMutationQueryInputs,
@@ -297,8 +299,8 @@ export interface QueryInputs
   "settings.globalShortcutStatus": EmptyInput;
   "agent.keys": EmptyInput;
   "agent.listAvailableModels": EmptyInput;
-  "agent.chats": EmptyInput;
-  "agent.newChat": EmptyInput;
+  "agent.chats": { fishId?: string };
+  "agent.newChat": { fishId?: string };
   "agent.mcpSnippet": EmptyInput;
   "agent.openMcpInstall": { id: "cursor" | "vscode" };
   "library.info": EmptyInput;
@@ -344,6 +346,7 @@ export interface QueryResults
     FolderQueryResults,
     InspectQueryResults,
     CanvasQueryResults,
+    FishQueryResults,
     ConversionQueryResults,
     SavesReadQueryResults,
     SavesMutationQueryResults,

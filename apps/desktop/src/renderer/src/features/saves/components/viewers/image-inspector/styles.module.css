@@ -8,7 +8,14 @@
   min-height: 0;
 }
 
+@property --edge-fade {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
 .frame {
+  --edge-fade: 0px;
   position: relative;
   flex: 1 1 auto;
   width: 100%;
@@ -16,6 +23,27 @@
   min-height: 0;
   overflow: hidden;
   touch-action: none;
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent,
+      #000 var(--edge-fade),
+      #000 calc(100% - var(--edge-fade)),
+      transparent
+    ),
+    linear-gradient(
+      to bottom,
+      transparent,
+      #000 var(--edge-fade),
+      #000 calc(100% - var(--edge-fade)),
+      transparent
+    );
+  mask-composite: intersect;
+  transition: --edge-fade var(--ds-duration-medium) var(--ds-easing-snap);
+
+  &[data-zoomed]:not([data-mode="crop"]) {
+    --edge-fade: 48px;
+  }
 
   &[data-mode="crop"] {
     cursor: crosshair;
@@ -52,6 +80,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .frame,
   .position {
     transition: none;
   }

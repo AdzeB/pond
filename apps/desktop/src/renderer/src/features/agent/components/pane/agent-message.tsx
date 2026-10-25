@@ -1,8 +1,12 @@
 import { useTextReveal } from "@pond/ui";
 import { Message } from "@pond/ui/message";
 import { RunStatus } from "@pond/ui/run-status";
-import type { AssistantProvider, AssistantSource } from "@shared/assistant";
-import { useRef } from "react";
+import type {
+  AssistantActivity,
+  AssistantProvider,
+  AssistantSource,
+} from "@shared/assistant";
+import { type ReactNode, useRef } from "react";
 import {
   type AssistantState,
   assistant,
@@ -18,7 +22,7 @@ import { currentActivityLabel } from "./activity-label";
 import { AssistantResponse } from "./assistant-response";
 import { FileAttachments } from "./file-attachments";
 import { inferredLookupResult, ResponseExtras } from "./response-content";
-import { WorkSummary } from "./work-summary";
+import { ActivityLog, WorkSummary } from "./work-summary";
 
 export function AgentMessage({
   message,
@@ -27,8 +31,10 @@ export function AgentMessage({
   attachedIds,
   attach,
   streaming,
+  entering = false,
   latest,
   onAnswer,
+  avatar,
 }: {
   message: PondUIMessage;
   state: AssistantState;
@@ -36,8 +42,10 @@ export function AgentMessage({
   attachedIds: string[];
   attach: (sources: AssistantSource[]) => void;
   streaming: boolean;
+  entering?: boolean;
   latest: boolean;
   onAnswer: (messageId: string, answer: string) => Promise<void>;
+  avatar?: (activity: AssistantActivity) => ReactNode;
 }) {
   const domain = fromUIMessage(message, state.chatId ?? "pending");
   const text = messageText(message);
@@ -81,7 +89,7 @@ export function AgentMessage({
       : undefined);
   return (
     <Message.View
-      animateEntrance={streaming}
+      animateEntrance={entering}
       role={message.role === "user" ? "user" : "assistant"}
       footer={
         message.role === "assistant" && settled ? (
@@ -113,12 +121,20 @@ export function AgentMessage({
         )
       }
     >
-      {message.role === "assistant" ? (
-        <WorkSummary
-          metadata={extras.metadata}
-          streaming={streaming && !text}
+      {message.role !== "assistant" ? null : streaming && steps.length ? (
+        <ActivityLog
+          steps={steps}
+          thinking={
+            showActivity && !steps.some((step) => step.status === "running")
+              ? currentActivityLabel(activity, steps)
+              : undefined
+          }
+          avatar={avatar?.(activity)}
+          live
         />
-      ) : null}
+      ) : (
+        <WorkSummary metadata={extras.metadata} streaming={streaming} />
+      )}
       {message.role === "user" ? (
         <FileAttachments files={domain.metadata?.files ?? []} />
       ) : null}
@@ -131,8 +147,10 @@ export function AgentMessage({
           onOpenSave={openSave}
         />
       ) : null}
-      {showActivity ? (
-        <RunStatus>{currentActivityLabel(activity, steps)}</RunStatus>
+      {showActivity && !steps.length ? (
+        <RunStatus icon={avatar?.(activity)}>
+          {currentActivityLabel(activity, steps)}
+        </RunStatus>
       ) : null}
     </Message.View>
   );

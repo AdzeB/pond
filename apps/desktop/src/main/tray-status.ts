@@ -221,7 +221,7 @@ export function buildTrayTemplate(
         run("Sources", "nav.sources", accelerators.sources),
         run("Downloads", "nav.downloads", accelerators.downloads),
         run("Tags", "nav.tags"),
-        run("Assistant", "nav.agent"),
+        run("Fish", "nav.agent"),
         { type: "separator" },
         run("Trash", "nav.trash", accelerators.trash),
         run("Uncategorized", "nav.uncategorized"),

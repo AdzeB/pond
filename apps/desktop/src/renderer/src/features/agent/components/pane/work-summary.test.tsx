@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { formatWorkDuration, WorkSummary } from "./work-summary";
+import { ActivityLog, formatWorkDuration, WorkSummary } from "./work-summary";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -53,10 +53,10 @@ it("starts collapsed and exposes actual activity when expanded", async () => {
     trigger?.click();
   });
   expect(trigger?.getAttribute("aria-expanded")).toBe("true");
-  expect(host.textContent).toContain("Search library");
+  expect(host.textContent).toContain("Searched your library");
   expect(host.textContent).toContain("Typography");
-  expect(host.textContent).toContain("Completed · 1s");
-  expect(host.textContent).toContain("Failed");
+  expect(host.textContent).toContain("1s");
+  expect(host.textContent).toContain("Read a SaveFailed");
   await act(async () => {
     trigger?.click();
   });
@@ -101,7 +101,7 @@ it("does not grow into place when an existing summary first mounts", async () =>
   expect(reveal.style.height).not.toBe("0px");
 });
 
-it("keeps short tool activity without emphasizing its duration", async () => {
+it("names the run time once tools ran, even for a short reply", async () => {
   await act(async () =>
     root.render(
       <WorkSummary
@@ -114,7 +114,30 @@ it("keeps short tool activity without emphasizing its duration", async () => {
       />,
     ),
   );
-  expect(host.querySelector("button")?.textContent).toBe("Activity");
+  expect(host.querySelector("button")?.textContent).toBe("Worked for 2s");
+});
+
+it("streams each step as a line and shows the running one live", async () => {
+  await act(async () =>
+    root.render(
+      <ActivityLog
+        steps={[
+          { id: "1", label: "Read Save", status: "complete" },
+          { id: "2", label: "Read Save", status: "complete" },
+          { id: "3", label: "Prepare changes for review", status: "running" },
+        ]}
+      />,
+    ),
+  );
+  expect(
+    [...host.querySelectorAll("li")].map((line) => [
+      line.textContent,
+      line.dataset.status,
+    ]),
+  ).toEqual([
+    ["Read 2 Saves", "complete"],
+    ["Preparing changes for review", "running"],
+  ]);
 });
 
 it("waits for completion and describes stopped runs without claiming a reply", async () => {

@@ -19,6 +19,7 @@ import {
   type RecentMenuEntry,
 } from "../shared/constants";
 import { FilterQuery } from "../shared/filter-query";
+import type { FishEvent } from "../shared/fish-contracts";
 import type {
   PreviewNeighborRequest,
   PreviewWindowConfigure,
@@ -404,6 +405,12 @@ const api = {
     const listener = (_: IpcRendererEvent, chunk: AssistantChunk) => cb(chunk);
     ipcRenderer.on(IPC.agentChunk, listener);
     return () => ipcRenderer.off(IPC.agentChunk, listener);
+  },
+
+  onFish(cb: (event: FishEvent) => void): () => void {
+    const listener = (_: IpcRendererEvent, event: FishEvent) => cb(event);
+    ipcRenderer.on(IPC.fish, listener);
+    return () => ipcRenderer.off(IPC.fish, listener);
   },
 
   agentStream(

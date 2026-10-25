@@ -26,11 +26,7 @@ import {
   collectionOwnsKeyboard,
   saveOwnsKeyboard,
 } from "@/features/saves/lib/keyboard-owner";
-import {
-  closeSave,
-  openSave,
-  saveIdFromPath,
-} from "@/features/saves/lib/save-nav";
+import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { inspect } from "@/features/saves/state/inspect";
 import { selection } from "@/features/saves/state/selection";
 import { openSources } from "@/features/sources/lib/open";
@@ -207,7 +203,7 @@ export function AppHotkeys() {
             getAppRouter()?.state.location.pathname ?? "",
           );
           if (openId) {
-            closeSave();
+            libraryChrome.toggleDetails();
             return;
           }
           const anchor = selection.getCursor();
@@ -235,14 +231,6 @@ export function AppHotkeys() {
         callback: () => {
           if (slideNavActive()) return;
           libraryChrome.toggleSidebar();
-        },
-        options: { ignoreInputs: true, conflictBehavior: "allow" as const },
-      },
-      {
-        hotkey: bindingKeys(shortcuts, "view.agent"),
-        callback: () => {
-          if (slideNavActive()) return;
-          libraryChrome.toggleAgent();
         },
         options: { ignoreInputs: true, conflictBehavior: "allow" as const },
       },

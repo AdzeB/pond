@@ -14,6 +14,7 @@ import {
 } from "./core/combine-images-window";
 import { ensureDefaultLibrary } from "./core/ensure-default-library";
 import { registerSyncActionListener } from "./core/executor";
+import { startFishRoutines } from "./core/fish";
 import {
   startGlobalShortcuts,
   summonShortcutTarget,
@@ -391,6 +392,7 @@ async function postLaunchInit(): Promise<void> {
 
   await initTray();
   registerSyncActionListener(() => queueTrayRefresh());
+  startFishRoutines({ onSyncAction: registerSyncActionListener });
 
   void runtimeControls
     .applyPrefsAtRuntime()

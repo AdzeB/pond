@@ -62,6 +62,7 @@ export const IPC = {
   archiveBackfillStart: "pond:archive-backfill-start",
   archiveSite: "pond:archive-site",
   agentChunk: "pond:agent-chunk",
+  fish: "pond:fish",
   agentStream: "pond:agent-stream",
   agentFilter: "pond:agent-filter",
   agentCite: "pond:agent-cite",
@@ -205,7 +206,6 @@ export type MenuActionId =
   | "organize.copy-tags"
   | "organize.paste-tags"
   | "view.sidebar.toggle"
-  | "view.agent.toggle"
   | "view.grayscale"
   | "view.random"
   | "view.subfolders.toggle"

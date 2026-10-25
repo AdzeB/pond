@@ -35,12 +35,12 @@ export function responseErrorCopy(error: string): ResponseErrorCopy {
   if (/invalid api key|incorrect api key|authentication/i.test(error)) {
     return {
       title: "Couldn't authenticate with the model provider",
-      description: "Check your API key in Assistant Settings, then try again.",
+      description: "Check your API key in Providers settings, then try again.",
     };
   }
   return {
     title: "Couldn't finish this response",
-    description: "Check your Assistant provider settings, then try again.",
+    description: "Check your Providers settings, then try again.",
   };
 }
 

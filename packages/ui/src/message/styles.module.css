@@ -1,9 +1,9 @@
 .message {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
   min-width: 0;
-  margin-block: 8px;
+  margin-block: 12px;
   font-size: var(--ds-text-md);
   font-weight: var(--ds-weight-md);
   line-height: 24px;
@@ -11,11 +11,13 @@
 }
 
 .message[data-enter="true"] {
-  animation: enter var(--ds-duration-snap) var(--ds-easing-decelerate);
+  transform-origin: 0 0;
+  animation: enter var(--ds-duration-bounce) var(--ds-easing-bounce);
 }
 
 .message[data-role="user"] {
   align-items: flex-end;
+  transform-origin: 100% 100%;
 }
 
 .leading {
@@ -33,18 +35,18 @@
 .body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
   width: 100%;
   min-width: 0;
 }
 
 .message[data-role="user"] .body {
   width: fit-content;
-  max-width: 75%;
-  padding: 8px 12px;
+  max-width: 70%;
+  padding: 8px 16px;
   line-height: 24px;
   background: var(--ds-gray-3);
-  border-radius: var(--ds-radius-md);
+  border-radius: 20px;
 }
 
 .actions {
@@ -128,20 +130,19 @@
 
 .message[data-role="user"] {
   position: relative;
-  margin-block: 8px 24px;
+  margin-block: 12px 36px;
 }
 
 .message[data-role="user"] > :last-child:not(.body) {
   position: absolute;
-  right: 0;
-  bottom: -28px;
+  right: 4px;
+  bottom: -30px;
 }
 
 @keyframes enter {
   from {
     opacity: 0;
-  }
-  to {
-    opacity: 1;
+    scale: 0.9;
+    translate: 0 12px;
   }
 }

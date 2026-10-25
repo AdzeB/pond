@@ -7,11 +7,17 @@ import type {
   AssistantSend,
 } from "../../../shared/assistant";
 import {
+  DEFAULT_FISH_ID,
+  type Fish,
+  type FishPresence,
+} from "../../../shared/fish-contracts";
+import {
   type ChatDependencies,
   sendMessage as send,
   stopMessage,
 } from "./chat";
 import type { ToolSpec } from "./complete";
+import type { LibraryScope } from "./tools";
 
 interface ChatTestState {
   prefs: typeof DEFAULT_PREFS;
@@ -23,8 +29,27 @@ interface ChatTestState {
   read: ReturnType<typeof vi.fn<ToolSpec["execute"]>>;
   history: AssistantMessage[];
   question: AssistantQuestion | undefined;
+  fish: Fish;
+  presence: Array<[string, FishPresence]>;
+  scopes: LibraryScope[];
 }
+const koi: Fish = {
+  id: DEFAULT_FISH_ID,
+  name: "Koi",
+  color: "orange",
+  species: "koi",
+  instructions: "",
+  scope: { folderIds: [], tags: [] },
+  model: null,
+  routine: { kind: "off" },
+  lastRun: null,
+  createdAt: 0,
+  updatedAt: 0,
+};
 const mock: ChatTestState = {
+  fish: koi,
+  presence: [],
+  scopes: [],
   prefs: structuredClone(DEFAULT_PREFS),
   complete: vi.fn<ChatDependencies["completeWithTools"]>(),
   append: vi.fn<ChatDependencies["appendMessage"]>(),
@@ -38,6 +63,10 @@ const mock: ChatTestState = {
 const dependencies: ChatDependencies = {
   conversationExists: async () => true,
   getPrefs: async () => mock.prefs,
+  fishForChat: async () => mock.fish,
+  setFishPresence: (fishId, activity) => {
+    mock.presence.push([fishId, activity]);
+  },
   listFolders: async () => [],
   imagesForSaves: async () => [],
   loadLocalAttachments: mock.loadFiles,
@@ -79,32 +108,38 @@ const dependencies: ChatDependencies = {
     ],
   }),
   listProviderModels: async () => ({ ok: true, models: [] }),
-  libraryContext: () => ({
-    onToolExecutionStart: () => {},
-    onToolExecutionEnd: () => {},
-    finishPending: () => {},
-    tools: [
-      {
-        name: "readSave",
-        description: "Read a Save",
-        schema: z.object({ id: z.string() }),
-        execute: mock.read,
-      },
-    ],
-    sources: () => [],
-    changes: () => [],
-    question: () => mock.question,
-    results: () => [{ title: "References", saveIds: ["film"] }],
-    steps: () => [
-      {
-        id: "step-1",
-        label: "Search library",
-        status: "complete",
-        elapsedMs: 10,
-      },
-    ],
-  }),
+  libraryContext: (input) => {
+    mock.scopes.push(input.scope);
+    return libraryContextFake();
+  },
 };
+const libraryContextFake = (): ReturnType<
+  ChatDependencies["libraryContext"]
+> => ({
+  onToolExecutionStart: () => {},
+  onToolExecutionEnd: () => {},
+  finishPending: () => {},
+  tools: [
+    {
+      name: "readSave",
+      description: "Read a Save",
+      schema: z.object({ id: z.string() }),
+      execute: mock.read,
+    },
+  ],
+  sources: () => [],
+  changes: () => [],
+  question: () => mock.question,
+  results: () => [{ title: "References", saveIds: ["film"] }],
+  steps: () => [
+    {
+      id: "step-1",
+      label: "Search library",
+      status: "complete",
+      elapsedMs: 10,
+    },
+  ],
+});
 const sendMessage = (input: AssistantSend) => send(input, dependencies);
 const request: AssistantSend = {
   chatId: "chat",
@@ -115,6 +150,37 @@ const request: AssistantSend = {
   scope: { kind: "library" },
   provider: "openai",
 };
+
+it("speaks as the chat's fish, follows its instructions, and searches only its scope", async () => {
+  mock.fish = {
+    ...koi,
+    id: "librarian",
+    name: "Librarian",
+    instructions: "File new Saves by theme.",
+    scope: { folderIds: [], tags: ["poster"] },
+  };
+  await sendMessage(request);
+  const context = mock.complete.mock.calls.at(-1)?.[0].context;
+  expect(context).toContain('"Librarian"');
+  expect(context).toContain("File new Saves by theme.");
+  expect(context).toContain('tags "poster"');
+  expect(mock.scopes.at(-1)?.filter).toEqual({
+    combinator: "or",
+    rules: [{ field: "tags", operator: "some", value: ["poster"] }],
+  });
+  expect(mock.presence[0]).toEqual(["librarian", "thinking"]);
+  expect(mock.presence.at(-1)).toEqual(["librarian", null]);
+});
+
+it("leaves explicitly attached Saves outside the fish's scope filter", async () => {
+  mock.fish = { ...koi, scope: { folderIds: [], tags: ["poster"] } };
+  await sendMessage({
+    ...request,
+    scope: { kind: "attachments" },
+    attachmentIds: ["film"],
+  });
+  expect(mock.scopes.at(-1)).toEqual({ saveIds: ["film"] });
+});
 
 it("includes saved personalization in each reply and stops including cleared fields", async () => {
   mock.prefs.agent.userProfile = "I design libraries.";
@@ -162,6 +228,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   mock.history = [];
   mock.question = undefined;
+  mock.fish = koi;
+  mock.presence = [];
+  mock.scopes = [];
   mock.prefs.agent = {
     ...DEFAULT_PREFS.agent,
     enabledKeys: {},

@@ -431,6 +431,12 @@ export const assistantToolStep = z.object({
 });
 export type AssistantToolStep = z.infer<typeof assistantToolStep>;
 
+export const assistantRoutine = z.object({
+  trigger: z.enum(["manual", "schedule", "newSaves"]),
+  saves: z.number().int().min(0).optional(),
+});
+export type AssistantRoutine = z.infer<typeof assistantRoutine>;
+
 export const assistantSend = z.object({
   chatId: z.string().min(1),
   requestId: z.string().min(1).max(100),
@@ -450,6 +456,7 @@ export const assistantSend = z.object({
   replyToQuestion: z.string().min(1).optional(),
   semanticQuery: z.string().nullable().optional(),
   visualSaveId: z.string().nullable().optional(),
+  routine: assistantRoutine.optional(),
 });
 export type AssistantSend = z.infer<typeof assistantSend>;
 
@@ -533,6 +540,8 @@ export const assistantMetadata = z.object({
     .optional(),
   question: assistantQuestion.optional(),
   replyToQuestion: z.string().optional(),
+  /** Set on the message a routine sends in your place, so the chat can show it as an event. */
+  routine: assistantRoutine.optional(),
   results: z.array(assistantResultSet).optional(),
   steps: z.array(assistantToolStep).optional(),
   stopped: z.boolean().optional(),
@@ -557,6 +566,13 @@ export type AssistantActivity =
   | "reading"
   | "writing"
   | "preparing";
+export const ASSISTANT_ACTIVITY_LABELS = {
+  thinking: "Thinking",
+  searching: "Searching your library",
+  reading: "Reading Saves",
+  writing: "Writing a response",
+  preparing: "Preparing changes",
+} satisfies Record<AssistantActivity, string>;
 export type AssistantEvent =
   | { type: "activity"; activity: AssistantActivity }
   | { type: "sources"; sources: AssistantSource[] }

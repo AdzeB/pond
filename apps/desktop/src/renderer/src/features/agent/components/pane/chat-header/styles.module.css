@@ -2,6 +2,12 @@
   min-width: 0;
 }
 
+.icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
 .popup {
   width: min(380px, calc(100vw - 32px));
   max-width: var(--available-width);

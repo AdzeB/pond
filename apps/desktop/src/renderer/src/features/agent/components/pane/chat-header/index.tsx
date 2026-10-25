@@ -18,6 +18,8 @@ interface ChatOption {
 }
 
 export function ChatHeader({
+  icon,
+  subtitle,
   chatId,
   chats,
   disabled,
@@ -27,6 +29,8 @@ export function ChatHeader({
   onFinishRenaming,
   children,
 }: {
+  icon?: ReactNode;
+  subtitle?: string;
   chatId: string | null;
   chats: { id: string; title: string | null; updatedAt?: Date }[];
   disabled: boolean;
@@ -47,23 +51,27 @@ export function ChatHeader({
   const groups = chatHistoryGroups(options, now);
   return (
     <AgentHeader
+      subtitle={subtitle}
       title={
-        renaming && chatId ? (
-          <InlineNameEditor
-            name={current?.title ?? "New Chat"}
-            className={styles.editor}
-            ariaLabel="Chat name"
-            errorTitle="Enter a name between 1 and 120 characters."
-            onSave={async (name) => {
-              if (name.length > 120)
-                throw new Error("Chat names can be at most 120 characters.");
-              await assistant.renameChat(chatId, name);
-            }}
-            onFinish={() => onFinishRenaming?.()}
-          />
-        ) : (
-          (current?.title ?? "New Chat")
-        )
+        <>
+          {icon ? <span className={styles.icon}>{icon}</span> : null}
+          {renaming && chatId ? (
+            <InlineNameEditor
+              name={current?.title ?? "New Chat"}
+              className={styles.editor}
+              ariaLabel="Chat name"
+              errorTitle="Enter a name between 1 and 120 characters."
+              onSave={async (name) => {
+                if (name.length > 120)
+                  throw new Error("Chat names can be at most 120 characters.");
+                await assistant.renameChat(chatId, name);
+              }}
+              onFinish={() => onFinishRenaming?.()}
+            />
+          ) : (
+            (current?.title ?? "New Chat")
+          )}
+        </>
       }
     >
       <Combobox.Root<ChatOption>

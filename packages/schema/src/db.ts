@@ -474,6 +474,19 @@ export const agentChats = sqliteTable("agent_chats", {
     .default(sql`(unixepoch() * 1000)`),
 });
 
+export const agentChatFish = sqliteTable(
+  "agent_chat_fish",
+  {
+    chatId: text("chat_id")
+      .primaryKey()
+      .references(() => agentChats.id, { onDelete: "cascade" }),
+    fishId: text("fish_id").notNull(),
+  },
+  (t) => ({
+    fishIdx: index("agent_chat_fish_fish_idx").on(t.fishId),
+  }),
+);
+
 export const agentMessages = sqliteTable(
   "agent_messages",
   {

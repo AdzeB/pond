@@ -15,6 +15,7 @@ import { bulkQueries } from "./bulk";
 import { canvasesQueries } from "./canvases";
 import { conversionQueries } from "./conversion";
 import { downloadsQueries } from "./downloads";
+import { fishQueries } from "./fish";
 import { foldersQueries } from "./folders";
 import { inspectQueries } from "./inspect";
 import { libraryQueries } from "./library";
@@ -43,6 +44,7 @@ const queryRegistry = {
   ...bulkQueries,
   ...openWithQueries,
   ...canvasesQueries,
+  ...fishQueries,
   ...conversionQueries,
   ...savesQueries,
   ...downloadsQueries,

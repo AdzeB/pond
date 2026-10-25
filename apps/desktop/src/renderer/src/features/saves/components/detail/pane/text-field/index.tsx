@@ -1,5 +1,7 @@
+import { IconChevronDown } from "@pond/icons";
 import { Button, Input } from "@pond/ui";
-import { useRef, useState } from "react";
+import { clsx as cn } from "clsx";
+import { useLayoutEffect, useRef, useState } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
 import styles from "./styles.module.css";
 
@@ -23,6 +25,7 @@ export function InspectorTextField({
   placeholder,
   mixedPlaceholder,
   maxLength,
+  clamp,
   commit,
 }: {
   className?: string;
@@ -38,12 +41,34 @@ export function InspectorTextField({
   placeholder?: string;
   mixedPlaceholder?: string;
   maxLength?: number;
+  clamp?: number;
   commit(value: string): Promise<void>;
 }) {
   const [, update] = useState(0);
   const cancelled = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
   const draft = drafts.get(cacheKey);
   const current = draft?.value ?? value ?? "";
+  const clamped = Boolean(clamp) && !expanded;
+
+  useLayoutEffect(() => {
+    void current;
+    const area = rootRef.current?.querySelector("textarea");
+    if (!clamped || !area) {
+      setOverflowing(false);
+      return;
+    }
+    const measure = () =>
+      setOverflowing(area.scrollHeight > area.clientHeight + 1);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(area);
+    return () => observer.disconnect();
+  }, [clamped, current]);
+
   function refresh() {
     update((count) => count + 1);
   }
@@ -100,7 +125,15 @@ export function InspectorTextField({
     },
   };
   return (
-    <div className={className}>
+    <div
+      ref={rootRef}
+      className={cn(styles.root, className)}
+      data-clamped={clamped || undefined}
+      data-overflowing={overflowing || undefined}
+      style={
+        clamp ? ({ "--clamp-lines": clamp } as React.CSSProperties) : undefined
+      }
+    >
       <Input.Root size={size} variant={variant} className={styles.field}>
         {multiline ? (
           <Input.Textarea {...props} rows={2} maxLength={maxLength ?? 8192} />
@@ -108,6 +141,17 @@ export function InspectorTextField({
           <Input.Field {...props} maxLength={maxLength ?? 255} />
         )}
       </Input.Root>
+      {overflowing ? (
+        <Button
+          className={styles.more}
+          size="sm"
+          variant="ghost"
+          onClick={() => setExpanded(true)}
+        >
+          Read More
+          <IconChevronDown size={12} />
+        </Button>
+      ) : null}
       {draft?.error ? (
         <div role="alert" className={styles.error}>
           {draft.error}

@@ -123,7 +123,7 @@ function pickFromRow(
   if (!ref) return null;
   const row: DetailRow = {
     id: "from",
-    label: "From",
+    label: ref.watch ? "Watch" : "Account",
     value: accountDisplayName(ref),
     kind: "account",
     accountId: ref.id,
@@ -143,7 +143,7 @@ export function collectIdentityRows(
   if (save.author) {
     const author: DetailRow = {
       id: "author",
-      label: "Author",
+      label: "Posted By",
       value: save.author,
       kind: "author",
     };
@@ -155,7 +155,7 @@ export function collectIdentityRows(
   if (from) rows.push(from);
   rows.push({
     id: "platform",
-    label: "Platform",
+    label: "Source",
     value: getSourceLabel(save.source),
     kind: "platform",
   });

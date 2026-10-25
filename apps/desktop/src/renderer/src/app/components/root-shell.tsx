@@ -1,6 +1,6 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect } from "react";
-import { RightPane } from "@/app/components/right-pane";
+import { SaveDetails } from "@/app/components/save-details";
 import { Toolbar } from "@/app/components/toolbar";
 import { Tray } from "@/app/components/tray";
 import { AppHotkeys } from "@/app/effects/app-hotkeys";
@@ -86,6 +86,8 @@ export function RootShell() {
       <DuplicateImportReviewHost />
       <AppShell.Root
         header={<Toolbar />}
+        right={<SaveDetails />}
+        rightOpen={saveIdFromPath(pathname) !== null}
         left={
           isSettings ? (
             <Suspense fallback={null}>
@@ -100,7 +102,6 @@ export function RootShell() {
             <FolderSidebar />
           )
         }
-        right={isSettings || sourceDetail ? undefined : <RightPane />}
       >
         <Outlet />
       </AppShell.Root>

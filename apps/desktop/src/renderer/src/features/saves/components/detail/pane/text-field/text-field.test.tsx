@@ -102,3 +102,33 @@ it("cancels a draft with Escape without writing", async () => {
   expect(field().value).toBe("Original");
   expect(commit).not.toHaveBeenCalled();
 });
+
+it("clamps long text behind Read More until expanded", async () => {
+  const scroll = vi
+    .spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get")
+    .mockReturnValue(200);
+  await act(async () =>
+    root.render(
+      <InspectorTextField
+        drafts={drafts}
+        cacheKey="description"
+        label="Description"
+        multiline
+        clamp={4}
+        value="A long description"
+        commit={async () => {}}
+      />,
+    ),
+  );
+  const more = [...host.querySelectorAll("button")].find(
+    (button) => button.textContent === "Read More",
+  );
+  expect(host.firstElementChild?.hasAttribute("data-clamped")).toBe(true);
+  expect(more).toBeDefined();
+
+  await act(async () => more?.click());
+
+  expect(host.firstElementChild?.hasAttribute("data-clamped")).toBe(false);
+  expect(host.textContent).not.toContain("Read More");
+  scroll.mockRestore();
+});

@@ -18,6 +18,8 @@ import {
   IconVersions,
   IconWindowDownload,
 } from "@pond/icons";
+import { DEFAULT_FISH_ID } from "@shared/fish-contracts";
+import { fishPath } from "@/features/fish";
 import {
   importClipboard,
   importEagle,
@@ -196,13 +198,13 @@ export const COMMANDS: readonly CommandSpec[] = [
     run: () => navigateTo("/tags"),
   },
   {
-    id: "assistant",
+    id: "fish",
     group: "Navigate",
-    label: "Assistant",
+    label: "Fish",
     detail: "Ask your library",
     icon: IconChatBubble,
-    keywords: "ask chat ai",
-    run: () => navigateTo("/assistant"),
+    keywords: "ask chat ai assistant",
+    run: () => navigateTo(fishPath(DEFAULT_FISH_ID)),
   },
   {
     id: "trash",
@@ -227,6 +229,19 @@ export const COMMANDS: readonly CommandSpec[] = [
     shortcut: "app.settings",
     run: () => openSettings(),
   },
+  ...(import.meta.env.DEV
+    ? [
+        {
+          id: "gallery",
+          group: "App",
+          label: "Open Gallery",
+          detail: "Koi cards in every state",
+          icon: IconAlbum2,
+          keywords: "components cards styles dev playground",
+          run: () => navigateTo("/gallery"),
+        } satisfies CommandSpec,
+      ]
+    : []),
   {
     id: "run-setup",
     group: "App",

@@ -38,6 +38,12 @@ const descriptions = new Map<string, string>(
       "Create a Canvas, optionally starting with explicit Save IDs placed in a grid.",
     "canvases.addSaves":
       "Add explicit Save IDs to a Canvas. Saves already on it are skipped; new cards land beside existing content.",
+    "fish.list":
+      "List fish: Assistant characters with a name, color, instructions, a folder and tag scope, an optional model, and an optional routine that runs on new Saves or a schedule.",
+    "fish.create":
+      "Create a fish with a name, color, instructions, scope, model, and routine.",
+    "fish.update":
+      "Change a fish's name, color, instructions, scope, model, or routine.",
     "conversion.start":
       "Export converted image or video-to-GIF copies using a preset. Opens a native export directory picker; originals are retained. Returns a job ID for progress and cancellation.",
     "conversion.capabilities":

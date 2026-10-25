@@ -1,7 +1,7 @@
 import { Sidebar } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { CanvasesSection, canvasIdFromPath } from "@/features/canvas";
-import { HarvesterButton } from "@/features/library/components/harvester-button";
+import { FishSection, fishIdFromPath } from "@/features/fish";
 import { NewMenu } from "@/features/library/components/new-menu";
 import { SmartFoldersSection } from "@/features/library/components/smart-folders";
 import { WorkspaceMenu } from "@/features/library/components/workspace-menu";
@@ -9,6 +9,7 @@ import { useFolders } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { useHydrateSavedViews } from "@/features/library/state/saved-views";
 import { useViewStore } from "@/features/library/state/view-store";
+import { useTags } from "@/features/tags";
 import { LibraryDestinations } from "./destinations";
 import { FolderTree } from "./folder-tree";
 import { selectLibraryNav } from "./navigation";
@@ -19,7 +20,6 @@ function WorkspaceHeader() {
     <Sidebar.Header className={styles.workspace}>
       <WorkspaceMenu />
       <div className={styles["workspace-actions"]}>
-        <HarvesterButton />
         <NewMenu />
       </div>
     </Sidebar.Header>
@@ -33,12 +33,13 @@ export function FolderSidebar() {
     select: (state) => state.location.pathname,
   });
   const folderRows = useFolders();
+  const tagRows = useTags();
   const activeCanvasId = canvasIdFromPath(pathname);
+  const activeFishId = fishIdFromPath(pathname);
   const libraryPage =
     activeCanvasId === null &&
-    !["/assistant", "/downloads", "/sources", "/tags", "/untagged"].includes(
-      pathname,
-    );
+    activeFishId === null &&
+    !["/downloads", "/sources", "/tags", "/untagged"].includes(pathname);
   useHydrateSavedViews();
 
   return (
@@ -58,6 +59,11 @@ export function FolderSidebar() {
         <SmartFoldersSection
           active={pathname === "/" && nav.kind === "all"}
           onSelect={() => selectLibraryNav({ kind: "all" })}
+        />
+        <FishSection
+          activeId={activeFishId}
+          folders={folderRows}
+          tagNames={tagRows.map((tag) => tag.name)}
         />
         <CanvasesSection activeId={activeCanvasId} />
         <FolderTree

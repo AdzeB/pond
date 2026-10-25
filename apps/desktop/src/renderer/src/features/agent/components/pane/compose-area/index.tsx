@@ -12,7 +12,6 @@ import { isLibrarySaveDrag, saveDropIds } from "@/features/saves";
 import { openSettings } from "@/shared/lib/open-settings";
 import { ComposerEditor, type ComposerEditorHandle } from "../../composer";
 import { AttachFilesButton } from "../attach-files";
-import { ChatContext } from "../chat-context";
 import { ReferencedSavesPopover } from "../consulted-saves";
 import { FileAttachments } from "../file-attachments";
 import { ModelPicker } from "../model-picker";
@@ -34,7 +33,6 @@ interface ComposeAreaProps {
   referencesOpen: boolean;
   referenceSources: AssistantSource[];
   attachedIds: string[];
-  conversationSources: AssistantSource[];
   inputRef: RefObject<ComposerEditorHandle | null>;
   focus: () => void;
   attach: (sources: AssistantSource[]) => void;
@@ -56,7 +54,6 @@ export function ComposeArea({
   referencesOpen,
   referenceSources,
   attachedIds,
-  conversationSources,
   inputRef,
   focus,
   attach,
@@ -156,31 +153,28 @@ export function ComposeArea({
             running ? "Draft your next message" : "Ask about your Saves"
           }
           running={running}
+          empty={!state.draft}
           data-dragging={dropping || undefined}
           onSend={() => submit()}
           onStop={assistant.stop}
+          leading={
+            <AttachFilesButton
+              disabled={state.loading}
+              onAttach={(files) => {
+                assistant.attachFiles(files);
+                requestAnimationFrame(focus);
+              }}
+            />
+          }
           toolbar={
-            <>
-              <AttachFilesButton
-                disabled={state.loading}
-                onAttach={(files) => {
-                  assistant.attachFiles(files);
-                  requestAnimationFrame(focus);
-                }}
-              />
-              <ChatContext
-                attached={state.attachments}
-                previous={conversationSources}
-              />
-              <ModelPicker
-                provider={provider}
-                modelId={modelId}
-                options={modelOptions}
-                disabled={running}
-                onChange={patchModel}
-                onOptionsChange={patchModelOptions}
-              />
-            </>
+            <ModelPicker
+              provider={provider}
+              modelId={modelId}
+              options={modelOptions}
+              disabled={running}
+              onChange={patchModel}
+              onOptionsChange={patchModelOptions}
+            />
           }
           editor={
             <ComposerEditor

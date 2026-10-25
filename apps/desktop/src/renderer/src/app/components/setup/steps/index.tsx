@@ -74,9 +74,9 @@ const STEPS = {
   },
   assistant: {
     layout: "split",
-    title: same("Assistant"),
+    title: same("Fish"),
     description: same(
-      "Ask about your Library in plain words. Pond doesn't bundle a chat model, so connect one you already use.",
+      "Fish answer questions about your Library and tidy it on request. Pond doesn't bundle a chat model, so connect one you already use.",
     ),
     primary: same("Continue"),
     Aside: AssistantOptions,

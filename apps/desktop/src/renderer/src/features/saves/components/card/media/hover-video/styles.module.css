@@ -3,7 +3,7 @@
   display: block;
   margin: auto;
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-save);
 }
 
 .poster {
