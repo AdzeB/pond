@@ -85,7 +85,9 @@ cpSync(
   extensionSource,
 );
 
-// 4. Build just the extension target, then keep the .appex.
+// 4. Build the extension target, then keep the .appex. The deployment target is pinned
+// because the converter derives it from the installed Xcode (10.14 on Xcode 26, 12.0 on
+// 27), and an older SDK rejects newer APIs that compile fine locally.
 run("xcodebuild", [
   "-project",
   join(projectRoot, "Pond.xcodeproj"),
@@ -95,6 +97,7 @@ run("xcodebuild", [
   "Release",
   "-derivedDataPath",
   join(workDir, "build"),
+  "MACOSX_DEPLOYMENT_TARGET=14.0",
   "build",
 ]);
 

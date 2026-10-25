@@ -26,7 +26,12 @@ import os.log
 private let maxMessageBytes = 8 * 1024 * 1024
 private let maxResponseBytes = 1024 * 1024 - 4096
 
-private let log = Logger(subsystem: "app.pond.safari", category: "native-host")
+/**
+ * `Logger` needs macOS 11 and `os_log` does not, and the converter picks its own
+ * deployment target per Xcode version (10.14 on Xcode 26, 12.0 on 27). Using `os_log`
+ * keeps this file compiling on both without an `@available` dance.
+ */
+private let log = OSLog(subsystem: "app.pond.safari", category: "native-host");
 
 final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     func beginRequest(with context: NSExtensionContext) {
@@ -95,7 +100,7 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             }
         }
         guard connected == 0 else {
-            log.debug("connect failed: \(errno)")
+            os_log("connect failed: %{public}d", log: log, type: .debug, errno)
             return nil
         }
 
