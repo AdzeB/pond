@@ -36,16 +36,35 @@ open apps/extension/dist/safari/Pond/Pond.xcodeproj
 Run the `Pond` scheme, enable the extension in Safari's settings, then `pnpm dev` for
 the desktop side as usual.
 
+## Site access must be granted before anything runs
+
+Safari does not run a web extension's content scripts on any site until the user allows
+it, and `<all_urls>` in the manifest does not imply that permission. After enabling the
+extension, open **Settings → Extensions → Pond** and allow it for the sites you save
+from, or use **Always Allow on Every Website…**. Until then the background script loads
+and the popup opens, but no content script ever injects and hooks stay silent — which
+looks like a broken build rather than a permission prompt.
+
 ## What is verified and what is not
 
-Verified:
+Verified on macOS 27.0.1 with Safari 27.0.1 and Xcode 27.1:
 
-- The handler compiles and its framing round-trips correctly over a real Unix socket.
-- Every API the extension calls exists in Safari (checked against MDN
-  browser-compat-data): `tabs.*`, `cookies.getAll`, `alarms.*`,
-  `runtime.sendNativeMessage`, `scripting.executeScript`, `storage.session`.
+- The handler compiles into the Safari App Extension and its framing round-trips over a
+  real Unix socket, in both directions.
+- The converted Xcode project builds, `pluginkit` registers it as
+  `com.apple.Safari.web-extension`, and the bundle passes
+  `codesign --verify --deep --strict`.
+- SafariWebDriver creates sessions once **Allow remote automation** is on in Settings →
+  Developer, and the extension appears under Settings → Extensions with its description,
+  permissions, and shortcuts.
+- `world: "MAIN"` **works**. On Pinterest the page's own world ends up with
+  `window.__pondInterceptors` holding the `pinterest` interceptor, with `patchedFetch`
+  and `patchedXhr` both true. The converter's "unsupported key" warning for `world` is
+  about its own manifest reading, not about Safari refusing the key.
+- `runtime.sendNativeMessage` reaches Pond through the handler: `hello`, `library.info`,
+  and `session.pending` all return real `{"ok":true,...}` payloads from a running Pond.
 
-Not verified, and the reason Safari is still marked experimental:
+Not verified:
 
 - **Source connection.** `entrypoints/background/session.ts` reads cookies for nine
   Source domains. Safari's `cookies.getAll` and ITP behave differently from Chromium
