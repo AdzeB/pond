@@ -17,6 +17,11 @@ import type {
 } from "../../../shared/assistant";
 import { MESSAGE_BREAK } from "../../../shared/assistant-text";
 import { loadModel } from "./adapter";
+import {
+  APPLE_OUTPUT_RESERVE,
+  APPLE_SYSTEM,
+  compactTools,
+} from "./apple-profile";
 import type { AgentProviderId } from "./keys";
 import {
   type LocalRuntimeCoordinator,
@@ -349,8 +354,10 @@ export async function completeWithTools(
   input.abortController.signal.throwIfAborted();
   const languageModel = input.languageModel ?? (await loadModel(input));
   if (!languageModel) throw new Error("Choose a supported model in Settings.");
+  const compact = input.provider === "apple";
+  const specs = compact ? compactTools(input.tools) : input.tools;
   const tools = Object.fromEntries(
-    input.tools.map((spec) => [
+    specs.map((spec) => [
       spec.name,
       tool({
         description: spec.description,
@@ -375,7 +382,11 @@ export async function completeWithTools(
         input.files ?? [],
       )
     : toModelMessages(input.messages, input.images ?? [], input.files ?? []);
-  const instructions = [SYSTEM, input.context, evidence(sources, true)]
+  const instructions = (
+    compact
+      ? [APPLE_SYSTEM, input.context]
+      : [SYSTEM, input.context, evidence(sources, true)]
+  )
     .filter(Boolean)
     .join("\n\n");
   const controls = input.controls ?? {
@@ -383,14 +394,13 @@ export async function completeWithTools(
     contextTokens: DEFAULT_CONTEXT_TOKENS,
     reasoning: "provider-default",
   };
-  const outputReserve = Math.max(
-    2_048,
-    Math.min(8_192, Math.floor(controls.contextTokens / 5)),
-  );
+  const outputReserve = compact
+    ? APPLE_OUTPUT_RESERVE
+    : Math.max(2_048, Math.min(8_192, Math.floor(controls.contextTokens / 5)));
   const inputBudget = controls.contextTokens - outputReserve;
   const { encode } = await import("gpt-tokenizer");
   const toolSchemas = JSON.stringify(
-    input.tools.map((spec) => {
+    specs.map((spec) => {
       try {
         return {
           name: spec.name,

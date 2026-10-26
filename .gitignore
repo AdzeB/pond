@@ -72,6 +72,7 @@ apps/desktop/resources/replay/sw.js
 # compiled Chrome native-messaging host
 apps/desktop/resources/bin/pond-native-host
 apps/desktop/resources/bin/pond-native-host.exe
+apps/desktop/resources/bin/pond-apple-model
 
 # Safari App Extension compiled by apps/desktop/scripts/build-safari-extension.mjs
 apps/desktop/resources/SafariExtension/
