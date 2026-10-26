@@ -170,6 +170,19 @@ describe("deriveTypeLabel web pages", () => {
     expect(deriveTypeKind(cover, save)).toBe("link");
   });
 
+  it("labels a save with a stored article as Article, not its cover format", () => {
+    const save = makeSave({
+      id: "post-1",
+      source: "substack",
+      mediaType: "image",
+      files: [
+        file("image", "cover.jpeg", "image/jpeg"),
+        file("article", "article.html", "text/html"),
+      ],
+    });
+    expect(deriveTypeLabel(save.files[0] ?? null, save)).toBe("Article");
+  });
+
   it("still uses the file extension for non-web image saves", () => {
     const save = makeSave({
       id: "photo-1",
