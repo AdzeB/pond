@@ -14,6 +14,7 @@ import {
   IconBrandArena,
   IconBrandBehance,
   IconBrandCosmos,
+  IconBrandDribbble,
   IconBrandGithub,
   IconBrandSaveePlaceholder,
   IconBrandSubstack,
@@ -151,6 +152,7 @@ const LOGOS = {
   savee: IconBrandSaveePlaceholder,
   behance: IconBrandBehance,
   vimeo: IconBrandVimeo,
+  dribbble: IconBrandDribbble,
 } satisfies Record<ExternalSource, ComponentType<SVGProps<SVGSVGElement>>>;
 
 function Harvest({

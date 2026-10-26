@@ -97,6 +97,7 @@ function profileUrlFromHandle(source: string, handle: string): string | null {
   if (source === "savee") return `https://savee.com/${h}/`;
   if (source === "behance") return `https://www.behance.net/${h}`;
   if (source === "vimeo") return `https://vimeo.com/${h}`;
+  if (source === "dribbble") return `https://dribbble.com/${h}`;
   return null;
 }
 

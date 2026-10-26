@@ -63,6 +63,7 @@ const SYNC_WATCHDOG_MS = {
   savee: 20 * 60_000,
   behance: 30 * 60_000,
   vimeo: 30 * 60_000,
+  dribbble: 30 * 60_000,
   web: 20 * 60_000,
   local: 20 * 60_000,
 } satisfies Record<Source, number>;
@@ -83,6 +84,7 @@ const SYNCABLE_SOURCES: readonly Source[] = [
   "savee",
   "behance",
   "vimeo",
+  "dribbble",
 ];
 
 function isSyncableSource(source: Source): boolean {

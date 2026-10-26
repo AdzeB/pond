@@ -31,6 +31,8 @@ export function homeUrlForSource(source: Source): string {
       return "https://www.behance.net/";
     case "vimeo":
       return "https://vimeo.com/log_in";
+    case "dribbble":
+      return "https://dribbble.com/session/new";
     case "web":
       return "";
     case "local":

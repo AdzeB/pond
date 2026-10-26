@@ -32,6 +32,8 @@ export function cookieDomainsForSource(source: Source): string[] {
       return ["behance.net"];
     case "vimeo":
       return ["vimeo.com"];
+    case "dribbble":
+      return ["dribbble.com"];
     case "web":
     case "local":
       return [];

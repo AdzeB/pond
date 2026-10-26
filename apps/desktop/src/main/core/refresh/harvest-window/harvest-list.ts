@@ -13,6 +13,10 @@ import { arenaProfileUrl, buildArenaListExpression } from "../harvest/arena";
 import { addCollectionEntry } from "../harvest/collection-entries";
 import { buildCosmosListExpression, COSMOS_LIST_URL } from "../harvest/cosmos";
 import {
+  buildDribbbleListExpression,
+  dribbbleLikesUrl,
+} from "../harvest/dribbble/list";
+import {
   buildGithubStarsExpression,
   githubStarsUrl,
 } from "../harvest/github/list";
@@ -436,6 +440,8 @@ function listUrlForSource(
       return null;
     case "vimeo":
       return null;
+    case "dribbble":
+      return accountKey ? dribbbleLikesUrl(accountKey) : null;
     case "web":
       return null;
     case "local":
@@ -478,6 +484,8 @@ function buildListExpressionFor(
       return null;
     case "vimeo":
       return null;
+    case "dribbble":
+      return buildDribbbleListExpression(args);
     case "web":
       return null;
     case "local":

@@ -124,6 +124,11 @@ const IMPORT_SCOPE_OPTIONS = {
     mediaKinds: [],
     since: true,
   },
+  dribbble: {
+    ...EVERYTHING_ONLY,
+    mediaKinds: ["image", "video"],
+    since: true,
+  },
   web: EVERYTHING_ONLY,
   local: EVERYTHING_ONLY,
 } satisfies Record<Source, ImportScopeOptions>;

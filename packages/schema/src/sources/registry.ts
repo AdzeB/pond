@@ -191,6 +191,16 @@ export const SOURCE_DESCRIPTORS = [
     ],
     sync: { strategy: "cursor" },
   },
+  {
+    id: "dribbble",
+    label: "Dribbble",
+    hosts: ["dribbble.com", "drbl.in"],
+    /** `drbl.in` short links carry no shot id until they redirect, so they match the host but not a pattern. */
+    urlPatterns: [
+      /^https?:\/\/(?:www\.)?dribbble\.com\/shots\/(\d+)(?=[-/?#]|$)/i,
+    ],
+    sync: { strategy: "cursor" },
+  },
 ] as const satisfies readonly SourceDescriptor[];
 
 export type ExternalSource = (typeof SOURCE_DESCRIPTORS)[number]["id"];

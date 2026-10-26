@@ -4,6 +4,7 @@ import { UnsupportedError } from "./errors";
 import { ArenaBlockExtractor } from "./sources/arena";
 import { BehanceProjectExtractor } from "./sources/behance";
 import { CosmosTileExtractor } from "./sources/cosmos";
+import { DribbbleShotExtractor } from "./sources/dribbble";
 import { GitHubRepoExtractor } from "./sources/github";
 import { InstagramPostExtractor } from "./sources/instagram";
 import { PinterestPinExtractor } from "./sources/pinterest";
@@ -34,6 +35,7 @@ const EXTRACTORS = {
   savee: new SaveeItemExtractor(),
   behance: new BehanceProjectExtractor(),
   vimeo: new VimeoVideoExtractor(),
+  dribbble: new DribbbleShotExtractor(),
 } as const satisfies Record<ExternalSource, Extractor>;
 
 const WEB_EXTRACTOR: Extractor = {

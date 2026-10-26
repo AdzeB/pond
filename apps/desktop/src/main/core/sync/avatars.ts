@@ -88,6 +88,8 @@ function profilePageUrl(
       return `https://www.behance.net/${h}`;
     case "vimeo":
       return `https://vimeo.com/${h}`;
+    case "dribbble":
+      return `https://dribbble.com/${h}`;
     default:
       return null;
   }

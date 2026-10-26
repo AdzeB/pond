@@ -63,6 +63,7 @@ export const LIST_HARVEST_SOURCES = new Set<Source>([
   "savee",
   "behance",
   "vimeo",
+  "dribbble",
 ]);
 
 export async function syncListSource(
@@ -93,7 +94,8 @@ export async function syncListSource(
     source === "arena" ||
     source === "tiktok" ||
     source === "reddit" ||
-    source === "github"
+    source === "github" ||
+    source === "dribbble"
   ) {
     accountKey = (await resolveAccountHandle(account)) ?? undefined;
     if (!accountKey) {

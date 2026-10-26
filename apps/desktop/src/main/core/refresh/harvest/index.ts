@@ -5,6 +5,7 @@ import { sourceIdFromUrl } from "@pond/schema/sources";
 import * as arena from "./arena";
 import * as behance from "./behance/item";
 import * as cosmos from "./cosmos";
+import * as dribbble from "./dribbble/item";
 import type { HarvestAdaptCtx } from "./from-page";
 import * as github from "./github/item";
 import * as instagram from "./instagram";
@@ -101,6 +102,11 @@ const REGISTRY = {
     buildExpression: vimeo.buildExpression,
     adapt: vimeo.adapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("vimeo", url),
+  },
+  dribbble: {
+    buildExpression: dribbble.buildExpression,
+    adapt: dribbble.adapt,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("dribbble", url),
   },
   web: {
     buildExpression: () => {

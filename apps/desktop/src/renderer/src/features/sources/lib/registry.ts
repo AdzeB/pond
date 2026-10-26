@@ -2,6 +2,7 @@ import {
   IconBrandArena,
   IconBrandBehance,
   IconBrandCosmos,
+  IconBrandDribbble,
   IconBrandGithub,
   IconBrandSaveePlaceholder,
   IconBrandSubstack,
@@ -48,6 +49,7 @@ const SOURCE_LOGOS = {
   savee: null,
   behance: null,
   vimeo: null,
+  dribbble: null,
   web: null,
   local: null,
 } satisfies Record<Source, string | null>;
@@ -68,6 +70,7 @@ const SOURCE_ICONS = {
   savee: IconBrandSaveePlaceholder,
   behance: IconBrandBehance,
   vimeo: IconBrandVimeo,
+  dribbble: IconBrandDribbble,
   web: IconSourceWeb,
   local: IconSourceLocal,
 } satisfies Record<Source, IconComponent | null>;

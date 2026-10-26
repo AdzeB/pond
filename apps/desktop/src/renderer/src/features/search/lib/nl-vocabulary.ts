@@ -182,6 +182,7 @@ export const SOURCE_SYNONYMS = new Map<string, string>([
   ["savee", "savee.com"],
   ["behance", "behance.net"],
   ["vimeo", "vimeo.com"],
+  ["dribbble", "dribbble.com"],
   ["local", "local"],
 ]);
 

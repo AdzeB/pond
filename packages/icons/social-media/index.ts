@@ -3,6 +3,7 @@ export { IconApple } from "./custom/apple";
 export { IconBrandArena } from "./custom/arena";
 export { IconBrandBehance } from "./custom/behance";
 export { IconBrandCosmos } from "./custom/cosmos";
+export { IconBrandDribbble } from "./custom/dribbble";
 export { IconGithub } from "./custom/github";
 export { IconBrandGithub } from "./custom/github-tile";
 export { IconGoogle } from "./custom/google";

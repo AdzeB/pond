@@ -25,6 +25,7 @@ The **Sync** column shows how a source's saved list is walked (`cursor` /
 | Savee | `savee` | `savee.com`, `savee.it` | `^https?:\/\/(?:www\.)?savee\.(?:com|it)\/i\/([A-Za-z0-9_-]+)\/?(?:[?#]|$)` | `cursor` |
 | Behance | `behance` | `behance.net`, `be.net` | `^https?:\/\/(?:www\.)?(?:behance|be)\.net\/gallery\/(\d+)` | `cursor` |
 | Vimeo | `vimeo` | `vimeo.com` | `^https?:\/\/(?:(?:www|player)\.)?vimeo\.com\/(?:video\/|videos\/|channels\/[^/?#]+\/|groups\/[^/?#]+\/videos\/|(?:album|showcase)\/\d+\/video\/|[^/?#]+\/review\/)?(\d{5,12})(?:\/[0-9a-f]{10})?(?:[/?#]|$)` | `cursor` |
+| Dribbble | `dribbble` | `dribbble.com`, `drbl.in` | `^https?:\/\/(?:www\.)?dribbble\.com\/shots\/(\d+)(?=[-/?#]|$)` | `cursor` |
 
 `local` is a built-in pseudo-source for files imported directly into the
 library; it has no network extractor.

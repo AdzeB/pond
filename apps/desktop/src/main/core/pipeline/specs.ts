@@ -180,6 +180,10 @@ export const CAPTURE_EXPECTATIONS = {
     required: ["title"],
     recommended: ["author", "capture.publishedAt", "capture.media"],
   },
+  dribbble: {
+    required: ["mediaUrl"],
+    recommended: ["title", "author", "capture.metrics.likes"],
+  },
   web: {
     required: ["title"],
     recommended: ["description", "mediaUrl"],

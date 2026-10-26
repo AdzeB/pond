@@ -4,6 +4,7 @@ import { MatchPattern } from "wxt/utils/match-patterns";
 import { matches as arena } from "./arena/matches";
 import { matches as behance } from "./behance/matches";
 import { matches as cosmos } from "./cosmos/matches";
+import { matches as dribbble } from "./dribbble/matches";
 import { matches as github } from "./github/matches";
 import { matches as instagram } from "./instagram/matches";
 import { matches as pinterest } from "./pinterest/matches";
@@ -40,6 +41,7 @@ export const HOOK_SOURCES = {
   savee: { matches: savee, likes: [], item: "Item" },
   behance: { matches: behance, likes: [], item: "Project" },
   vimeo: { matches: vimeo, likes: [], item: "Video" },
+  dribbble: { matches: dribbble, likes: [], item: "Shot" },
 } as const satisfies Record<ExternalSource, HookSource>;
 
 export const HOOK_SOURCE_IDS: readonly ExternalSource[] = SOURCES.filter(
