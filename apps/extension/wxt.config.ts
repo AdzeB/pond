@@ -76,9 +76,16 @@ export default defineConfig({
             },
           },
         }
-      : STORE_BUILD
-        ? {}
-        : { key: EXTENSION_KEY }),
+      : browser === "safari"
+        ? /** `world: "MAIN"` hooks need Safari 18. */
+          {
+            browser_specific_settings: {
+              safari: { strict_min_version: "18.0" },
+            },
+          }
+        : STORE_BUILD
+          ? {}
+          : { key: EXTENSION_KEY }),
     description:
       "Save pages, screenshots, images, and your bookmarks from X, Instagram, Pinterest, and more into your local Pond library.",
     icons: ICONS,

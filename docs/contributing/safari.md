@@ -1,27 +1,45 @@
 # Safari extension
 
 Safari is the one engine that cannot use Pond's native-messaging setup as-is, so the
-Safari target differs from Chrome, Brave, Edge, and Firefox in three places.
+Safari target differs from Chrome, Brave, Edge, and Firefox in four places.
 
 ## Why Safari is different
 
 | | Chrome, Edge, Brave, Firefox | Safari |
 | --- | --- | --- |
-| Native messaging | `NativeMessagingHosts` manifest + `allowed_origins`, launches `pond-native-host` | `SafariWebExtensionHandler` compiled into a Safari App Extension |
+| Native messaging | `NativeMessagingHosts` manifest + `allowed_origins`, launches `pond-native-host` | `SafariWebExtensionHandler` compiled into a Safari App Extension inside Pond.app |
+| Socket | `~/Library/Application Support/Pond/native.sock` | `~/Library/Group Containers/7VFLYD5292.so.pond/native.sock` |
 | Context menus | `contextMenus` namespace | `menus` namespace |
 | MAIN-world scripts | `world: "MAIN"` since Chrome 111 | `world: "MAIN"` **only since Safari 18** |
 
 The wire protocol does not change. `apps/extension/safari/SafariWebExtensionHandler.swift`
 writes the same 4-byte little-endian length prefix and UTF-8 JSON that
-`native-host/pond-native-host.c` writes, to the same Unix socket that
-`apps/desktop/src/main/native/server.ts` listens on. **The desktop app needs no changes.**
+`native-host/pond-native-host.c` writes.
+
+## Why a second socket
+
+Safari refuses an extension that isn't sandboxed, and the sandbox blocks `connect()` to a
+Unix socket outside the extension's own container, even with a temporary file exception
+or `network.client`. The one shared place it may reach is an App Group container. Pond
+and the appex both carry the `7VFLYD5292.so.pond` group, and packaged builds of Pond
+listen there as well as on the Chrome socket. macOS requires the team ID prefix on a
+Developer ID app group, so a build signed by another team needs its own group ID in
+`SAFARI_APP_GROUP`, both entitlements files, and the Swift handler.
+
+Development builds of Pond run unsigned, have no group entitlement, and skip the Safari
+socket. Test Safari against a packaged build.
+
+## Bundle IDs
+
+The appex is `so.pond.desktop.Extension`. macOS only accepts an embedded appex whose
+bundle ID starts with the host app's, so it follows `appId` in `electron-builder.yml`.
 
 ## Version floor
 
 `entrypoints/hooks-main.content.ts` declares `world: "MAIN"`, which Safari added in 18.
-The Safari target therefore needs macOS 14.4 or later, even though Pond itself supports
-macOS 13. There is no fallback injector; a script-tag shim would break on strict-CSP
-sites such as X and TikTok, which are the Sources that matter most.
+The manifest sets `browser_specific_settings.safari.strict_min_version` to `18.0`, and
+Safari 18 runs on macOS 13.5 and later, so the appex targets 13.5. There is no fallback
+injector; a script-tag shim would break on strict-CSP sites such as X and TikTok.
 
 ## Building
 
@@ -29,46 +47,45 @@ You need Xcode, not only the Command Line Tools, because `safari-web-extension-c
 ships with the full IDE.
 
 ```bash
-pnpm --filter @pond/extension build:safari
-open apps/extension/dist/safari/Pond/Pond.xcodeproj
+pnpm --filter @pond/desktop build:safari-extension
+pnpm --filter @pond/desktop dist:mac:arm64
 ```
 
-Run the `Pond` scheme, enable the extension in Safari's settings, then `pnpm dev` for
-the desktop side as usual.
+The first command builds the Safari target with WXT, converts it, compiles the appex
+into `apps/desktop/resources/SafariExtension`, and signs it ad hoc with
+`apps/extension/safari/extension.entitlements`. The `dist:mac` scripts run it before
+electron-builder, which copies the appex to `Contents/PlugIns`. electron-builder never
+signs `Contents/PlugIns`, so `apps/desktop/scripts/sign-mac.cjs` re-signs the appex with
+the release identity before the app is sealed. Without Xcode the script skips locally
+and fails in CI.
+
+Quit any other Pond first, open the packaged app from `apps/desktop/dist`, then enable
+the extension in Safari's settings. An ad hoc build also needs **Allow unsigned
+extensions** in Safari's Developer settings.
 
 ## Site access must be granted before anything runs
 
-Safari does not run a web extension's content scripts on any site until the user allows
-it, and `<all_urls>` in the manifest does not imply that permission. After enabling the
+Safari does not run a web extension's content scripts on any site until you allow it,
+and `<all_urls>` in the manifest does not imply that permission. After enabling the
 extension, open **Settings → Extensions → Pond** and allow it for the sites you save
-from, or use **Always Allow on Every Website…**. Until then the background script loads
-and the popup opens, but no content script ever injects and hooks stay silent — which
-looks like a broken build rather than a permission prompt.
+from, or use **Always Allow on Every Website**. Until then the background script loads
+and the popup opens, but no content script injects and hooks stay silent.
 
 ## What is verified and what is not
 
 Verified on macOS 27.0.1 with Safari 27.0.1 and Xcode 27.1:
 
-- The handler compiles into the Safari App Extension and its framing round-trips over a
-  real Unix socket, in both directions.
-- The converted Xcode project builds, `pluginkit` registers it as
-  `com.apple.Safari.web-extension`, and the bundle passes
-  `codesign --verify --deep --strict`.
-- SafariWebDriver creates sessions once **Allow remote automation** is on in Settings →
-  Developer, and the extension appears under Settings → Extensions with its description,
-  permissions, and shortcuts.
-- `world: "MAIN"` **works**. On Pinterest the page's own world ends up with
-  `window.__pondInterceptors` holding the `pinterest` interceptor, with `patchedFetch`
-  and `patchedXhr` both true. The converter's "unsupported key" warning for `world` is
-  about its own manifest reading, not about Safari refusing the key.
-- `runtime.sendNativeMessage` reaches Pond through the handler: `hello`, `library.info`,
-  and `session.pending` all return real `{"ok":true,...}` payloads from a running Pond.
+- The handler's framing round-trips over a real Unix socket, in both directions.
+- A sandboxed, Developer ID-signed process in the app group connects to a socket that
+  an unsandboxed process in the same group binds in the group container. The same
+  process cannot connect to `~/Library/Application Support`.
+- `world: "MAIN"` works: on Pinterest the page's own world holds the `pinterest`
+  interceptor with fetch and XHR patched.
 
 Not verified:
 
-- **Source connection.** `entrypoints/background/session.ts` reads cookies for nine
-  Source domains. Safari's `cookies.getAll` and ITP behave differently from Chromium
-  around `HttpOnly` and session lifetime, and that has not been tested against a live
-  signed-in session.
+- **Source connection.** `entrypoints/background/session.ts` reads cookies for each
+  Source domain. Safari's `cookies.getAll` and ITP behave differently from Chromium
+  around `HttpOnly` and session lifetime.
 - **Full-page capture.** The stitching loop in `entrypoints/background/screenshot.ts`
-  depends on `captureVisibleTab` rate limits; Safari's differ and have not been measured.
+  depends on `captureVisibleTab` rate limits; Safari's differ.

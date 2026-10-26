@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { SAFARI_APP_GROUP } from "@pond/schema/native";
 
 const WINDOWS_SID = /^S-\d+(?:-\d+)+$/;
 export const WINDOWS_SID_LOOKUP_TIMEOUT_MS = 3_000;
@@ -70,6 +71,16 @@ const resolveWindowsUserSid = createWindowsUserSidResolver();
 export function windowsNativePipePath(sid: string): string {
   if (!WINDOWS_SID.test(sid)) throw new Error("Invalid Windows user SID.");
   return `\\\\.\\pipe\\pond-native-host-${sid}`;
+}
+
+/** Safari extension connect path; keep in lockstep with `SafariWebExtensionHandler.swift`. */
+export function safariSocketPath(home: string = homedir()): string {
+  return join(
+    home,
+    "Library/Group Containers",
+    SAFARI_APP_GROUP,
+    "native.sock",
+  );
 }
 
 /** Chrome native-host connect path; keep in lockstep with `pond-native-host.c`. */

@@ -20,16 +20,7 @@ import { savesRoutes } from "./saves";
 import { sessionImportHandler } from "./session-import";
 import { sessionPendingHandler } from "./session-pending";
 
-/**
- * Origins allowed to read the local API from a browser.
- *
- * Every first-party client (the CLI, the Raycast extension, MCP) is a Node process and
- * sends no `Origin` header, so the browser allow-list exists only for extensions and for
- * origins the user names explicitly. Any web page served from localhost used to qualify
- * too, which let an unrelated local dev server read authenticated responses; that is why
- * localhost is no longer implicit. Add an origin in Settings > Local API if a page really
- * needs one.
- */
+/** The CLI, Raycast and MCP send no `Origin`; browsers get extensions plus pages named in `prefs.api.allowedOrigins`. */
 export function isAllowedOrigin(
   origin: string | undefined,
   extraAllowed: readonly string[],

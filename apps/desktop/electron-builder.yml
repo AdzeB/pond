@@ -57,6 +57,8 @@ extraResources:
     to: .
     filter:
       - "**/*"
+      # The Safari appex belongs in Contents/PlugIns only; see mac.extraFiles.
+      - "!SafariExtension{,/**}"
   - from: ../../packages/icons/brand/tints
     to: app-icons
     filter:
@@ -108,12 +110,14 @@ mac:
   # the hardened runtime after notarization.
   entitlements: packaging/entitlements.mac.plist
   entitlementsInherit: packaging/entitlements.mac.inherit.plist
+  # Signs the Safari appex, which electron-builder skips, then the app as usual.
+  sign: scripts/sign-mac.cjs
   extraResources:
     - from: node_modules/ffmpeg-static/ffmpeg
       to: bin/ffmpeg
   # The Safari App Extension, compiled by scripts/build-safari-extension.mjs. Safari
   # cannot launch an external native-messaging host, so the handler ships inside the
-  # app bundle; macOS only loads a .appex from Contents/PlugIns, and signing covers it.
+  # app bundle; macOS only loads a .appex from Contents/PlugIns, and sign-mac.cjs signs it.
   extraFiles:
     - from: resources/SafariExtension/Pond Extension.appex
       to: PlugIns/Pond Extension.appex

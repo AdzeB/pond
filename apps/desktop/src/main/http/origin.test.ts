@@ -13,8 +13,6 @@ describe("local API origin allow-list", () => {
   });
 
   it("rejects any localhost page unless it is named explicitly", () => {
-    // An unrelated dev server on the user's machine must not be able to read
-    // authenticated responses just by being on localhost.
     for (const origin of [
       "http://localhost:3000",
       "http://127.0.0.1:8080",
@@ -31,7 +29,6 @@ describe("local API origin allow-list", () => {
   });
 
   it("supports a trailing wildcard in a named origin", () => {
-    // `allowedOrigins` entries ending in `*` match by prefix (server.ts).
     expect(
       isAllowedOrigin("https://app.example.com/", ["https://app.example.com*"]),
     ).toBe(true);

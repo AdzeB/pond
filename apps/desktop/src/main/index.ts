@@ -72,6 +72,7 @@ import {
 import { resolveLogFile } from "./logging";
 import { installAppMenu, setMenuRecents } from "./menu";
 import { writeNativeHostManifests } from "./native/manifests";
+import { safariSocketPath } from "./native/paths";
 import { startNativeServer, stopNativeServer } from "./native/server";
 import { flushOpenFiles, queueOpenFile } from "./open-files";
 import { libraryRoot, type PondPaths, resolvePaths } from "./paths";
@@ -149,6 +150,7 @@ if (wantsMcp) app.dock?.hide();
 const initialDeepLink = deepLinkArg(process.argv);
 
 let nativeServer: NetServer | null = null;
+let safariServer: NetServer | null = null;
 let stopMediaWarmer: (() => void) | null = null;
 
 let signalRendererReady: (() => void) | null = null;
@@ -364,6 +366,18 @@ async function postLaunchInit(): Promise<void> {
     nativeServer = await startNativeServer();
   } catch (err) {
     log.error("[pond] native host failed to start", err);
+  }
+  /** Only a signed build carries the App Group entitlement that opens the shared container. */
+  if (
+    process.platform === "darwin" &&
+    app.isPackaged &&
+    !process.env.POND_SANDBOX
+  ) {
+    try {
+      safariServer = await startNativeServer({ path: safariSocketPath() });
+    } catch (err) {
+      log.error("[pond] Safari native host failed to start", err);
+    }
   }
   /** Manifests must keep pointing at the real app, and registration never depends on the socket binding. */
   if (!process.env.POND_SANDBOX) {
@@ -587,8 +601,15 @@ app.on("before-quit", async (event) => {
   closePreviewWindows();
   closeCombineImagesWindow();
   try {
-    await withDeadline(stopNativeServer(nativeServer), SERVER_CLOSE_MS);
+    await withDeadline(
+      Promise.all([
+        stopNativeServer(nativeServer),
+        stopNativeServer(safariServer),
+      ]).then(() => undefined),
+      SERVER_CLOSE_MS,
+    );
     nativeServer = null;
+    safariServer = null;
   } catch (err) {
     log.warn("[pond] native host close failed", err);
   }

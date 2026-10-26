@@ -12,10 +12,10 @@
 //  applies in `utils/native.ts`, so adding validation here would duplicate the contract
 //  and risk the two drifting apart.
 //
-//  Transport is the Unix socket Pond already listens on
-//  (`src/main/native/server.ts`), which is why the desktop app needs no changes:
-//  the framing is the same 4-byte little-endian length prefix followed by UTF-8 JSON
-//  that `pond-native-host.c` writes.
+//  Transport is a Unix socket Pond listens on (`src/main/native/server.ts`), with the
+//  same 4-byte little-endian length prefix followed by UTF-8 JSON that
+//  `pond-native-host.c` writes. The sandbox only lets this extension connect inside
+//  the App Group container it shares with Pond, so Pond binds a second socket there.
 //
 
 import Foundation
@@ -31,7 +31,10 @@ private let maxResponseBytes = 1024 * 1024 - 4096
  * deployment target per Xcode version (10.14 on Xcode 26, 12.0 on 27). Using `os_log`
  * keeps this file compiling on both without an `@available` dance.
  */
-private let log = OSLog(subsystem: "app.pond.safari", category: "native-host");
+private let log = OSLog(subsystem: "so.pond.desktop.Extension", category: "native-host")
+
+/// Mirrors SAFARI_APP_GROUP in packages/schema/src/native.ts and Pond's entitlements.
+private let appGroup = "7VFLYD5292.so.pond"
 
 final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     func beginRequest(with context: NSExtensionContext) {
@@ -108,14 +111,10 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         return String(data: reply, encoding: .utf8)
     }
 
-    /// Same directory the Chrome host uses: `~/Library/Application Support/Pond`.
+    /// Mirrors `safariSocketPath` in `src/main/native/paths.ts`.
     private func socketPath() -> String? {
-        guard let support = FileManager.default.urls(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask
-        ).first else { return nil }
-        return support
-            .appendingPathComponent("Pond", isDirectory: true)
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: appGroup)?
             .appendingPathComponent("native.sock")
             .path
     }

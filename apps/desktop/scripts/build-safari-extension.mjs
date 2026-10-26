@@ -1,17 +1,14 @@
 #!/usr/bin/env node
 /**
- * Compiles the Safari App Extension into `resources/`, so electron-builder bundles it
- * inside Pond.app and the extension ships from the same binary as the desktop app.
+ * Compiles the Safari App Extension into `resources/SafariExtension`, which
+ * electron-builder copies to Contents/PlugIns. Safari cannot launch an external
+ * native-messaging host, so the handler has to ship inside Pond.app.
  *
- * Safari cannot launch an external native-messaging host, so the host has to live inside
- * the app bundle as a `SafariWebExtensionHandler`. That means the extension is part of
- * Pond, not a separate download, and the two can never drift apart.
+ * The appex is signed here ad hoc with its own entitlements; `sign-mac.cjs` re-signs it
+ * with the release identity, because electron-builder never signs Contents/PlugIns.
  *
- * Run before `electron-builder`: electron-builder signs whatever is in resources/ and,
- * on macOS, places a `.appex` under Contents/PlugIns.
- *
- * Skipped outside macOS, and skipped without Xcode, because
- * `safari-web-extension-converter` ships with the full IDE.
+ * Skipped outside macOS. Without Xcode it skips locally and fails in CI, so a release
+ * cannot ship without Safari.
  */
 
 import { spawnSync } from "node:child_process";
@@ -23,6 +20,13 @@ const desktopRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const extensionRoot = resolve(desktopRoot, "../extension");
 const workDir = resolve(desktopRoot, ".safari-build");
 const outDir = resolve(desktopRoot, "resources/SafariExtension");
+const entitlements = resolve(extensionRoot, "safari/extension.entitlements");
+
+/** The appex must carry the host app's bundle ID as its prefix; keep in lockstep with `appId`. */
+const APP_ID = "so.pond.desktop";
+
+/** Safari 18 is the first to honor `world: "MAIN"`, and it runs on macOS 13.5 and later. */
+const DEPLOYMENT_TARGET = "13.5";
 
 function skip(reason) {
   console.log(`[pond safari] skipped: ${reason}`);
@@ -41,19 +45,21 @@ function run(command, args, options = {}) {
   }
 }
 
-if (process.platform !== "darwin") skip("Safari is macOS and iOS only");
+if (process.platform !== "darwin") skip("Safari is macOS only");
 
 const xcode = spawnSync("xcrun", ["--find", "xcodebuild"], {
   encoding: "utf8",
 });
-if (xcode.error || xcode.status !== 0) skip("Xcode is not installed");
+if (xcode.error || xcode.status !== 0) {
+  if (process.env.CI) fail("Xcode is required to build the Safari extension");
+  skip("Xcode is not installed");
+}
 
-// 1. Extension bundle for Safari.
 run("pnpm", ["exec", "wxt", "build", "-b", "safari", "--mv3"], {
   cwd: extensionRoot,
 });
 
-// 2. Wrap it in a Safari App Extension project. The converter needs a clean directory.
+/** The converter needs a clean directory. */
 rmSync(workDir, { recursive: true, force: true });
 mkdirSync(workDir, { recursive: true });
 run("xcrun", [
@@ -64,7 +70,7 @@ run("xcrun", [
   "--app-name",
   "Pond",
   "--bundle-identifier",
-  "app.pond.Pond",
+  APP_ID,
   "--swift",
   "--macos-only",
   "--no-open",
@@ -79,39 +85,46 @@ const extensionSource = join(
 if (!existsSync(extensionSource))
   fail("the converter did not produce an extension target");
 
-// 3. Replace the converter's echo stub with the real handler that talks to Pond.
 cpSync(
   resolve(extensionRoot, "safari/SafariWebExtensionHandler.swift"),
   extensionSource,
 );
 
-// 4. Build the extension target, then keep the .appex. The deployment target is pinned
-// because the converter derives it from the installed Xcode (10.14 on Xcode 26, 12.0 on
-// 27), and an older SDK rejects newer APIs that compile fine locally.
+/**
+ * Only the extension target builds: the converter's wrapper app is discarded, and its ID
+ * (`so.pond.Pond`) would fail the embedded-binary prefix check. The deployment target is
+ * pinned because the converter derives it from the installed Xcode.
+ */
 run("xcodebuild", [
   "-project",
   join(projectRoot, "Pond.xcodeproj"),
-  "-scheme",
-  "Pond",
+  "-target",
+  "Pond Extension",
   "-configuration",
   "Release",
-  "-derivedDataPath",
-  join(workDir, "build"),
-  "MACOSX_DEPLOYMENT_TARGET=14.0",
+  `SYMROOT=${join(workDir, "build")}`,
+  `MACOSX_DEPLOYMENT_TARGET=${DEPLOYMENT_TARGET}`,
+  "CODE_SIGNING_ALLOWED=NO",
   "build",
 ]);
 
-const builtAppex = join(
-  workDir,
-  "build/Build/Products/Release/Pond.app/Contents/PlugIns/Pond Extension.appex",
-);
+const builtAppex = join(workDir, "build/Release/Pond Extension.appex");
 if (!existsSync(builtAppex)) fail("the .appex was not produced");
 
 rmSync(outDir, { recursive: true, force: true });
-mkdirSync(dirname(outDir), { recursive: true });
-cpSync(builtAppex, join(outDir, "Pond Extension.appex"), { recursive: true });
+mkdirSync(outDir, { recursive: true });
+const appex = join(outDir, "Pond Extension.appex");
+cpSync(builtAppex, appex, { recursive: true });
 
-console.log(`[pond safari] extension bundled at ${outDir}`);
-console.log(
-  "[pond safari] electron-builder places it under Contents/PlugIns and signs it.",
-);
+run("codesign", [
+  "--force",
+  "--sign",
+  "-",
+  "--options",
+  "runtime",
+  "--entitlements",
+  entitlements,
+  appex,
+]);
+
+console.log(`[pond safari] extension bundled at ${appex}`);
