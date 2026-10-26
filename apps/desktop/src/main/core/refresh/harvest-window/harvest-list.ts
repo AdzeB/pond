@@ -4,6 +4,7 @@ import {
   type Source,
 } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
+import { LIST_KINDS } from "@pond/schema/list-kinds";
 import type { ImportCollectionOption } from "@shared/import-scope";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -94,8 +95,18 @@ const HarvestStatsSchema = z
 
 type ListHarvestProgress = NonNullable<z.infer<typeof HarvestStatsSchema>>;
 
+const OptionalListKinds = z
+  .array(z.enum(LIST_KINDS))
+  .optional()
+  .catch(undefined);
+
 const PartialEntrySchema = z
-  .object({ sourceId: z.string(), url: z.string(), savedAt: OptionalText })
+  .object({
+    sourceId: z.string(),
+    url: z.string(),
+    savedAt: OptionalText,
+    listKinds: OptionalListKinds,
+  })
   .nullable()
   .catch(null);
 
@@ -119,6 +130,7 @@ const ListEntrySchema = z
       .optional()
       .catch(undefined),
     mediaType: z.enum(MEDIA_TYPES).optional().catch(undefined),
+    listKinds: OptionalListKinds,
   })
   .nullable()
   .catch(null);

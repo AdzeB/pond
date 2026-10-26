@@ -25,7 +25,12 @@ import { resolveAccountHandle } from "./account-key";
 import { getAccountSync, partitionForAccount } from "./accounts";
 import { fileIntoFolders } from "./collection-folders";
 import { NO_COLLECTION_PASS, walkEveryCollection } from "./every-collection";
-import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
+import {
+  defaultListKind,
+  mergeEntryListKinds,
+  stampListKind,
+  unionById,
+} from "./harvest-union";
 import {
   COMBINED_LISTS,
   collectionCheckDue,
@@ -206,7 +211,7 @@ export async function syncListSource(
   let combined =
     dualHarvest && !plan.collections
       ? harvest.entries
-      : stampListKind(harvest.entries, "saved");
+      : defaultListKind(harvest.entries, "saved");
   if (dualHarvest && plan.collections && plan.primary) {
     const rest = await harvestSourceList(source, listArgs, { partition });
     if (rest.ok) {
