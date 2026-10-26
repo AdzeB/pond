@@ -78,6 +78,13 @@ apps/desktop/resources/bin/pond-apple-model
 apps/desktop/resources/SafariExtension/
 apps/desktop/.safari-build/
 
+# Share extension compiled by apps/desktop/scripts/build-share-extension.mjs
+apps/desktop/resources/ShareExtension/
+apps/desktop/.share-build/
+
+# Alfred workflow staging from apps/alfred/scripts/pack.mjs
+apps/alfred/.pack/
+
 # generated icon previews
 apps/desktop/src/renderer/src/generated/
 

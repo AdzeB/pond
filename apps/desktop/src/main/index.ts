@@ -54,6 +54,7 @@ import {
   handleSecondInstance,
   shouldOpenInitialWindow,
 } from "./deep-link";
+import { markSaveLinksReady } from "./deep-link-save";
 import { registerIpc } from "./ipc";
 import { waitForLibraryLocationChanges } from "./ipc/queries/library-locations";
 import { ensureIngestToken } from "./keychain";
@@ -312,6 +313,8 @@ app.whenReady().then(async () => {
   }
   if (dbResult.status === "rejected") {
     log.error("[pond] db init failed", dbResult.reason);
+  } else {
+    markSaveLinksReady();
   }
 
   app.on("activate", () => void handleActivate());

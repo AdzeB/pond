@@ -8,6 +8,7 @@ import {
 import { createFishHandoff } from "../fish-handoff";
 import { enqueue, libraryInfo, sessionImport, sessionPending } from "../ops";
 import type { NativePorts } from "./rpc";
+import { importSharedFiles } from "./share-inbox";
 
 const fishHandoff = createFishHandoff({
   fishExists: async (id) => {
@@ -70,6 +71,7 @@ export function liveNativePorts(): NativePorts {
     },
     sessionPending,
     sessionImport,
+    importSharedFiles: (paths) => importSharedFiles(paths),
     appVersion: () => app.getVersion(),
   };
 }
