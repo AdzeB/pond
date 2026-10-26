@@ -13,36 +13,70 @@ import type { OkResult } from "@shared/query-contracts-shared";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
 import { syncMonitor } from "@/features/sources/state/sync-monitor";
 
-const SOURCE_LIST_KIND_LABELS = {
-  instagram: { saved: "Saved Posts", liked: "Liked Posts" },
-  youtube: { saved: "Saved Videos", liked: "Liked Videos" },
-  tiktok: { saved: "Favorites", liked: "Liked Videos" },
-  reddit: { saved: "Saved Posts", liked: "Upvoted Posts" },
-  twitter: { saved: "Bookmarks", liked: "Likes" },
-} satisfies Partial<Record<Source, Record<ListKind, string>>>;
+type ListKindCopy = Partial<Record<ListKind, string>>;
 
-const SOURCE_LIST_KIND_DESCRIPTIONS = {
-  instagram: {
-    saved: "Posts you've saved on Instagram.",
-    liked: "Posts you've liked on Instagram.",
-  },
-  youtube: {
-    saved: "Videos you've saved on YouTube.",
-    liked: "Videos you've liked on YouTube.",
-  },
-  tiktok: {
-    saved: "Videos you've added to Favorites on TikTok.",
-    liked: "Videos you've liked on TikTok.",
-  },
-  reddit: {
-    saved: "Posts you've saved on Reddit.",
-    liked: "Posts you've upvoted on Reddit.",
-  },
-  twitter: {
-    saved: "Posts you've bookmarked on Twitter.",
-    liked: "Posts you've liked on Twitter.",
-  },
-} satisfies Partial<Record<Source, Record<ListKind, string>>>;
+const SOURCE_LIST_KIND_LABELS = new Map<Source, ListKindCopy>([
+  ["instagram", { saved: "Saved Posts", liked: "Liked Posts" }],
+  ["youtube", { saved: "Saved Videos", liked: "Liked Videos" }],
+  ["tiktok", { saved: "Favorites", liked: "Liked Videos" }],
+  ["reddit", { saved: "Saved Posts", liked: "Upvoted Posts" }],
+  ["twitter", { saved: "Bookmarks", liked: "Likes" }],
+  [
+    "substack",
+    {
+      saved: "Saved Posts",
+      liked: "Liked Posts",
+      subscription: "Subscriptions",
+    },
+  ],
+]);
+
+const SOURCE_LIST_KIND_DESCRIPTIONS = new Map<Source, ListKindCopy>([
+  [
+    "instagram",
+    {
+      saved: "Posts you've saved on Instagram.",
+      liked: "Posts you've liked on Instagram.",
+    },
+  ],
+  [
+    "youtube",
+    {
+      saved: "Videos you've saved on YouTube.",
+      liked: "Videos you've liked on YouTube.",
+    },
+  ],
+  [
+    "tiktok",
+    {
+      saved: "Videos you've added to Favorites on TikTok.",
+      liked: "Videos you've liked on TikTok.",
+    },
+  ],
+  [
+    "reddit",
+    {
+      saved: "Posts you've saved on Reddit.",
+      liked: "Posts you've upvoted on Reddit.",
+    },
+  ],
+  [
+    "twitter",
+    {
+      saved: "Posts you've bookmarked on Twitter.",
+      liked: "Posts you've liked on Twitter.",
+    },
+  ],
+  [
+    "substack",
+    {
+      saved: "Posts you've saved on Substack.",
+      liked: "Posts you've liked on Substack.",
+      subscription:
+        "New posts from publications you subscribe to, from the week you connect onward.",
+    },
+  ],
+]);
 
 const MEDIA_KIND_LABELS = {
   image: "Images",
@@ -85,32 +119,14 @@ const COLLECTION_NOUNS = {
 } satisfies Record<ImportCollectionKind, CollectionNouns>;
 
 export function listKindLabel(source: Source, kind: ListKind): string {
-  switch (source) {
-    case "instagram":
-    case "youtube":
-    case "tiktok":
-    case "reddit":
-    case "twitter":
-      return SOURCE_LIST_KIND_LABELS[source][kind];
-    default:
-      return LIST_KIND_LABELS[kind];
-  }
+  return SOURCE_LIST_KIND_LABELS.get(source)?.[kind] ?? LIST_KIND_LABELS[kind];
 }
 
 export function listKindDescription(
   source: Source,
   kind: ListKind,
 ): string | null {
-  switch (source) {
-    case "instagram":
-    case "youtube":
-    case "tiktok":
-    case "reddit":
-    case "twitter":
-      return SOURCE_LIST_KIND_DESCRIPTIONS[source][kind];
-    default:
-      return null;
-  }
+  return SOURCE_LIST_KIND_DESCRIPTIONS.get(source)?.[kind] ?? null;
 }
 
 export function mediaKindLabel(kind: ImportMediaKind): string {
@@ -144,6 +160,7 @@ export function hasImportFilters(source: Source): boolean {
 
 export type SincePreset =
   | "any"
+  | "today"
   | "month"
   | "quarter"
   | "half"
@@ -155,9 +172,9 @@ const SINCE_PRESET_MONTHS = {
   quarter: 3,
   half: 6,
   year: 12,
-} satisfies Record<Exclude<SincePreset, "any" | "custom">, number>;
+} satisfies Record<Exclude<SincePreset, "any" | "today" | "custom">, number>;
 
-export const SINCE_PRESETS = [
+const SINCE_PRESETS = [
   { value: "any", label: "Any Time" },
   { value: "month", label: "Past Month" },
   { value: "quarter", label: "Past 3 Months" },
@@ -166,9 +183,41 @@ export const SINCE_PRESETS = [
   { value: "custom", label: "Custom Date" },
 ] as const satisfies ReadonlyArray<{ value: SincePreset; label: string }>;
 
+const SAVED_SINCE_PRESETS = [
+  { value: "any", label: "Any Time" },
+  { value: "today", label: "From Today" },
+  ...SINCE_PRESETS.slice(1),
+] as const satisfies ReadonlyArray<{ value: SincePreset; label: string }>;
+
+interface SinceCopy {
+  title: string;
+  description: string;
+  presets: ReadonlyArray<{ value: SincePreset; label: string }>;
+  /** Shown beside the title when some items have no date to compare. */
+  info?: string;
+}
+
+/** Sources without publish dates compare the day you saved an item, and can start from today. */
+export function sinceCopy(source: Source): SinceCopy {
+  if (importScopeOptions(source).sinceDate === "saved") {
+    return {
+      title: "Saved Since",
+      description: "Skips items you saved before this date.",
+      presets: SAVED_SINCE_PRESETS,
+    };
+  }
+  return {
+    title: "Posted Since",
+    description: "Skips older posts by publish date.",
+    presets: SINCE_PRESETS,
+    info: "Posts without a publish date are always imported.",
+  };
+}
+
 /** The local `YYYY-MM-DD` a preset starts from; empty for any time or a custom date. */
 export function sinceForPreset(preset: SincePreset, now = new Date()): string {
   if (preset === "any" || preset === "custom") return "";
+  if (preset === "today") return localDay(now);
   const start = new Date(
     now.getFullYear(),
     now.getMonth() - SINCE_PRESET_MONTHS[preset],

@@ -148,6 +148,14 @@ export const CAPTURE_EXPECTATIONS = {
       "capture.author.avatarUrl",
     ],
   },
+  github: {
+    required: ["title"],
+    recommended: ["description", "author", "capture.author.avatarUrl"],
+  },
+  substack: {
+    required: ["title"],
+    recommended: ["description", "author", "capture.publishedAt"],
+  },
   web: {
     required: ["title"],
     recommended: ["description", "mediaUrl"],

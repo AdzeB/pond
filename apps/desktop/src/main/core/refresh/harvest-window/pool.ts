@@ -20,6 +20,8 @@ const PER_SOURCE_CAP = {
   arena: 2,
   reddit: 2,
   threads: 2,
+  github: 2,
+  substack: 2,
   web: 2,
   local: 0,
 } satisfies Record<Source, number>;
@@ -49,6 +51,8 @@ const busyBySource = {
   arena: 0,
   reddit: 0,
   threads: 0,
+  github: 0,
+  substack: 0,
   web: 0,
   local: 0,
 } satisfies Record<Source, number>;

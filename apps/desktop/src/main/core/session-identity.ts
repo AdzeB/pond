@@ -37,6 +37,10 @@ export function identityKeyFromCookies(
     }
     case "tiktok":
       return get("uid_tt");
+    case "github": {
+      const login = get("dotcom_user");
+      return login ? decodeURIComponent(login).toLowerCase() : null;
+    }
     default:
       return null;
   }

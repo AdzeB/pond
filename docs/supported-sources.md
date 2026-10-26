@@ -19,6 +19,8 @@ The **Sync** column shows how a source's saved list is walked (`cursor` /
 | YouTube | `youtube` | `youtube.com`, `youtu.be` | `^https?:\/\/(?:www\.|m\.)?youtube\.com\/watch\?[^#]*v=([A-Za-z0-9_-]+)`<br>`^https?:\/\/(?:www\.|m\.)?youtube\.com\/shorts\/([A-Za-z0-9_-]+)`<br>`^https?:\/\/youtu\.be\/([A-Za-z0-9_-]+)` | `scroll` |
 | Reddit | `reddit` | `reddit.com`, `redd.it` | `^https?:\/\/(?:[a-z]+\.)?reddit\.com\/r\/[^/]+\/comments\/([a-z0-9]+)`<br>`^https?:\/\/(?:[a-z]+\.)?reddit\.com\/comments\/([a-z0-9]+)`<br>`^https?:\/\/redd\.it\/([a-z0-9]+)` | `cursor` |
 | Threads | `threads` | `threads.net`, `threads.com` | `^https?:\/\/(?:www\.)?threads\.(?:net|com)\/@[^/]+\/post\/([A-Za-z0-9_-]+)`<br>`^https?:\/\/(?:www\.)?threads\.(?:net|com)\/t\/([A-Za-z0-9_-]+)` | `scroll` |
+| GitHub | `github` | `github.com` | `^https?:\/\/(?:www\.)?github\.com\/(?!(?:about|apps|codespaces|collections|contact|customer-stories|dashboard|enterprise|events|explore|features|issues|login|logout|marketplace|new|notifications|orgs|organizations|pricing|pulls|readme|search|security|settings|signup|site|sponsors|stars|team|topics|trending|watching)\/)([A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9._-]+?)(?:\.git)?\/?(?:[?#].*)?$` | `cursor` |
+| Substack | `substack` | `substack.com` | `^https?:\/\/((?!www\.|open\.)[a-z0-9-]+\.substack\.com\/p\/[A-Za-z0-9_-]+)`<br>`^https?:\/\/(?:www\.)?substack\.com\/(?:@[^/]+|home\/post)\/(p-\d+)` | `cursor` |
 
 `local` is a built-in pseudo-source for files imported directly into the
 library; it has no network extractor.

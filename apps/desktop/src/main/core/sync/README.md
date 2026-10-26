@@ -65,6 +65,17 @@ filtered afterward.
   `listSourceCollections` and `harvestSourceCollections`
   (`harvest-window/harvest-list.ts`) load and walk them.
 - Cosmos, Are.na, and Threads import every list.
+- GitHub reads your public stars from the API. Its `since` limit compares the
+  day you starred a repo (`sinceDate: "saved"`), so From Today imports only new
+  stars and the walk stops at the first older one. A walk that reads every star
+  (`complete`) takes the Saved label off repos you unstarred; the saves stay.
+- Substack reads saved and liked posts in one walk of the signed-in reader API.
+  Subscriptions are a third list kind (`subscription`): at most every six hours
+  the run reads each subscribed publication's RSS feed and imports posts
+  published since `lastSubscriptionCheckAt`, or the last week on the first
+  pass, capped at 50 a run. Posts key by `<subdomain>.substack.com/p/<slug>`;
+  a reader link that only carries an id keys by `p-<id>`, and sync keeps that
+  id once it's known.
 
 A save harvested from chosen collections is filed into Folders named
 `<Source>/<collection>` (`collection-folders.ts`). Harvesters tag each entry

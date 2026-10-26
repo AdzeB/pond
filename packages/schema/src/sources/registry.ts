@@ -10,6 +10,16 @@ export const DEFAULT_RATE_PROFILE: RateProfile = {
   maxPerDay: 1500,
 };
 
+/** First-level paths GitHub keeps for itself, so `github.com/settings/profile` never reads as a repo. */
+const GITHUB_RESERVED =
+  "about|apps|codespaces|collections|contact|customer-stories|dashboard|enterprise|events|explore|features|issues|login|logout|marketplace|new|notifications|orgs|organizations|pricing|pulls|readme|search|security|settings|signup|site|sponsors|stars|team|topics|trending|watching";
+
+/** Matches a repo root only; deeper links like issues or files stay plain web saves. */
+export const GITHUB_REPO_PATTERN = new RegExp(
+  `^https?://(?:www\\.)?github\\.com/(?!(?:${GITHUB_RESERVED})/)([A-Za-z0-9](?:[A-Za-z0-9-]{0,38})/[A-Za-z0-9._-]+?)(?:\\.git)?/?(?:[?#].*)?$`,
+  "i",
+);
+
 const NO_SYNC: SourceSyncConfig = {
   strategy: "none",
   rate: DEFAULT_RATE_PROFILE,
@@ -119,6 +129,28 @@ export const SOURCE_DESCRIPTORS = [
       /^https?:\/\/(?:www\.)?threads\.(?:net|com)\/t\/([A-Za-z0-9_-]+)/i,
     ],
     sync: { strategy: "scroll" },
+  },
+  {
+    id: "github",
+    label: "GitHub",
+    hosts: ["github.com"],
+    urlPatterns: [GITHUB_REPO_PATTERN],
+    /** Unauthenticated API calls share 60 an hour per IP, so stars sync slower than the default. */
+    sync: {
+      strategy: "cursor",
+      rate: { minDelayMs: 2000, maxPerWindow: 30, maxPerHour: 120 },
+    },
+  },
+  {
+    id: "substack",
+    label: "Substack",
+    hosts: ["substack.com"],
+    /** A post on its publication's subdomain keys by that address; reader links only carry the numeric id. */
+    urlPatterns: [
+      /^https?:\/\/((?!www\.|open\.)[a-z0-9-]+\.substack\.com\/p\/[A-Za-z0-9_-]+)/i,
+      /^https?:\/\/(?:www\.)?substack\.com\/(?:@[^/]+|home\/post)\/(p-\d+)/i,
+    ],
+    sync: { strategy: "cursor" },
   },
 ] as const satisfies readonly SourceDescriptor[];
 

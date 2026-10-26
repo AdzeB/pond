@@ -23,6 +23,8 @@ const SAVES = {
   youtube: "Save videos when you add them to a playlist.",
   reddit: "Save posts when you save them.",
   threads: "Save posts when you save them.",
+  github: "Save repositories when you star them.",
+  substack: "Save posts when you save them.",
 } satisfies Record<ExternalSource, string>;
 
 const LIKE_SOURCES: ReadonlySet<ExternalSource> = new Set(
