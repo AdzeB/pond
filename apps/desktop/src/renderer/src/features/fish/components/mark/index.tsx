@@ -34,10 +34,14 @@ function faceOf(activity: FishPresence, mood: FishMood): FishFace {
   return "scan";
 }
 
+/** Sibling `useId`s differ by one character, so the final mix spreads them across the whole range. */
 function hash(text: string): number {
-  let value = 0;
-  for (const char of text) value = (value * 31 + char.charCodeAt(0)) >>> 0;
-  return value;
+  let value = 0x811c9dc5;
+  for (const char of text)
+    value = Math.imul(value ^ char.charCodeAt(0), 0x01000193);
+  value = Math.imul(value ^ (value >>> 16), 0x85ebca6b);
+  value = Math.imul(value ^ (value >>> 13), 0xc2b2ae35);
+  return (value ^ (value >>> 16)) >>> 0;
 }
 
 interface FishMarkProps extends React.ComponentPropsWithoutRef<"span"> {
