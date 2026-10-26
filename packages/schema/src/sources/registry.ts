@@ -152,6 +152,17 @@ export const SOURCE_DESCRIPTORS = [
     ],
     sync: { strategy: "cursor" },
   },
+  {
+    id: "tumblr",
+    label: "Tumblr",
+    hosts: ["tumblr.com"],
+    /** Post ids are global, so the blog in the path only matters when fetching the post. */
+    urlPatterns: [
+      /^https?:\/\/(?:www\.)?tumblr\.com\/(?:blog\/view\/)?[a-z0-9-]+\/(\d{6,20})(?:[/?#]|$)/i,
+      /^https?:\/\/(?!www\.)[a-z0-9-]+\.tumblr\.com\/(?:post|image)\/(\d{6,20})(?:[/?#]|$)/i,
+    ],
+    sync: { strategy: "cursor" },
+  },
 ] as const satisfies readonly SourceDescriptor[];
 
 export type ExternalSource = (typeof SOURCE_DESCRIPTORS)[number]["id"];

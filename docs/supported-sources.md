@@ -21,6 +21,7 @@ The **Sync** column shows how a source's saved list is walked (`cursor` /
 | Threads | `threads` | `threads.net`, `threads.com` | `^https?:\/\/(?:www\.)?threads\.(?:net|com)\/@[^/]+\/post\/([A-Za-z0-9_-]+)`<br>`^https?:\/\/(?:www\.)?threads\.(?:net|com)\/t\/([A-Za-z0-9_-]+)` | `scroll` |
 | GitHub | `github` | `github.com` | `^https?:\/\/(?:www\.)?github\.com\/(?!(?:about|apps|codespaces|collections|contact|customer-stories|dashboard|enterprise|events|explore|features|issues|login|logout|marketplace|new|notifications|orgs|organizations|pricing|pulls|readme|search|security|settings|signup|site|sponsors|stars|team|topics|trending|watching)\/)([A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9._-]+?)(?:\.git)?\/?(?:[?#].*)?$` | `cursor` |
 | Substack | `substack` | `substack.com` | `^https?:\/\/((?!www\.|open\.)[a-z0-9-]+\.substack\.com\/p\/[A-Za-z0-9_-]+)`<br>`^https?:\/\/(?:www\.)?substack\.com\/(?:@[^/]+|home\/post)\/(p-\d+)` | `cursor` |
+| Tumblr | `tumblr` | `tumblr.com` | `^https?:\/\/(?:www\.)?tumblr\.com\/(?:blog\/view\/)?[a-z0-9-]+\/(\d{6,20})(?:[/?#]|$)`<br>`^https?:\/\/(?!www\.)[a-z0-9-]+\.tumblr\.com\/(?:post|image)\/(\d{6,20})(?:[/?#]|$)` | `cursor` |
 
 `local` is a built-in pseudo-source for files imported directly into the
 library; it has no network extractor.

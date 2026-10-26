@@ -25,6 +25,7 @@ describe("source create menu", () => {
       "Threads",
       "GitHub",
       "Substack",
+      "Tumblr",
       "New Watch",
       "Twitter",
       "Instagram",

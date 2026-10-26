@@ -10,6 +10,7 @@ import { RedditPostExtractor } from "./sources/reddit";
 import { SubstackPostExtractor } from "./sources/substack";
 import { ThreadsPostExtractor } from "./sources/threads";
 import { TikTokVideoExtractor } from "./sources/tiktok";
+import { TumblrPostExtractor } from "./sources/tumblr";
 import { TwitterTweetExtractor } from "./sources/twitter";
 import { YouTubeWatchExtractor } from "./sources/youtube";
 import type { ExtractInput, Extractor } from "./types";
@@ -26,6 +27,7 @@ const EXTRACTORS = {
   threads: new ThreadsPostExtractor(),
   github: new GitHubRepoExtractor(),
   substack: new SubstackPostExtractor(),
+  tumblr: new TumblrPostExtractor(),
 } as const satisfies Record<ExternalSource, Extractor>;
 
 const WEB_EXTRACTOR: Extractor = {

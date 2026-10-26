@@ -12,6 +12,7 @@ import * as reddit from "./reddit";
 import * as substack from "./substack/item";
 import * as threads from "./threads";
 import * as tiktok from "./tiktok";
+import * as tumblr from "./tumblr/item";
 import * as twitter from "./twitter";
 import * as youtube from "./youtube";
 
@@ -77,6 +78,11 @@ const REGISTRY = {
     buildExpression: substack.buildExpression,
     adapt: substack.adapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("substack", url),
+  },
+  tumblr: {
+    buildExpression: tumblr.buildExpression,
+    adapt: tumblr.adapt,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("tumblr", url),
   },
   web: {
     buildExpression: () => {

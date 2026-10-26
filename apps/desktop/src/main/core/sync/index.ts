@@ -59,6 +59,7 @@ const SYNC_WATCHDOG_MS = {
   threads: 20 * 60_000,
   github: 20 * 60_000,
   substack: 20 * 60_000,
+  tumblr: 20 * 60_000,
   web: 20 * 60_000,
   local: 20 * 60_000,
 } satisfies Record<Source, number>;
@@ -75,6 +76,7 @@ const SYNCABLE_SOURCES: readonly Source[] = [
   "threads",
   "github",
   "substack",
+  "tumblr",
 ];
 
 function isSyncableSource(source: Source): boolean {

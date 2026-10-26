@@ -97,6 +97,7 @@ const IMPORT_SCOPE_OPTIONS = {
     mediaKinds: [],
     since: true,
   },
+  tumblr: { ...EVERYTHING_ONLY, mediaKinds: ALL_MEDIA, since: true },
   web: EVERYTHING_ONLY,
   local: EVERYTHING_ONLY,
 } satisfies Record<Source, ImportScopeOptions>;

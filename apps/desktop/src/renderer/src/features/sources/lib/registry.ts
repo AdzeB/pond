@@ -4,6 +4,7 @@ import {
   IconBrandGithub,
   IconBrandSubstack,
   IconBrandThreads,
+  IconBrandTumblr,
   IconInstagram,
   IconPinterest,
   IconReddit,
@@ -40,6 +41,7 @@ const SOURCE_LOGOS = {
   threads: null,
   github: null,
   substack: null,
+  tumblr: null,
   web: null,
   local: null,
 } satisfies Record<Source, string | null>;
@@ -56,6 +58,7 @@ const SOURCE_ICONS = {
   threads: IconBrandThreads,
   github: IconBrandGithub,
   substack: IconBrandSubstack,
+  tumblr: IconBrandTumblr,
   web: IconSourceWeb,
   local: IconSourceLocal,
 } satisfies Record<Source, IconComponent | null>;

@@ -164,6 +164,10 @@ export const CAPTURE_EXPECTATIONS = {
     required: ["title"],
     recommended: ["description", "author", "capture.publishedAt"],
   },
+  tumblr: {
+    required: ["author"],
+    recommended: ["description", "mediaUrl", "capture.publishedAt"],
+  },
   web: {
     required: ["title"],
     recommended: ["description", "mediaUrl"],

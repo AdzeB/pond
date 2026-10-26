@@ -93,6 +93,7 @@ function profileUrlFromHandle(source: string, handle: string): string | null {
   if (source === "pinterest") return `https://www.pinterest.com/${h}/`;
   if (source === "arena") return `https://www.are.na/${h}`;
   if (source === "youtube") return `https://www.youtube.com/@${h}`;
+  if (source === "tumblr") return `https://www.tumblr.com/${h}`;
   return null;
 }
 

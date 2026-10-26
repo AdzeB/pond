@@ -25,6 +25,7 @@ const SAVES = {
   threads: "Save posts when you save them.",
   github: "Save repositories when you star them.",
   substack: "Save posts when you save them.",
+  tumblr: "Save posts with the Pond toolbar button.",
 } satisfies Record<ExternalSource, string>;
 
 const LIKE_SOURCES: ReadonlySet<ExternalSource> = new Set(

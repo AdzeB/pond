@@ -125,6 +125,10 @@ export async function probeUserHandle(
     const { probeSubstackHandle } = await import("../harvest/substack/api");
     return probeSubstackHandle(partition ?? PARTITION);
   }
+  if (source === "tumblr") {
+    const { probeTumblrHandle } = await import("../harvest/tumblr/api");
+    return probeTumblrHandle(partition ?? PARTITION);
+  }
   if (source === "tiktok") {
     const { probeTiktokHandle } = await import("../harvest/tiktok/api");
     const viaApi = await probeTiktokHandle(partition ?? PARTITION);
@@ -177,6 +181,7 @@ function probeUrlForSource(source: Source): string {
   if (source === "cosmos") return "https://www.cosmos.so/";
   if (source === "github") return "https://github.com/";
   if (source === "substack") return "https://substack.com/home";
+  if (source === "tumblr") return "https://www.tumblr.com/";
   return homeUrlForSource(source);
 }
 

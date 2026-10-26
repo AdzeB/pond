@@ -16,6 +16,7 @@ import {
   IconBrandGithub,
   IconBrandSubstack,
   IconBrandThreads,
+  IconBrandTumblr,
   IconInstagram,
   IconPinterest,
   IconReddit,
@@ -143,6 +144,7 @@ const LOGOS = {
   threads: IconBrandThreads,
   github: IconBrandGithub,
   substack: IconBrandSubstack,
+  tumblr: IconBrandTumblr,
 } satisfies Record<ExternalSource, ComponentType<SVGProps<SVGSVGElement>>>;
 
 function Harvest({

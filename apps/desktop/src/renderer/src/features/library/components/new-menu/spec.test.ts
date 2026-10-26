@@ -65,6 +65,7 @@ describe("new menu spec", () => {
       "Threads",
       "GitHub",
       "Substack",
+      "Tumblr",
       "New Watch",
       "Twitter",
       "Instagram",

@@ -180,6 +180,10 @@ export async function harvestSourceList(
     const { harvestSubstackLists } = await import("../harvest/substack/api");
     return harvestSubstackLists(args, opts.partition);
   }
+  if (source === "tumblr") {
+    const { harvestTumblrLikes } = await import("../harvest/tumblr/api");
+    return harvestTumblrLikes(args, opts.partition);
+  }
   const target = listUrlForSource(source, args);
   if (!target) {
     return { ok: false, reason: "no_match" };
@@ -398,6 +402,8 @@ function listUrlForSource(
       return accountKey ? githubStarsUrl(accountKey) : null;
     case "substack":
       return null;
+    case "tumblr":
+      return null;
     case "web":
       return null;
     case "local":
@@ -431,6 +437,8 @@ function buildListExpressionFor(
     case "github":
       return buildGithubStarsExpression(args);
     case "substack":
+      return null;
+    case "tumblr":
       return null;
     case "web":
       return null;

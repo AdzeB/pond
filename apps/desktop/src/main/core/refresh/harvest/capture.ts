@@ -48,6 +48,16 @@ export async function captureFromSource(args: CaptureArgs): Promise<Capture> {
     if (result.ok) return result.capture;
   }
 
+  if (args.source === "tumblr" && args.sourceId) {
+    const { fetchTumblrCapture } = await import("./tumblr/api");
+    const result = await fetchTumblrCapture({
+      sourceId: args.sourceId,
+      url: args.url,
+      accountId: args.accountId ?? null,
+    });
+    if (result.ok) return result.capture;
+  }
+
   const result = await harvestUrl(args);
   /** A signed-in session can still open a secret-board pin, but an empty page shell means the pin is gone. */
   if (removedAtSource && (result.capture?.media.length ?? 0) === 0) {

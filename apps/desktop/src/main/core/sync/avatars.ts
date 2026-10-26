@@ -80,6 +80,8 @@ function profilePageUrl(
       return `https://github.com/${h}`;
     case "substack":
       return `https://substack.com/@${h}`;
+    case "tumblr":
+      return `https://www.tumblr.com/${h}`;
     default:
       return null;
   }

@@ -11,6 +11,7 @@ export const REDDIT_PATTERNS = descriptorFor("reddit").urlPatterns;
 export const THREADS_PATTERNS = descriptorFor("threads").urlPatterns;
 export const GITHUB_PATTERNS = descriptorFor("github").urlPatterns;
 export const SUBSTACK_PATTERNS = descriptorFor("substack").urlPatterns;
+export const TUMBLR_PATTERNS = descriptorFor("tumblr").urlPatterns;
 
 export function firstMatch(
   url: URL,

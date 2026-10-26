@@ -23,6 +23,8 @@ export function homeUrlForSource(source: Source): string {
       return "https://github.com/login";
     case "substack":
       return "https://substack.com/sign-in";
+    case "tumblr":
+      return "https://www.tumblr.com/login";
     case "web":
       return "";
     case "local":

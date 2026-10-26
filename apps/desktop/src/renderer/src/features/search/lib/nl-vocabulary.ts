@@ -178,6 +178,7 @@ export const SOURCE_SYNONYMS = new Map<string, string>([
   ["reddit", "reddit.com"],
   ["threads", "threads.net"],
   ["cosmos", "cosmos.so"],
+  ["tumblr", "tumblr.com"],
   ["local", "local"],
 ]);
 
