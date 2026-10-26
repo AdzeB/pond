@@ -114,7 +114,7 @@ export function primaryBlog(
   );
 }
 
-export function tumblrPostUrl(
+function tumblrPostUrl(
   post: Pick<TumblrPost, "blogName" | "idString">,
 ): string {
   return `${WWW}/${post.blogName}/${post.idString}`;
@@ -146,7 +146,7 @@ function largest(media: NpfBlock["media"]): NpfMedia | undefined {
   return best;
 }
 
-export function mediaOf(post: TumblrPost): CaptureMedia[] {
+function mediaOf(post: TumblrPost): CaptureMedia[] {
   const out: CaptureMedia[] = [];
   for (const block of blocksOf(post)) {
     if (block.type === "image") {

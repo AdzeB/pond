@@ -10,7 +10,7 @@ interface PostMedia {
   poster?: string;
 }
 
-export function postUrl(post: BlueskyPost): string {
+function postUrl(post: BlueskyPost): string {
   return `${WEB}/profile/${post.author.handle}/post/${rkeyOf(post.uri) ?? ""}`;
 }
 
