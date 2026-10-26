@@ -27,16 +27,20 @@ icon: icon.png
 files:
   - out/**/*
   - package.json
+  # Vite bundles main, preload, and the renderer into `out`, so app.asar ships
+  # only the packages main loads from disk at runtime (the externals in
+  # electron.vite.config.ts, plus onnxruntime-node, which transformers
+  # requires by name) and their runtime dependencies. electron-builder applies
+  # only exclusions to node_modules, so the allowlist is one negated extglob.
+  # scripts/verify-runtime-packages.cjs fails the pack when it falls behind.
+  - "!node_modules/!(better-sqlite3|sqlite-vec|sqlite-vec-*|sharp|@img|detect-libc|semver|onnxruntime-node|onnxruntime-common){,/**}"
   - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
   - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
   - "!**/*.{d.ts,map}"
   - "!**/*.tsbuildinfo"
-  # These dependencies are already bundled into `out`; keeping their source
-  # packages duplicates tens of megabytes in app.asar.
-  - "!node_modules/@pond/icons/brand/tints/**"
-  - "!node_modules/ffmpeg-static/**"
-  - "!node_modules/gpt-tokenizer/**"
-  - "!node_modules/onnxruntime-web/**"
+  # better-sqlite3 loads its prebuilt binary; the SQLite and C++ sources only
+  # matter when it compiles from source.
+  - "!node_modules/better-sqlite3/{deps,src}/**"
 
 # Tray icons and any other runtime-loaded assets. At runtime we read
 # them from `process.resourcesPath` which lands inside `Contents/Resources`
