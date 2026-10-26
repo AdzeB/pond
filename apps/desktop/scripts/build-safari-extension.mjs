@@ -12,7 +12,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,11 +22,19 @@ const workDir = resolve(desktopRoot, ".safari-build");
 const outDir = resolve(desktopRoot, "resources/SafariExtension");
 const entitlements = resolve(extensionRoot, "safari/extension.entitlements");
 
-/** The appex must carry the host app's bundle ID as its prefix; keep in lockstep with `appId`. */
-const APP_ID = "so.pond.desktop";
-
 /** Safari 18 is the first to honor `world: "MAIN"`, and it runs on macOS 13.5 and later. */
 const DEPLOYMENT_TARGET = "13.5";
+
+/** The appex must carry the host app's bundle ID as its prefix, so read it from `appId`. */
+function appBundleId() {
+  const yml = readFileSync(
+    resolve(desktopRoot, "electron-builder.yml"),
+    "utf8",
+  );
+  const match = yml.match(/^appId:\s*(\S+)\s*$/m);
+  if (!match) fail("electron-builder.yml has no top-level appId");
+  return match[1];
+}
 
 function skip(reason) {
   console.log(`[pond safari] skipped: ${reason}`);
@@ -70,7 +78,7 @@ run("xcrun", [
   "--app-name",
   "Pond",
   "--bundle-identifier",
-  APP_ID,
+  appBundleId(),
   "--swift",
   "--macos-only",
   "--no-open",
