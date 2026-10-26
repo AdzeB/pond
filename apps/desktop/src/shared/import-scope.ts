@@ -130,6 +130,12 @@ const IMPORT_SCOPE_OPTIONS = {
     since: true,
   },
   unsplash: { ...EVERYTHING_ONLY, mediaKinds: ["image"] },
+  bluesky: {
+    ...EVERYTHING_ONLY,
+    mediaKinds: ALL_MEDIA,
+    since: true,
+    sinceDate: "saved",
+  },
   web: EVERYTHING_ONLY,
   local: EVERYTHING_ONLY,
 } satisfies Record<Source, ImportScopeOptions>;

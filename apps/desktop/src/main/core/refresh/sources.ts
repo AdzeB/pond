@@ -35,6 +35,8 @@ export function homeUrlForSource(source: Source): string {
       return "https://dribbble.com/session/new";
     case "unsplash":
       return "https://unsplash.com/login";
+    case "bluesky":
+      return "";
     case "web":
       return "";
     case "local":

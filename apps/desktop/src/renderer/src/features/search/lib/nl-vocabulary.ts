@@ -184,6 +184,8 @@ export const SOURCE_SYNONYMS = new Map<string, string>([
   ["vimeo", "vimeo.com"],
   ["dribbble", "dribbble.com"],
   ["unsplash", "unsplash.com"],
+  ["bluesky", "bsky.app"],
+  ["bsky", "bsky.app"],
   ["local", "local"],
 ]);
 

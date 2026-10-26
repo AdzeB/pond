@@ -80,6 +80,18 @@ export async function captureFromSource(args: CaptureArgs): Promise<Capture> {
     throw new TransientError("vimeo api unavailable");
   }
 
+  if (args.source === "bluesky" && args.sourceId) {
+    const { fetchBlueskyCapture } = await import("./bluesky/api");
+    const result = await fetchBlueskyCapture({
+      sourceId: args.sourceId,
+      url: args.url,
+    });
+    if (result.ok) return result.capture;
+    if (result.reason === "not_found") {
+      throw new TerminalError("bluesky post was deleted or hidden");
+    }
+  }
+
   const result = await harvestUrl(args);
   /** A signed-in session can still open a secret-board pin, but an empty page shell means the pin is gone. */
   if (removedAtSource && (result.capture?.media.length ?? 0) === 0) {

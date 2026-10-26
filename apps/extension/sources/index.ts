@@ -3,6 +3,7 @@ import { type ExternalSource, sourceIdFromUrl } from "@pond/schema/sources";
 import { MatchPattern } from "wxt/utils/match-patterns";
 import { matches as arena } from "./arena/matches";
 import { matches as behance } from "./behance/matches";
+import { matches as bluesky } from "./bluesky/matches";
 import { matches as cosmos } from "./cosmos/matches";
 import { matches as dribbble } from "./dribbble/matches";
 import { matches as github } from "./github/matches";
@@ -44,6 +45,7 @@ export const HOOK_SOURCES = {
   vimeo: { matches: vimeo, likes: [], item: "Video" },
   dribbble: { matches: dribbble, likes: [], item: "Shot" },
   unsplash: { matches: unsplash, likes: [], item: "Photo" },
+  bluesky: { matches: bluesky, likes: [], item: "Post" },
 } as const satisfies Record<ExternalSource, HookSource>;
 
 export const HOOK_SOURCE_IDS: readonly ExternalSource[] = SOURCES.filter(

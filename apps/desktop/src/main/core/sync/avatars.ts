@@ -92,6 +92,8 @@ function profilePageUrl(
       return `https://dribbble.com/${h}`;
     case "unsplash":
       return `https://unsplash.com/@${h}`;
+    case "bluesky":
+      return `https://bsky.app/profile/${h}`;
     default:
       return null;
   }

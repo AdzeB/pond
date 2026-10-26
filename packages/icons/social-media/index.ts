@@ -2,6 +2,7 @@ export { IconAnthropic } from "./custom/anthropic";
 export { IconApple } from "./custom/apple";
 export { IconBrandArena } from "./custom/arena";
 export { IconBrandBehance } from "./custom/behance";
+export { IconBrandBluesky } from "./custom/bluesky";
 export { IconBrandCosmos } from "./custom/cosmos";
 export { IconBrandDribbble } from "./custom/dribbble";
 export { IconGithub } from "./custom/github";

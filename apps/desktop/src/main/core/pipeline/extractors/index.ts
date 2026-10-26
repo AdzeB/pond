@@ -3,6 +3,7 @@ import type { ExternalSource } from "@pond/schema/sources";
 import { UnsupportedError } from "./errors";
 import { ArenaBlockExtractor } from "./sources/arena";
 import { BehanceProjectExtractor } from "./sources/behance";
+import { BlueskyPostExtractor } from "./sources/bluesky";
 import { CosmosTileExtractor } from "./sources/cosmos";
 import { DribbbleShotExtractor } from "./sources/dribbble";
 import { GitHubRepoExtractor } from "./sources/github";
@@ -38,6 +39,7 @@ const EXTRACTORS = {
   vimeo: new VimeoVideoExtractor(),
   dribbble: new DribbbleShotExtractor(),
   unsplash: new UnsplashAssetExtractor(),
+  bluesky: new BlueskyPostExtractor(),
 } as const satisfies Record<ExternalSource, Extractor>;
 
 const WEB_EXTRACTOR: Extractor = {

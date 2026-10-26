@@ -211,6 +211,17 @@ export const SOURCE_DESCRIPTORS = [
     ],
     sync: { strategy: "cursor" },
   },
+  {
+    id: "bluesky",
+    label: "Bluesky",
+    hosts: ["bsky.app"],
+    /** Keys by the post's rkey: a handle URL carries no DID, and TIDs embed a microsecond clock. */
+    urlPatterns: [
+      /^https?:\/\/(?:www\.)?bsky\.app\/profile\/[^/?#]+\/post\/([2-7a-z]{13})(?=[/?#]|$)/i,
+    ],
+    connect: "handle",
+    sync: { strategy: "cursor" },
+  },
 ] as const satisfies readonly SourceDescriptor[];
 
 export type ExternalSource = (typeof SOURCE_DESCRIPTORS)[number]["id"];

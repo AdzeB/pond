@@ -31,6 +31,7 @@ const SAVES = {
   vimeo: "Save videos with the Pond toolbar button.",
   dribbble: "Save shots with the Pond toolbar button.",
   unsplash: "Save photos with the Pond toolbar button.",
+  bluesky: "Save posts with the Pond toolbar button.",
 } satisfies Record<ExternalSource, string>;
 
 const LIKE_SOURCES: ReadonlySet<ExternalSource> = new Set(

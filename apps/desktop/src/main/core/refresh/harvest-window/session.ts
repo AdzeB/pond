@@ -1,4 +1,5 @@
 import type { ConnectedAccount, Source } from "@pond/schema/db";
+import { connectsByHandle } from "@pond/schema/sources";
 import { type Cookie, session, shell } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -41,6 +42,7 @@ export async function isPartitionSignedIn(
 export async function isAccountConnected(
   account: ConnectedAccount,
 ): Promise<boolean> {
+  if (connectsByHandle(account.source)) return account.identityKey !== null;
   return isPartitionSignedIn(account.source, partitionForAccount(account.id));
 }
 

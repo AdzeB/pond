@@ -218,6 +218,10 @@ export async function harvestSourceList(
     const { harvestVimeoLists } = await import("../harvest/vimeo/api");
     return harvestVimeoLists(args, opts.partition);
   }
+  if (source === "bluesky") {
+    const { harvestBlueskyLikes } = await import("../harvest/bluesky/api");
+    return harvestBlueskyLikes(args, args.accountKey);
+  }
   const target = listUrlForSource(source, args);
   if (!target) {
     return { ok: false, reason: "no_match" };
@@ -448,6 +452,8 @@ function listUrlForSource(
       return accountKey ? dribbbleLikesUrl(accountKey) : null;
     case "unsplash":
       return UNSPLASH_LIST_URL;
+    case "bluesky":
+      return null;
     case "web":
       return null;
     case "local":
@@ -494,6 +500,8 @@ function buildListExpressionFor(
       return buildDribbbleListExpression(args);
     case "unsplash":
       return buildUnsplashListExpression(args);
+    case "bluesky":
+      return null;
     case "web":
       return null;
     case "local":

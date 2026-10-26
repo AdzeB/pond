@@ -188,6 +188,14 @@ export const CAPTURE_EXPECTATIONS = {
     required: ["mediaUrl"],
     recommended: ["title", "author", "capture.publishedAt"],
   },
+  bluesky: {
+    required: ["author"],
+    recommended: [
+      "description",
+      "capture.publishedAt",
+      "capture.author.avatarUrl",
+    ],
+  },
   web: {
     required: ["title"],
     recommended: ["description", "mediaUrl"],

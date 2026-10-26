@@ -65,6 +65,7 @@ export const LIST_HARVEST_SOURCES = new Set<Source>([
   "vimeo",
   "dribbble",
   "unsplash",
+  "bluesky",
 ]);
 
 export async function syncListSource(
@@ -96,9 +97,14 @@ export async function syncListSource(
     source === "tiktok" ||
     source === "reddit" ||
     source === "github" ||
-    source === "dribbble"
+    source === "dribbble" ||
+    source === "bluesky"
   ) {
-    accountKey = (await resolveAccountHandle(account)) ?? undefined;
+    /** A handle Source has no session to probe; its Account was keyed by DID when you connected. */
+    accountKey =
+      source === "bluesky"
+        ? (account.identityKey ?? undefined)
+        : ((await resolveAccountHandle(account)) ?? undefined);
     if (!accountKey) {
       log.info(`[pond sync:${source}] could not resolve account from session`);
       await patchAccountSync(accountId, { lastError: "auth_required" });
@@ -106,7 +112,10 @@ export async function syncListSource(
         accountId,
         source,
         state: "auth_required",
-        message: `Sign in to ${source} to enable background sync.`,
+        message:
+          source === "bluesky"
+            ? "Connect Bluesky with your handle to enable background sync."
+            : `Sign in to ${source} to enable background sync.`,
         lastError: "auth_required",
       });
       return;

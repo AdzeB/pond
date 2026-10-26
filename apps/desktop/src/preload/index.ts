@@ -309,6 +309,16 @@ const api = {
     return ipcRenderer.invoke(IPC.sourceConnect, source);
   },
 
+  connectSourceHandle(
+    source: string,
+    handle: string,
+  ): Promise<
+    | { ok: true; accountId: string }
+    | { ok: false; reason: "invalid" | "not_found" | "unavailable" }
+  > {
+    return ipcRenderer.invoke(IPC.sourceConnectHandle, source, handle);
+  },
+
   clearPendingSession(source?: string): Promise<{ ok: true }> {
     return ipcRenderer.invoke(IPC.sessionPendingClear, source);
   },

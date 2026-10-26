@@ -297,3 +297,64 @@ it("fails when Pond cannot open the sign-in page", async () => {
     "Pond couldn't open the sign-in page. Try again.",
   );
 });
+
+async function connectByHandle(
+  reply:
+    | { ok: true; accountId: string }
+    | { ok: false; reason: "invalid" | "not_found" | "unavailable" },
+) {
+  const connectSource = vi.fn(async () => ({ ok: true, mode: "external" }));
+  const connectSourceHandle = vi.fn(async () => reply);
+  stubPond();
+  vi.stubGlobal("pond", {
+    ...window.pond,
+    query: async () => ({ accounts: [] }),
+    connectSource,
+    connectSourceHandle,
+  });
+  connectFlow.start("bluesky", []);
+  await act(async () => {
+    root.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ConnectWaitSection />
+      </QueryClientProvider>,
+    );
+  });
+  const input = host.querySelector("input");
+  if (!input) throw new Error("handle field did not render");
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set?.call(input, "alice.bsky.social");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await act(async () => {
+    host.querySelector("form")?.requestSubmit();
+  });
+  return { connectSource, connectSourceHandle };
+}
+
+it("asks a handle Source for its handle instead of opening a browser", async () => {
+  const { connectSource, connectSourceHandle } = await connectByHandle({
+    ok: true,
+    accountId: "acc-bluesky",
+  });
+  expect(host.textContent).toContain("Your Bluesky Handle");
+  expect(host.textContent).toContain("Read your liked posts");
+  expect(host.textContent).not.toContain("Get Extension");
+  expect(connectSource).not.toHaveBeenCalled();
+  expect(connectSourceHandle).toHaveBeenCalledWith(
+    "bluesky",
+    "alice.bsky.social",
+  );
+});
+
+it("says when a handle does not resolve", async () => {
+  await connectByHandle({ ok: false, reason: "not_found" });
+  await vi.waitFor(() => {
+    expect(host.textContent).toContain(
+      "Pond couldn't find that handle. Check the spelling and try again.",
+    );
+  });
+});

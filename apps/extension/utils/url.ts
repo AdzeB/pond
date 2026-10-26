@@ -36,6 +36,8 @@ export function cookieDomainsForSource(source: Source): string[] {
       return ["dribbble.com"];
     case "unsplash":
       return ["unsplash.com"];
+    case "bluesky":
+      return [];
     case "web":
     case "local":
       return [];

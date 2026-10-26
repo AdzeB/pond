@@ -4,6 +4,7 @@ import type { Capture } from "@pond/schema/raw";
 import { sourceIdFromUrl } from "@pond/schema/sources";
 import * as arena from "./arena";
 import * as behance from "./behance/item";
+import * as bluesky from "./bluesky/item";
 import * as cosmos from "./cosmos";
 import * as dribbble from "./dribbble/item";
 import type { HarvestAdaptCtx } from "./from-page";
@@ -113,6 +114,11 @@ const REGISTRY = {
     buildExpression: unsplash.buildExpression,
     adapt: unsplash.adapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("unsplash", url),
+  },
+  bluesky: {
+    buildExpression: bluesky.buildExpression,
+    adapt: bluesky.adapt,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("bluesky", url),
   },
   web: {
     buildExpression: () => {

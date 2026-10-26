@@ -30,4 +30,5 @@ export const INJECTORS = {
   vimeo: null,
   dribbble: null,
   unsplash: null,
+  bluesky: null,
 } satisfies Record<ExternalSource, (() => void) | null>;

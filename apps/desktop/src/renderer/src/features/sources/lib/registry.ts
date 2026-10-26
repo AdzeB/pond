@@ -1,6 +1,7 @@
 import {
   IconBrandArena,
   IconBrandBehance,
+  IconBrandBluesky,
   IconBrandCosmos,
   IconBrandDribbble,
   IconBrandGithub,
@@ -52,6 +53,7 @@ const SOURCE_LOGOS = {
   vimeo: null,
   dribbble: null,
   unsplash: null,
+  bluesky: null,
   web: null,
   local: null,
 } satisfies Record<Source, string | null>;
@@ -74,6 +76,7 @@ const SOURCE_ICONS = {
   vimeo: IconBrandVimeo,
   dribbble: IconBrandDribbble,
   unsplash: IconBrandUnsplash,
+  bluesky: IconBrandBluesky,
   web: IconSourceWeb,
   local: IconSourceLocal,
 } satisfies Record<Source, IconComponent | null>;
