@@ -124,11 +124,7 @@ const IMPORT_SCOPE_OPTIONS = {
     mediaKinds: [],
     since: true,
   },
-  dribbble: {
-    ...EVERYTHING_ONLY,
-    mediaKinds: ["image", "video"],
-    since: true,
-  },
+  dribbble: { ...EVERYTHING_ONLY, mediaKinds: ["image", "video"] },
   unsplash: { ...EVERYTHING_ONLY, mediaKinds: ["image"] },
   bluesky: {
     ...EVERYTHING_ONLY,
