@@ -82,6 +82,19 @@ describe("importDataExport", () => {
     expect(state.closed).toBe(true);
   });
 
+  it("doesn't ask you to connect YouTube or Reddit", async () => {
+    const { reader } = memoryReader({
+      "saved_posts.csv":
+        "id,permalink\nab1,https://www.reddit.com/r/x/comments/ab1/t/\n",
+    });
+    const result = await importDataExport("/x.zip", {
+      open: async () => reader,
+      importFile: importFileStub(),
+      connectedSources: async () => new Set<Source>(),
+    });
+    expect(result).toMatchObject({ ok: true, connect: [] });
+  });
+
   it("fails clearly when nothing in the archive is readable", async () => {
     const { reader, state } = memoryReader({ "readme.txt": "hi" });
     const importFile = importFileStub();

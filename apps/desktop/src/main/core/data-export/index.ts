@@ -118,6 +118,9 @@ async function readEntries(
   return { entries, platforms: [...platforms] };
 }
 
+/** Public videos and posts capture without a session, so connecting adds nothing. */
+const CAPTURES_SIGNED_OUT = new Set<Source>(["youtube", "reddit"]);
+
 function unconnectedSources(
   file: BookmarkFile,
   connected: ReadonlySet<Source>,
@@ -126,6 +129,7 @@ function unconnectedSources(
   for (const bookmark of file.bookmarks) {
     const { source } = classifyUrlToSource(bookmark.url);
     if (!source || source === "web" || source === "local") continue;
+    if (CAPTURES_SIGNED_OUT.has(source)) continue;
     if (!connected.has(source)) sources.add(source);
   }
   return [...sources];
