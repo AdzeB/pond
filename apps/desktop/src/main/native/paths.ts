@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, posix } from "node:path";
 import { promisify } from "node:util";
 import { SAFARI_APP_GROUP } from "@pond/schema/native";
 
@@ -75,7 +75,7 @@ export function windowsNativePipePath(sid: string): string {
 
 /** Safari extension connect path; keep in lockstep with `SafariWebExtensionHandler.swift`. */
 export function safariSocketPath(home: string = homedir()): string {
-  return join(
+  return posix.join(
     home,
     "Library/Group Containers",
     SAFARI_APP_GROUP,

@@ -7,6 +7,9 @@ import { renderSaveDragIcon, saveDragIconSvg } from "./save-drag-icon";
 
 const roots: string[] = [];
 
+/** Sharp's cache holds input files open, which blocks the temp cleanup on Windows. */
+sharp.cache(false);
+
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -37,7 +40,10 @@ it("leaves the count off a single save", () => {
   );
 });
 
-it("rasterizes a thumbnail into a 2x PNG and skips a save with nothing to show", async () => {
+/** The first SVG text render initializes fonts, which takes several seconds on Windows runners. */
+it("rasterizes a thumbnail into a 2x PNG and skips a save with nothing to show", {
+  timeout: 20_000,
+}, async () => {
   const root = await mkdtemp(join(tmpdir(), "pond-drag-icon-"));
   roots.push(root);
   const thumbnail = join(root, "clip.mp4_thumbnail.webp");
