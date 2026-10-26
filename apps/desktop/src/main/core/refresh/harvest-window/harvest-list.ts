@@ -219,8 +219,8 @@ export async function harvestSourceList(
     return harvestVimeoLists(args, opts.partition);
   }
   if (source === "bluesky") {
-    const { harvestBlueskyLikes } = await import("../harvest/bluesky/api");
-    return harvestBlueskyLikes(args, args.accountKey);
+    const { harvestBlueskyLists } = await import("../harvest/bluesky/api");
+    return harvestBlueskyLists(args, args.accountKey, opts.partition);
   }
   const target = listUrlForSource(source, args);
   if (!target) {

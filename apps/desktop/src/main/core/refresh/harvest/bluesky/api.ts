@@ -1,6 +1,8 @@
+import type { ListKind } from "@pond/schema/db";
 import type { Capture } from "@pond/schema/raw";
 import { session } from "electron";
 import log from "electron-log/main.js";
+import { mergeEntryListKinds, unionById } from "../../../sync/harvest-union";
 import {
   browserUserAgent,
   PUBLIC_PARTITION,
@@ -204,12 +206,81 @@ export async function resolveProfile(
   return handle.startsWith("did:") ? null : { did, handle };
 }
 
-export async function harvestBlueskyLikes(
+const LIST_ORDER: readonly ListKind[] = ["liked", "saved"];
+
+export type BlueskyListReaders = Record<
+  "liked" | "saved",
+  (args: ListHarvestArgs) => Promise<ListHarvestResult>
+>;
+
+/** A cursor without a list prefix predates Bookmarks and belongs to likes. */
+function readCursor(
+  raw: string | undefined,
+): { kind: "liked" | "saved"; cursor: string } | null {
+  if (!raw) return null;
+  if (raw.startsWith("saved:")) return { kind: "saved", cursor: raw.slice(6) };
+  if (raw.startsWith("liked:")) return { kind: "liked", cursor: raw.slice(6) };
+  return { kind: "liked", cursor: raw };
+}
+
+export async function readBlueskyLists(
+  args: ListHarvestArgs,
+  readers: BlueskyListReaders,
+): Promise<ListHarvestResult> {
+  const wanted = args.listKinds ?? LIST_ORDER;
+  const resume = readCursor(args.resumeCursor);
+  const kinds = (["liked", "saved"] as const).filter(
+    (kind) =>
+      wanted.includes(kind) &&
+      (!resume || LIST_ORDER.indexOf(kind) >= LIST_ORDER.indexOf(resume.kind)),
+  );
+  let entries: ListEntry[] = [];
+  for (const kind of kinds) {
+    const { resumeCursor: _resumed, ...rest } = args;
+    const listArgs: ListHarvestArgs = rest;
+    if (resume?.kind === kind) listArgs.resumeCursor = resume.cursor;
+    const walk = await readers[kind](listArgs);
+    if (!walk.ok) {
+      /** Bookmarks need a bsky.app sign-in that likes don't, so a signed-out page only skips that list. */
+      const optional = kind === "saved" && wanted.includes("liked");
+      if (!optional && entries.length === 0) return walk;
+      log.warn("[pond bluesky] list walk failed", kind, walk.reason);
+      continue;
+    }
+    entries = unionById(
+      entries,
+      walk.entries,
+      (e) => e.sourceId,
+      mergeEntryListKinds,
+    );
+    if (!walk.reachedEnd) {
+      const result: ListHarvestResult = {
+        ok: true,
+        entries,
+        reachedEnd: false,
+        seen: entries.length,
+      };
+      if (walk.resumeCursor)
+        result.resumeCursor = `${kind}:${walk.resumeCursor}`;
+      return result;
+    }
+  }
+  return { ok: true, entries, reachedEnd: true, seen: entries.length };
+}
+
+export async function harvestBlueskyLists(
   args: ListHarvestArgs,
   did: string | undefined,
+  partition: string | undefined,
 ): Promise<ListHarvestResult> {
   if (!did) return { ok: false, reason: "auth_required" };
-  return readBlueskyLikes(args, publicGet(), did);
+  return readBlueskyLists(args, {
+    liked: (listArgs) => readBlueskyLikes(listArgs, publicGet(), did),
+    saved: async (listArgs) => {
+      const { harvestBlueskyBookmarks } = await import("./session");
+      return harvestBlueskyBookmarks(listArgs, did, partition);
+    },
+  });
 }
 
 export async function fetchBlueskyCapture(args: {

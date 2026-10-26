@@ -31,7 +31,7 @@ const EmbedSchema = MediaEmbedSchema.extend({
   media: MediaEmbedSchema.optional().catch(undefined),
 });
 
-const PostSchema = z.object({
+export const PostSchema = z.object({
   uri: z.string(),
   author: z.object({
     did: z.string(),

@@ -1,6 +1,9 @@
 import type { QueryName } from "../../../shared/query-contracts";
 
 export const queryOperationAccess = {
+  "accounts.blueskySession": "hidden",
+  "accounts.blueskySignIn": "hidden",
+  "accounts.blueskySignOut": "hidden",
   "accounts.disconnect": "review",
   "accounts.importOptions": "read",
   "accounts.list": "read",

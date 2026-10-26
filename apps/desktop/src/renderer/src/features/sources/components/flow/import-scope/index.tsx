@@ -35,6 +35,7 @@ import {
   useImportScopeFlowActions,
 } from "@/features/sources/state/import-scope-flow";
 import { formatNumber } from "@/shared/lib/format";
+import { BlueskySignIn, useBlueskySignedIn } from "./bluesky-sign-in";
 import styles from "./styles.module.css";
 
 /** Loads the Account's saved choices into the draft and saves each change, like Settings. */
@@ -81,11 +82,15 @@ export function ImportScopeLists({ accountId }: { accountId: string }) {
   if (options.listKinds.length > 0) {
     return (
       <Settings.List className={styles.choices}>
-        {options.listKinds.map((kind) => (
-          <ListKindRows key={kind} source={source} kind={kind}>
-            {kind === "saved" ? collections : null}
-          </ListKindRows>
-        ))}
+        {options.listKinds.map((kind) =>
+          source === "bluesky" && kind === "saved" ? (
+            <BlueskyBookmarkRows key={kind} accountId={accountId} />
+          ) : (
+            <ListKindRows key={kind} source={source} kind={kind}>
+              {kind === "saved" ? collections : null}
+            </ListKindRows>
+          ),
+        )}
       </Settings.List>
     );
   }
@@ -186,13 +191,25 @@ async function confirmImportScope(
   flow.markSaved(scope, { started: start });
 }
 
+/** Bookmarks stay visible but locked until Pond's bsky.app window is signed in as this Account. */
+function BlueskyBookmarkRows({ accountId }: { accountId: string }) {
+  const signedIn = useBlueskySignedIn(accountId, true);
+  return (
+    <ListKindRows source="bluesky" kind="saved" locked={!signedIn}>
+      <BlueskySignIn accountId={accountId} />
+    </ListKindRows>
+  );
+}
+
 function ListKindRows({
   source,
   kind,
+  locked = false,
   children,
 }: {
   source: Source;
   kind: ListKind;
+  locked?: boolean;
   children: ReactNode;
 }) {
   const flow = useImportScopeFlowActions();
@@ -201,7 +218,7 @@ function ListKindRows({
   const description = listKindDescription(source, kind);
   return (
     <>
-      <Settings.Item>
+      <Settings.Item disabled={locked}>
         <Settings.ItemDetails>
           <Settings.ItemTitle>{title}</Settings.ItemTitle>
           {description ? (
@@ -211,7 +228,8 @@ function ListKindRows({
         <Settings.ItemControl>
           <Switch.Root
             aria-label={title}
-            checked={draft.listKinds.includes(kind)}
+            checked={!locked && draft.listKinds.includes(kind)}
+            disabled={locked}
             onCheckedChange={(next) => flow.setListKind(kind, next)}
           />
         </Settings.ItemControl>

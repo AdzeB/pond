@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { readBlueskyCapture, readBlueskyLikes, resolveProfile } from "./api";
+import {
+  readBlueskyCapture,
+  readBlueskyLikes,
+  readBlueskyLists,
+  resolveProfile,
+} from "./api";
 import type { AtGet } from "./atproto";
 
 const ME = "did:plc:me";
@@ -265,5 +270,120 @@ describe("Bluesky profile", () => {
   it("returns null for a handle that does not resolve", async () => {
     const { get } = transport([]);
     expect(await resolveProfile(get, "nobody.example")).toBeNull();
+  });
+});
+
+function entry(sourceId: string, kind: "liked" | "saved") {
+  return { sourceId, url: `https://bsky.app/x/${sourceId}`, listKinds: [kind] };
+}
+
+describe("readBlueskyLists", () => {
+  it("reads likes, then bookmarks, and merges a post on both", async () => {
+    const result = await readBlueskyLists(
+      { knownIds: [], listKinds: ["saved", "liked"] },
+      {
+        liked: async () => ({
+          ok: true,
+          entries: [entry("a", "liked")],
+          reachedEnd: true,
+        }),
+        saved: async () => ({
+          ok: true,
+          entries: [entry("a", "saved"), entry("b", "saved")],
+          reachedEnd: true,
+        }),
+      },
+    );
+    expect(
+      result.ok && result.entries.map((e) => [e.sourceId, e.listKinds]),
+    ).toEqual([
+      ["a", ["liked", "saved"]],
+      ["b", ["saved"]],
+    ]);
+  });
+
+  it("keeps syncing likes when bookmarks aren't signed in", async () => {
+    const result = await readBlueskyLists(
+      { knownIds: [], listKinds: ["saved", "liked"] },
+      {
+        liked: async () => ({ ok: true, entries: [], reachedEnd: true }),
+        saved: async () => ({ ok: false, reason: "auth_required" }),
+      },
+    );
+    expect(result).toEqual({
+      ok: true,
+      entries: [],
+      reachedEnd: true,
+      seen: 0,
+    });
+  });
+
+  it("asks you to sign in when only bookmarks are on", async () => {
+    const result = await readBlueskyLists(
+      { knownIds: [], listKinds: ["saved"] },
+      {
+        liked: async () => ({ ok: true, entries: [], reachedEnd: true }),
+        saved: async () => ({ ok: false, reason: "auth_required" }),
+      },
+    );
+    expect(result).toEqual({ ok: false, reason: "auth_required" });
+  });
+
+  it("prefixes the cursor with its list and resumes there", async () => {
+    const calls: Array<[string, string | undefined]> = [];
+    const readers = {
+      liked: async (args: { resumeCursor?: string }) => {
+        calls.push(["liked", args.resumeCursor]);
+        return { ok: true as const, entries: [], reachedEnd: true };
+      },
+      saved: async (args: { resumeCursor?: string }) => {
+        calls.push(["saved", args.resumeCursor]);
+        return {
+          ok: true as const,
+          entries: [entry("b", "saved")],
+          reachedEnd: false,
+          resumeCursor: "next",
+        };
+      },
+    };
+    const first = await readBlueskyLists(
+      { knownIds: [], listKinds: ["saved", "liked"] },
+      readers,
+    );
+    expect(first.ok && first.resumeCursor).toBe("saved:next");
+    await readBlueskyLists(
+      {
+        knownIds: [],
+        listKinds: ["saved", "liked"],
+        resumeCursor: "saved:next",
+      },
+      readers,
+    );
+    expect(calls).toEqual([
+      ["liked", undefined],
+      ["saved", undefined],
+      ["saved", "next"],
+    ]);
+  });
+
+  it("treats an unprefixed cursor as a likes cursor", async () => {
+    const calls: Array<[string, string | undefined]> = [];
+    await readBlueskyLists(
+      { knownIds: [], listKinds: ["saved", "liked"], resumeCursor: "old" },
+      {
+        liked: async (args) => {
+          calls.push(["liked", args.resumeCursor]);
+          return { ok: true, entries: [], reachedEnd: true };
+        },
+        saved: async (args) => {
+          calls.push(["saved", args.resumeCursor]);
+          return { ok: true, entries: [], reachedEnd: true };
+        },
+      },
+    );
+    expect(calls).toEqual([
+      ["liked", "old"],
+      ["saved", undefined],
+    ]);
   });
 });
