@@ -9,4 +9,3 @@ What's planned for Pond. Items have no dates, and the order isn't a commitment. 
 - **Import from more apps.** Eagle libraries import today with their folders. Bookmark managers such as Raindrop.io come next.
 - **Region notes.** Pin a note to part of an image or a moment in a video.
 - **Plugins.** Extend Pond with JavaScript plugins that run on your computer.
-- **Assistant with your MCP servers.** Give Assistant tools from MCP servers you run, the way Cursor and Claude already reach your library through Pond.
