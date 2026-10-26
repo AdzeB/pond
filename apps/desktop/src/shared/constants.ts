@@ -170,6 +170,7 @@ export type MenuActionId =
   | "library.import-clipboard"
   | "library.import-bookmarks"
   | "library.import-mymind"
+  | "library.import-data-export"
   | "library.import-page-assets"
   | "library.import-eagle"
   | "library.import-package"

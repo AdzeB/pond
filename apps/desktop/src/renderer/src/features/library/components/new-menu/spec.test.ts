@@ -43,6 +43,7 @@ describe("new menu spec", () => {
       "Import from Clipboard",
       "Import Bookmarks",
       "Import mymind",
+      "Import Data Export",
       "Import Page Assets",
       "Import Eagle Package",
       "Import Pond Package",

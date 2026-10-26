@@ -6,6 +6,7 @@ import { z } from "zod";
 import { IPC } from "../../../shared/constants";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { importBookmarkFile, parseBookmarkFile } from "../../core/bookmarks";
+import { importDataExport } from "../../core/data-export";
 import {
   dryRunEagleLibrary,
   importEagleLibrary,
@@ -225,6 +226,27 @@ export const savesImportSourceQueries = {
     const path = picked.filePaths[0];
     if (picked.canceled || !path) return { ok: false, reason: "cancelled" };
     return importMymindExport(path);
+  },
+
+  async "saves.importDataExport"(): Promise<
+    QueryResult<"saves.importDataExport">
+  > {
+    const win = BrowserWindow.getFocusedWindow();
+    const darwin = process.platform === "darwin";
+    const options: Electron.OpenDialogOptions = {
+      /** Only macOS lets one dialog pick either a file or a folder. */
+      properties: darwin ? ["openFile", "openDirectory"] : ["openFile"],
+      message: darwin
+        ? "Choose the .zip or folder you downloaded from X, Instagram, TikTok, Google Takeout, or Reddit"
+        : "Choose the .zip you downloaded from X, Instagram, TikTok, Google Takeout, or Reddit",
+      filters: [{ name: "Data Export", extensions: ["zip"] }],
+    };
+    const picked = win
+      ? await dialog.showOpenDialog(win, options)
+      : await dialog.showOpenDialog(options);
+    const path = picked.filePaths[0];
+    if (picked.canceled || !path) return { ok: false, reason: "cancelled" };
+    return importDataExport(path);
   },
 
   "saves.extractPageAssets": query(

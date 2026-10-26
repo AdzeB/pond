@@ -10,6 +10,7 @@ import {
   findDuplicates,
   importBookmarks,
   importClipboard,
+  importDataExport,
   importEagle,
   importFilePaths,
   importMymind,
@@ -322,6 +323,10 @@ export function MenuBridge() {
 
         case "library.import-mymind":
           void runNewAction(importMymind);
+          return;
+
+        case "library.import-data-export":
+          void runNewAction(importDataExport);
           return;
 
         case "library.import-page-assets":

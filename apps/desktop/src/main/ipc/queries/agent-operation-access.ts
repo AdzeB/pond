@@ -179,6 +179,7 @@ export const queryOperationAccess = {
   "saves.getMany": "read",
   "saves.importBookmarks": "review",
   "saves.importMymind": "review",
+  "saves.importDataExport": "review",
   "saves.importClipboard": "review",
   "saves.importEagleLibrary": "review",
   "saves.importEaglePackage": "review",

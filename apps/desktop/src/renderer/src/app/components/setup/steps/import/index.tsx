@@ -8,6 +8,7 @@ import { Button, ContentRow, Loader } from "@pond/ui";
 import { type ReactNode, useState } from "react";
 import {
   importBookmarks,
+  importDataExport,
   importEagle,
   importEaglePackage,
   importLegacyLibrary,
@@ -61,6 +62,7 @@ const FEATURED: readonly FeaturedSource[] = [
 ];
 
 const MORE: readonly ImportSource[] = [
+  { id: "data-export", title: "Data Export", run: importDataExport },
   { id: "folders", title: "Folders", run: () => importPaths("folders") },
   { id: "eagle-package", title: "Eagle Package", run: importEaglePackage },
   { id: "pond-package", title: "Pond Package", run: importPondPackage },
