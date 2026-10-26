@@ -64,6 +64,68 @@ describe("captureFromPost", () => {
       media: [{ url: "https://substackcdn.com/cover.jpg", type: "image" }],
     });
   });
+
+  it("carries the post body as an article", () => {
+    const capture = captureFromPost(
+      {
+        ...POST,
+        body_html: "<p>One</p><p>Two</p>",
+        canonical_url: "https://www.lennysnewsletter.com/p/how-to-price",
+        audience: "everyone",
+      },
+      PUB,
+      "lenny.substack.com/p/how-to-price",
+      "https://lenny.substack.com/p/how-to-price",
+    );
+    expect(capture.article).toEqual({
+      html: "<p>One</p><p>Two</p>",
+      subtitle: "A guide",
+      canonicalUrl: "https://www.lennysnewsletter.com/p/how-to-price",
+    });
+  });
+
+  it("marks a paid post with a short body as a preview", () => {
+    const capture = captureFromPost(
+      {
+        ...POST,
+        body_html: "<p>Only the opening words</p>",
+        audience: "only_paid",
+        wordcount: 2400,
+      },
+      PUB,
+      "lenny.substack.com/p/how-to-price",
+      "https://lenny.substack.com/p/how-to-price",
+    );
+    expect(capture.article?.preview).toBe(true);
+  });
+
+  it("falls back to the truncated text when the body is withheld", () => {
+    const capture = captureFromPost(
+      {
+        ...POST,
+        body_html: null,
+        truncated_body_text: "Teaser <here>",
+        audience: "only_paid",
+      },
+      PUB,
+      "lenny.substack.com/p/how-to-price",
+      "https://lenny.substack.com/p/how-to-price",
+    );
+    expect(capture.article).toMatchObject({
+      html: "<p>Teaser &lt;here&gt;</p>",
+      preview: true,
+    });
+  });
+
+  it("leaves out the article when the post has no body", () => {
+    const capture = captureFromPost(
+      POST,
+      PUB,
+      "lenny.substack.com/p/how-to-price",
+      "https://lenny.substack.com/p/how-to-price",
+    );
+    expect(capture.article).toBeUndefined();
+  });
 });
 
 describe("feedItems", () => {

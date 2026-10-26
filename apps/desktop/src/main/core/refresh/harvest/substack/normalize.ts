@@ -1,4 +1,4 @@
-import type { Capture, CaptureAuthor } from "@pond/schema/raw";
+import type { Capture, CaptureArticle, CaptureAuthor } from "@pond/schema/raw";
 import { z } from "zod";
 import type { ListEntry } from "../list-types";
 
@@ -23,6 +23,8 @@ export const PostSchema = z.object({
   canonical_url: z.string().nullish().catch(undefined),
   cover_image: z.string().nullish().catch(undefined),
   body_html: z.string().nullish().catch(undefined),
+  audience: z.string().nullish().catch(undefined),
+  wordcount: z.number().nullish().catch(undefined),
   truncated_body_text: z.string().nullish().catch(undefined),
   publication_id: z.number().nullish().catch(undefined),
   reaction_count: z.number().nullish().catch(undefined),
@@ -148,6 +150,8 @@ export function captureFromPost(
     capture.description =
       text.length > TEXT_LIMIT ? `${text.slice(0, TEXT_LIMIT)}…` : text;
   }
+  const article = articleFromPost(post, body);
+  if (article) capture.article = article;
   if (post.post_date) capture.publishedAt = post.post_date;
   const byline = post.publishedBylines?.[0];
   if (byline?.name || byline?.handle) {
@@ -166,6 +170,42 @@ export function captureFromPost(
   if (Object.keys(metrics).length > 0) capture.metrics = metrics;
   if (publication?.name) capture.extras = { publisher: publication.name };
   return capture;
+}
+
+/** Under this share of the post's word count, a non-public body is Substack's paywall preview. */
+const PREVIEW_RATIO = 0.8;
+
+function articleFromPost(
+  post: SubstackPost,
+  bodyText: string,
+): CaptureArticle | null {
+  const html = post.body_html?.trim()
+    ? post.body_html
+    : post.truncated_body_text?.trim()
+      ? `<p>${escapeHtml(post.truncated_body_text.trim())}</p>`
+      : "";
+  if (!html) return null;
+  const article: CaptureArticle = { html };
+  const subtitle = post.subtitle?.trim();
+  if (subtitle) article.subtitle = subtitle;
+  if (post.canonical_url) article.canonicalUrl = post.canonical_url;
+  const words = bodyText.split(/\s+/).filter(Boolean).length;
+  if (
+    post.audience &&
+    post.audience !== "everyone" &&
+    (!post.body_html?.trim() ||
+      (post.wordcount != null && words < post.wordcount * PREVIEW_RATIO))
+  ) {
+    article.preview = true;
+  }
+  return article;
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 export interface FeedItem {

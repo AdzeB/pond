@@ -57,6 +57,12 @@ const SafeWebViewer = lazy(() =>
   ),
 );
 
+const ArticleViewer = lazy(() =>
+  import("@/features/saves/components/viewers/article-viewer").then(
+    (module) => ({ default: module.ArticleViewer }),
+  ),
+);
+
 const TextFileViewer = lazy(() =>
   import("@/features/saves/components/viewers/text-file-viewer").then(
     (module) => ({ default: module.TextFileViewer }),
@@ -121,6 +127,7 @@ export function StoredFileContent({
     return <LivePhotoFileViewer {...props} url={url} />;
   if (kind === "archive") return <ArchiveViewer {...props} url={url} />;
   if (kind === "safe-web") return <SafeWebFileViewer {...props} url={url} />;
+  if (kind === "article") return <ArticleFileViewer {...props} url={url} />;
   return <GenericFileViewer {...props} />;
 }
 
@@ -245,6 +252,33 @@ function SafeWebFileViewer(props: ViewerProps & { url: string }) {
         url={props.url}
         path={props.file.path}
         size={props.file.size}
+        onUnavailable={onUnavailable}
+        toolbarStart={<ViewerSaveNav saveId={props.save.id} />}
+        toolbarActions={<FileActions {...props} />}
+        toolbarNavigation={navigationControls(props.navigation)}
+      />
+    </div>
+  );
+}
+
+function ArticleFileViewer(props: ViewerProps & { url: string }) {
+  const [unavailable, setUnavailable] = useState(false);
+  const onUnavailable = useCallback(() => setUnavailable(true), []);
+  if (unavailable) {
+    return (
+      <ViewerFallback
+        {...props}
+        reason="preview"
+        active={props.active}
+        slideNavigation={props.navigation}
+      />
+    );
+  }
+  return (
+    <div className={styles.preview}>
+      <ArticleViewer
+        url={props.url}
+        fallbackUrl={props.save.url}
         onUnavailable={onUnavailable}
         toolbarStart={<ViewerSaveNav saveId={props.save.id} />}
         toolbarActions={<FileActions {...props} />}

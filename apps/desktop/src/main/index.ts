@@ -455,7 +455,11 @@ async function startDeferredMaintenance(): Promise<void> {
         await import("./core/refresh/source-icon-backfill")
       ).backfillSourceIcons(),
     )
-    .catch((err) => log.warn("[pond] source icon backfill failed", err));
+    .catch((err) => log.warn("[pond] source icon backfill failed", err))
+    .then(async () =>
+      (await import("./core/refresh/article-backfill")).startArticleBackfill(),
+    )
+    .catch((err) => log.warn("[pond] article backfill failed", err));
   void enrichmentModule
     .backfillEnrichmentSidecars()
     .catch((err) => log.warn("[pond] enrichment sidecar backfill failed", err));
