@@ -40,11 +40,10 @@ export const FishScopeSchema = z.object({
 });
 export type FishScope = z.infer<typeof FishScopeSchema>;
 
-export const FishModelSchema = z.object({
+const FishModelSchema = z.object({
   provider: assistantProvider,
   modelId: z.string().trim().min(1).max(300),
 });
-export type FishModel = z.infer<typeof FishModelSchema>;
 
 export const FishRunSchema = z.object({
   routineId: z.string().min(1).max(64).optional(),

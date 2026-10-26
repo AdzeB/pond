@@ -69,7 +69,7 @@ const LegacyRoutineSchema = z.discriminatedUnion("kind", [
 ]);
 
 /** Fish written before routines were a list carry one `routine`; it becomes the first entry. */
-function migrateLegacyRoutine(raw: unknown): unknown {
+const StoredFishSchema = z.preprocess((raw) => {
   const fish = z
     .looseObject({
       routine: LegacyRoutineSchema.optional(),
@@ -101,9 +101,7 @@ function migrateLegacyRoutine(raw: unknown): unknown {
       },
     ],
   };
-}
-
-const StoredFishSchema = z.preprocess(migrateLegacyRoutine, FishSchema);
+}, FishSchema);
 
 function write(root: string, school: readonly Fish[]): void {
   writeBundleJson(fishFile(root), z.array(FishSchema).parse(school));
@@ -261,12 +259,17 @@ function writeRoutines(
   return next;
 }
 
+export interface RoutineChange {
+  fish: Fish;
+  routine: FishRoutine;
+}
+
 export function createRoutine(
   fishId: string,
   input: FishRoutineInput,
   root = resolvePaths().libraryRoot,
   now = Date.now(),
-): { fish: Fish; routine: FishRoutine } {
+): RoutineChange {
   const fields = FishRoutineInputSchema.parse(input);
   const routine: FishRoutine = {
     ...fields,
@@ -297,7 +300,7 @@ export function updateRoutine(
   patch: FishRoutinePatch,
   root = resolvePaths().libraryRoot,
   now = Date.now(),
-): { fish: Fish; routine: FishRoutine } {
+): RoutineChange {
   const fields = FishRoutinePatchSchema.parse(patch);
   let routine: FishRoutine | undefined;
   const fish = writeRoutines(
@@ -341,7 +344,7 @@ export function deleteRoutine(
   routineId: string,
   root = resolvePaths().libraryRoot,
   now = Date.now(),
-): { fish: Fish; routine: FishRoutine } {
+): RoutineChange {
   let routine: FishRoutine | undefined;
   const fish = writeRoutines(
     fishId,

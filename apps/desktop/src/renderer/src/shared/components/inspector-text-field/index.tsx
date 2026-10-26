@@ -1,9 +1,14 @@
 import { IconChevronDown } from "@pond/icons";
 import { Button, Input } from "@pond/ui";
 import { clsx as cn } from "clsx";
+import type { CSSProperties } from "react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
 import styles from "./styles.module.css";
+
+interface ClampStyle extends CSSProperties {
+  "--clamp-lines": number;
+}
 
 interface Draft {
   value: string;
@@ -63,7 +68,7 @@ export function InspectorTextField({
     const measure = () =>
       setOverflowing(area.scrollHeight > area.clientHeight + 1);
     measure();
-    if (typeof ResizeObserver === "undefined") return;
+    if (!globalThis.ResizeObserver) return;
     const observer = new ResizeObserver(measure);
     observer.observe(area);
     return () => observer.disconnect();
@@ -124,15 +129,16 @@ export function InspectorTextField({
         event.currentTarget.blur();
     },
   };
+  const clampStyle: ClampStyle | undefined = clamp
+    ? { "--clamp-lines": clamp }
+    : undefined;
   return (
     <div
       ref={rootRef}
       className={cn(styles.root, className)}
       data-clamped={clamped || undefined}
       data-overflowing={overflowing || undefined}
-      style={
-        clamp ? ({ "--clamp-lines": clamp } as React.CSSProperties) : undefined
-      }
+      style={clampStyle}
     >
       <Input.Root size={size} variant={variant} className={styles.field}>
         {multiline ? (

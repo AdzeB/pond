@@ -15,7 +15,11 @@
         "src/main/core/enrichment-sidecar.ts"
       ],
       "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{mjs,cjs,ts}"],
-      "ignoreDependencies": ["@types/better-sqlite3", "drizzle-kit"]
+      "ignoreDependencies": [
+        "@types/better-sqlite3",
+        "app-builder-lib",
+        "drizzle-kit"
+      ]
     },
     "apps/website": {
       "project": ["**/*.{ts,tsx}"],

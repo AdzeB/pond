@@ -3,20 +3,23 @@ import { expect, it, vi } from "vitest";
 import { assistant } from "./assistant";
 import { createAssistantHarness } from "./assistant.test-harness";
 
-const chats: Record<string, { id: string; title: string }[]> = {
-  koi: [
-    { id: "koi-latest", title: "Latest" },
-    { id: "koi-older", title: "Older" },
+const chats = new Map([
+  [
+    "koi",
+    [
+      { id: "koi-latest", title: "Latest" },
+      { id: "koi-older", title: "Older" },
+    ],
   ],
-  carp: [{ id: "carp-only", title: "Only" }],
-  guppy: [],
-};
+  ["carp", [{ id: "carp-only", title: "Only" }]],
+  ["guppy", []],
+]);
 
 it("opens each fish on its one conversation and keeps its draft", async () => {
   vi.stubGlobal("pond", {
     query: async (name: string, args: { fishId?: string; chatId?: string }) =>
       name === "agent.chats"
-        ? (chats[args.fishId ?? ""] ?? [])
+        ? (chats.get(args.fishId ?? "") ?? [])
         : name === "agent.messages"
           ? [
               {

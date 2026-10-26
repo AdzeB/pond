@@ -18,7 +18,7 @@ function reducedMotion(): boolean {
 }
 
 export function pop(element: Element | null | undefined): void {
-  if (!element || typeof element.animate !== "function" || reducedMotion()) {
+  if (!element || !("animate" in element) || reducedMotion()) {
     return;
   }
   for (const animation of element.getAnimations()) {

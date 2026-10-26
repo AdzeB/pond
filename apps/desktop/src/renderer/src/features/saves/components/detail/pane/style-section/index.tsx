@@ -23,23 +23,23 @@ import { Section } from "@/shared/components/inspector-section";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import styles from "./styles.module.css";
 
-const STYLE_ICONS: Record<string, IconComponent> = {
-  minimalist: IconSquare,
-  maximalist: IconLayers,
-  vintage: IconHistory,
-  modern: IconSparkle,
-  brutalist: IconGrid,
-  colorful: IconPalette,
-  monochrome: IconContrast,
-  dark: IconLightbulb,
-  bright: IconLightbulbFill,
-  illustration: IconPaintbrush,
-  photograph: IconCamera,
-  "3d render": IconCube,
-  diagram: IconNodes3,
-  screenshot: IconScanImage,
-  typography: IconTextA,
-};
+const STYLE_ICONS = new Map<string, IconComponent>([
+  ["minimalist", IconSquare],
+  ["maximalist", IconLayers],
+  ["vintage", IconHistory],
+  ["modern", IconSparkle],
+  ["brutalist", IconGrid],
+  ["colorful", IconPalette],
+  ["monochrome", IconContrast],
+  ["dark", IconLightbulb],
+  ["bright", IconLightbulbFill],
+  ["illustration", IconPaintbrush],
+  ["photograph", IconCamera],
+  ["3d render", IconCube],
+  ["diagram", IconNodes3],
+  ["screenshot", IconScanImage],
+  ["typography", IconTextA],
+]);
 
 function styleName(label: string): string {
   return label
@@ -58,7 +58,7 @@ export function StyleSection({ labels }: { labels: readonly string[] }) {
       <ol className={styles.table}>
         {labels.map((label, index) => {
           const name = styleName(label);
-          const Icon = STYLE_ICONS[label.toLowerCase()] ?? IconImage;
+          const Icon = STYLE_ICONS.get(label.toLowerCase()) ?? IconImage;
           return (
             <SpecContextMenu
               key={label}

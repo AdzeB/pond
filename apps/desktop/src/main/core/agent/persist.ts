@@ -52,7 +52,7 @@ export async function listChats(fishId?: string): Promise<ChatListing[]> {
     .orderBy(desc(agentChats.updatedAt));
 }
 
-export async function createChat(
+async function createChat(
   fishId: string = DEFAULT_FISH_ID,
   title: string | null = null,
 ): Promise<ChatListing> {

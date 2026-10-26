@@ -44,7 +44,7 @@ export function ChangeRow({
   const content = (
     <>
       {change.saveId ? (
-        <SourceThumbnail id={change.saveId} size="compact" shape="natural" />
+        <SourceThumbnail id={change.saveId} size="compact" fit="natural" />
       ) : (
         <span className={styles.icon} aria-hidden>
           <FieldIcon size={12} />

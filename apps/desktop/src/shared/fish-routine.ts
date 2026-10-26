@@ -50,7 +50,7 @@ export function describeWhen(when: FishWhen): string {
 }
 
 /** The latest scheduled moment at or before `now`, in local time. */
-export function previousSlot(
+function previousSlot(
   when: Extract<FishWhen, { kind: "daily" }>,
   now: number,
 ): number | null {

@@ -14,9 +14,13 @@ import { createRoutine, deleteRoutine, updateRoutine } from "./store";
 const WHEN_HELP =
   'when is {"kind":"daily","time":"08:00","days":[1,2,3,4,5]} for weekdays at 8:00 AM (24-hour time, 0 is Sunday), {"kind":"every","hours":2} for every 2 hours, or {"kind":"newSaves"} to run when new Saves arrive in this fish\'s scope.';
 
-const RoutineIdInput = z.object({ routineId: z.string().min(1).max(64) });
+const RoutineId = z.string().min(1).max(64);
+const RoutineIdInput = z.object({ routineId: RoutineId });
+const UpdateRoutineInput = FishRoutinePatchSchema.extend({
+  routineId: RoutineId,
+});
 
-export const routineToolDependencies = {
+const routineToolDependencies = {
   createRoutine,
   updateRoutine,
   deleteRoutine,
@@ -83,12 +87,10 @@ export function routineTools(
     {
       name: "updateRoutine",
       description: `Change one of your routines by ID: its name, instruction, or when it runs. Send only the fields that change. ${WHEN_HELP}`,
-      schema: RoutineIdInput.extend(FishRoutinePatchSchema.shape),
+      schema: UpdateRoutineInput,
       execute: async (args) => {
         input.signal.throwIfAborted();
-        const { routineId, ...patch } = RoutineIdInput.extend(
-          FishRoutinePatchSchema.shape,
-        ).parse(args);
+        const { routineId, ...patch } = UpdateRoutineInput.parse(args);
         const { routine } = deps.updateRoutine(input.fishId, routineId, patch);
         record("updated", routine);
         return { updated: summary(routine) };

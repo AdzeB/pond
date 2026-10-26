@@ -18,18 +18,26 @@ export interface FactAction {
 
 const MB = 1_000_000;
 
-const DATE_FIELDS: Record<
-  string,
-  { field: FieldId; verb: string; at: (save: Save) => unknown }
-> = {
-  imported: { field: "savedAt", verb: "from", at: (save) => save.savedAt },
-  modified: {
-    field: "modifiedAt",
-    verb: "Modified",
-    at: (save) => save.createdAt ?? save.savedAt,
-  },
-  taken: { field: "takenAt", verb: "Taken", at: (save) => save.takenAt },
-};
+type SaveTime = Save["savedAt"] | Save["createdAt"] | Save["takenAt"];
+
+interface DateField {
+  field: FieldId;
+  verb: string;
+  at: (save: Save) => SaveTime;
+}
+
+const DATE_FIELDS = new Map<string, DateField>([
+  ["imported", { field: "savedAt", verb: "from", at: (save) => save.savedAt }],
+  [
+    "modified",
+    {
+      field: "modifiedAt",
+      verb: "Modified",
+      at: (save) => save.createdAt ?? save.savedAt,
+    },
+  ],
+  ["taken", { field: "takenAt", verb: "Taken", at: (save) => save.takenAt }],
+]);
 
 function show(label: string, predicate: Predicate): FactAction {
   return { label, run: () => saveLibraryBridge.showMatching(predicate) };
@@ -50,8 +58,8 @@ function extensionOf(path: string | undefined): string | null {
     : null;
 }
 
-function dayRange(value: unknown): [number, number] | null {
-  if (!(value instanceof Date) && typeof value !== "number") return null;
+function dayRange(value: SaveTime): [number, number] | null {
+  if (value == null) return null;
   const start = new Date(value);
   if (Number.isNaN(start.getTime())) return null;
   start.setHours(0, 0, 0, 0);
@@ -94,14 +102,16 @@ export function factFilters(
     }
     case "dimensions": {
       const out: FactAction[] = [];
-      const shape = orientationFromDims(save.width, save.height);
-      const shapeLabel = shape ? presetLabel("shape", shape) : null;
-      if (shape && shapeLabel) {
+      const orientation = orientationFromDims(save.width, save.height);
+      const orientationLabel = orientation
+        ? presetLabel("shape", orientation)
+        : null;
+      if (orientation && orientationLabel) {
         out.push(
-          show(`Show ${shapeLabel} Saves`, {
+          show(`Show ${orientationLabel} Saves`, {
             field: "shape",
             operator: "eq",
-            value: shape,
+            value: orientation,
           }),
         );
       }
@@ -146,7 +156,7 @@ export function factFilters(
       ];
     }
     default: {
-      const date = DATE_FIELDS[fact.id];
+      const date = DATE_FIELDS.get(fact.id);
       const range = date ? dayRange(date.at(save)) : null;
       if (!date || !range) return [];
       return [

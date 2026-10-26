@@ -3,7 +3,7 @@ function clampTrack(width: number, min: number, max: number): number {
 }
 
 /** How far past the minimum width a drag must travel before it collapses the track. */
-export const COLLAPSE_OVERSHOOT = 48;
+const COLLAPSE_OVERSHOOT = 48;
 
 export function nextTrackWidth(input: {
   edge: "left" | "right";

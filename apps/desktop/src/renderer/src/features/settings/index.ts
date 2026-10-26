@@ -7,6 +7,5 @@ export {
   resolveSidebarBadgeStyle,
   SIDEBAR_DESTINATION_GROUPS,
   SIDEBAR_DESTINATION_LABELS,
-  setSidebarSectionVisible,
   useRevealSidebarSection,
 } from "./lib/sidebar-customization";

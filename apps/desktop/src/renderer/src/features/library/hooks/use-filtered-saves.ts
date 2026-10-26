@@ -1,6 +1,6 @@
 import { seededOrderKey } from "@shared/order-key";
 import { pickCardFile } from "@shared/save-file-names";
-import { saveDuration } from "@/features/saves/lib/duration";
+import { saveDuration } from "@/features/saves/media";
 import type { Save } from "@/features/saves/types";
 
 export type SortKey =

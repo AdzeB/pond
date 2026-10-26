@@ -18,6 +18,7 @@ function tags(
   added: string,
   extra: Partial<AssistantChange> = {},
 ): AssistantChange {
+  /** SAFETY: `field` is "tags" with string-array before/after, and `extra` only overrides shared fields. */
   return {
     id: `${save.id}:tags:${status}:${added}`,
     saveId: save.id,
@@ -48,6 +49,7 @@ function rename(save: SampleSave, status: Status): AssistantChange {
 
 export function reviewFixtures(input: readonly SampleSave[]) {
   const saves = [...input, ...PLACEHOLDERS];
+  /** SAFETY: PLACEHOLDERS holds six saves, so the first six entries always exist. */
   const [a, b, c, d, e, f] = saves as [
     SampleSave,
     SampleSave,

@@ -20,7 +20,7 @@
   width: 40px;
   height: 40px;
 }
-.thumbnail[data-shape="natural"] {
+.thumbnail[data-fit="natural"] {
   height: auto;
   min-height: 24px;
   max-height: 40px;
@@ -39,7 +39,7 @@
   height: 100%;
   object-fit: cover;
 }
-.thumbnail[data-shape="natural"] img {
+.thumbnail[data-fit="natural"] img {
   object-position: top;
 }
 .thumbnail svg {

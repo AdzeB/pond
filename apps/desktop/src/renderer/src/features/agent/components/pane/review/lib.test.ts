@@ -103,7 +103,7 @@ describe("reviewSummary", () => {
         change("pending"),
         change("pending"),
         { ...change("pending"), field: "title", before: "A", after: "B" },
-      ] as AssistantChange[]),
+      ] satisfies AssistantChange[]),
     ).toBe("Retags 2 Saves, renames 1 Save");
   });
 
@@ -120,7 +120,7 @@ describe("reviewSummary", () => {
           action: "runOperation",
           before: "",
           after: "Create folder Design",
-        } as AssistantChange,
+        } satisfies AssistantChange,
       ]),
     ).toBe("Create folder Design");
   });

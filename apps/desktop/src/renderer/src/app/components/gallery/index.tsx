@@ -311,7 +311,10 @@ export function Gallery() {
         <ToggleGroup
           aria-label="Theme"
           value={[mode]}
-          onValueChange={(value) => value[0] && setMode(value[0] as ThemeMode)}
+          onValueChange={(value) =>
+            /** SAFETY: every Toggle in this group carries a ThemeMode value. */
+            value[0] && setMode(value[0] as ThemeMode)
+          }
         >
           <Toggle size="sm" value="light">
             Light
@@ -326,7 +329,10 @@ export function Gallery() {
         <ToggleGroup
           aria-label="Width"
           value={[width]}
-          onValueChange={(value) => value[0] && setWidth(value[0] as Width)}
+          onValueChange={(value) =>
+            /** SAFETY: every Toggle in this group carries a WIDTHS key. */
+            value[0] && setWidth(value[0] as Width)
+          }
         >
           <Toggle size="sm" value="pane">
             Pane

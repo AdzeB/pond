@@ -19,7 +19,7 @@ export const LIST_COLUMN_OPTIONS = [
 
 export type ListColumnKey = (typeof LIST_COLUMN_OPTIONS)[number]["key"];
 
-export type ListColumns = Record<ListColumnKey, boolean>;
+export type ListColumns = { [Key in ListColumnKey]: boolean };
 
 export const LIST_COLUMN_DEFAULTS: ListColumns = {
   name: true,
