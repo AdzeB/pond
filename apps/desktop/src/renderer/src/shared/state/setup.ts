@@ -25,6 +25,9 @@ export const setupFlow = {
   close(): void {
     store.setState((s) => (s.open ? { ...s, open: false } : s));
   },
+  isOpen(): boolean {
+    return store.state.open;
+  },
 };
 
 export function useSetupFlow(): SetupState {

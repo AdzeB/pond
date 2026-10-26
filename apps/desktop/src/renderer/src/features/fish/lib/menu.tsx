@@ -1,4 +1,10 @@
-import { IconChatBubble, IconPencil, IconPlus, IconTrash } from "@pond/icons";
+import {
+  IconChatBubble,
+  IconCircleInfo,
+  IconPencil,
+  IconPlus,
+  IconTrash,
+} from "@pond/icons";
 import { Dialog, type MenuItemSpec } from "@pond/ui";
 import {
   DEFAULT_FISH_ID,
@@ -8,6 +14,7 @@ import {
 } from "@shared/fish-contracts";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
+import { fishIntroDialog } from "@/shared/state/fish-intro";
 import { fish } from "../state/fish";
 
 async function runFishAction(
@@ -83,7 +90,14 @@ function confirmDeleteFish(target: Fish): void {
 }
 
 export function sectionItems(): MenuItemSpec[] {
-  return [{ label: "New Fish", icon: <IconPlus />, onClick: createFish }];
+  return [
+    { label: "New Fish", icon: <IconPlus />, onClick: createFish },
+    {
+      label: "About Fish",
+      icon: <IconCircleInfo />,
+      onClick: () => fishIntroDialog.open(),
+    },
+  ];
 }
 
 /** Actions for the fish whose conversation is open. */

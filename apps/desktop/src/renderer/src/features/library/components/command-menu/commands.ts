@@ -3,6 +3,7 @@ import {
   IconBookmark,
   IconBookmarkSlash,
   IconChatBubble,
+  IconCircleInfo,
   IconCoffee,
   IconCompass,
   IconCopy,
@@ -33,6 +34,7 @@ import { resetFilters } from "@/features/library/state/view-store";
 import { openSources, pickWatchedFolder } from "@/features/sources";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { openSettings } from "@/shared/lib/open-settings";
+import { fishIntroDialog } from "@/shared/state/fish-intro";
 import { setupFlow } from "@/shared/state/setup";
 import { supportDialog } from "@/shared/state/support";
 import type { CommandSpec } from "./types";
@@ -250,6 +252,15 @@ export const COMMANDS: readonly CommandSpec[] = [
     icon: IconCompass,
     keywords: "onboarding welcome guide tour setup",
     run: () => setupFlow.open("existing"),
+  },
+  {
+    id: "about-fish",
+    group: "App",
+    label: "About Fish",
+    detail: "What fish do and where Assistant went",
+    icon: IconCircleInfo,
+    keywords: "assistant chat ai help intro koi",
+    run: () => fishIntroDialog.open(),
   },
   {
     id: "support",
