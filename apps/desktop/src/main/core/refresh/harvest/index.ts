@@ -5,6 +5,7 @@ import { sourceIdFromUrl } from "@pond/schema/sources";
 import * as arena from "./arena";
 import * as cosmos from "./cosmos";
 import type { HarvestAdaptCtx } from "./from-page";
+import * as github from "./github/item";
 import * as instagram from "./instagram";
 import * as pinterest from "./pinterest";
 import * as reddit from "./reddit";
@@ -65,6 +66,12 @@ const REGISTRY = {
     buildExpression: threads.buildExpression,
     adapt: threads.adapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("threads", url),
+  },
+  github: {
+    buildExpression: github.buildExpression,
+    adapt: github.adapt,
+    sourceIdFromUrl: (url) =>
+      sourceIdFromUrl("github", url)?.toLowerCase() ?? null,
   },
   substack: {
     buildExpression: substack.buildExpression,

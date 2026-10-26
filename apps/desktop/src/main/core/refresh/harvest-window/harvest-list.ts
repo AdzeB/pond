@@ -12,6 +12,10 @@ import { arenaProfileUrl, buildArenaListExpression } from "../harvest/arena";
 import { addCollectionEntry } from "../harvest/collection-entries";
 import { buildCosmosListExpression, COSMOS_LIST_URL } from "../harvest/cosmos";
 import {
+  buildGithubStarsExpression,
+  githubStarsUrl,
+} from "../harvest/github/list";
+import {
   buildInstagramCollectionsExpression,
   buildInstagramLikesExpression,
   buildInstagramListExpression,
@@ -126,6 +130,7 @@ const ListResultSchema = z
       reachedEnd: z.boolean().catch(false),
       seen: OptionalCount,
       resumeCursor: OptionalText,
+      complete: z.boolean().optional().catch(undefined),
     }),
     z.object({
       ok: z.literal(false),
@@ -289,6 +294,7 @@ export async function harvestSourceList(
       reachedEnd: parsed.reachedEnd,
     };
     if (parsed.resumeCursor) result.resumeCursor = parsed.resumeCursor;
+    if (parsed.complete) result.complete = true;
     if (parsed.seen != null) {
       result.seen = parsed.seen;
     } else {
@@ -384,6 +390,8 @@ function listUrlForSource(
       return accountKey ? redditSavedUrl(accountKey) : null;
     case "threads":
       return THREADS_LIST_URL;
+    case "github":
+      return accountKey ? githubStarsUrl(accountKey) : null;
     case "substack":
       return null;
     case "web":
@@ -416,6 +424,8 @@ function buildListExpressionFor(
       return buildRedditListExpression(args);
     case "threads":
       return buildThreadsListExpression(args);
+    case "github":
+      return buildGithubStarsExpression(args);
     case "substack":
       return null;
     case "web":

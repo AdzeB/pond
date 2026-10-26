@@ -116,6 +116,11 @@ export async function probeUserHandle(
     const { probeCosmosHandle } = await import("../harvest/cosmos/api");
     return probeCosmosHandle(partition ?? PARTITION);
   }
+  if (source === "github") {
+    const { probeGithubHandle } = await import("../harvest/github/account");
+    const viaCookie = await probeGithubHandle(partition ?? PARTITION);
+    if (viaCookie) return viaCookie;
+  }
   if (source === "substack") {
     const { probeSubstackHandle } = await import("../harvest/substack/api");
     return probeSubstackHandle(partition ?? PARTITION);
@@ -170,6 +175,7 @@ function probeUrlForSource(source: Source): string {
   if (source === "reddit") return "https://www.reddit.com/";
   if (source === "threads") return "https://www.threads.com/";
   if (source === "cosmos") return "https://www.cosmos.so/";
+  if (source === "github") return "https://github.com/";
   if (source === "substack") return "https://substack.com/home";
   return homeUrlForSource(source);
 }

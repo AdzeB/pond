@@ -183,6 +183,16 @@ describe("deriveTypeLabel web pages", () => {
     expect(deriveTypeLabel(save.files[0] ?? null, save)).toBe("Article");
   });
 
+  it("labels a GitHub save as a Repository, even with a README article", () => {
+    const save = makeSave({
+      id: "repo-1",
+      source: "github",
+      mediaType: "text",
+      files: [file("article", "article.html", "text/html")],
+    });
+    expect(deriveTypeLabel(save.files[0] ?? null, save)).toBe("Repository");
+  });
+
   it("still uses the file extension for non-web image saves", () => {
     const save = makeSave({
       id: "photo-1",

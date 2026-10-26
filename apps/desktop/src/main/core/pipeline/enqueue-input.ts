@@ -2,6 +2,7 @@ import type { ListKind, Source } from "@pond/schema/db";
 import { mergeListKinds } from "@pond/schema/list-kinds";
 import type { ImportableCookie } from "../refresh/harvest-window/session";
 import { classifyUrlToSource } from "./extractors";
+import { firstMatch, GITHUB_PATTERNS } from "./extractors/url-patterns";
 import { listKindsFromTrigger } from "./list-kinds";
 import type { EnqueueSeed } from "./seed";
 import { sourceIdFromUrl } from "./url";
@@ -53,6 +54,9 @@ export function normalizeUrl(rawUrl: string): string {
         url.searchParams.delete(key);
       }
     }
+    const repo = firstMatch(url, GITHUB_PATTERNS)?.[1];
+    /** GitHub repo names are case-insensitive, so every spelling of a repo lands on one save. */
+    if (repo) return `https://github.com/${repo.toLowerCase()}`;
     const shared = OPEN_SUBSTACK_POST.exec(`${url.host}${url.pathname}`);
     if (shared) return `https://${shared[1]}.substack.com/p/${shared[2]}`;
     return url.toString();

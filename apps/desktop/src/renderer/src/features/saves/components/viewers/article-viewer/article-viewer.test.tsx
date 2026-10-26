@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import type { Source } from "@pond/schema/db";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -38,10 +39,14 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-async function render() {
+async function render(source: Source = "substack") {
   await act(async () => {
     root.render(
-      <ArticleViewer url="pond://s1/article.html" onUnavailable={vi.fn()} />,
+      <ArticleViewer
+        url="pond://s1/article.html"
+        source={source}
+        onUnavailable={vi.fn()}
+      />,
     );
   });
 }
@@ -76,4 +81,10 @@ it("opens body links and Open on Substack in the browser", async () => {
     open?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   });
   expect(window.pond.openExternal).toHaveBeenCalledWith(POST_URL);
+});
+
+it("names the save's source in the toolbar", async () => {
+  await render("github");
+
+  expect(host.querySelector('[aria-label="Open on GitHub"]')).not.toBeNull();
 });

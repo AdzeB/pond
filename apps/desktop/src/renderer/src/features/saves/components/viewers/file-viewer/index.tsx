@@ -278,6 +278,7 @@ function ArticleFileViewer(props: ViewerProps & { url: string }) {
     <div className={styles.preview}>
       <ArticleViewer
         url={props.url}
+        source={props.save.source}
         fallbackUrl={props.save.url}
         onUnavailable={onUnavailable}
         toolbarStart={<ViewerSaveNav saveId={props.save.id} />}

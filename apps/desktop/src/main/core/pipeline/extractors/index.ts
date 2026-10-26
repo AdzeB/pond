@@ -3,6 +3,7 @@ import type { ExternalSource } from "@pond/schema/sources";
 import { UnsupportedError } from "./errors";
 import { ArenaBlockExtractor } from "./sources/arena";
 import { CosmosTileExtractor } from "./sources/cosmos";
+import { GitHubRepoExtractor } from "./sources/github";
 import { InstagramPostExtractor } from "./sources/instagram";
 import { PinterestPinExtractor } from "./sources/pinterest";
 import { RedditPostExtractor } from "./sources/reddit";
@@ -23,6 +24,7 @@ const EXTRACTORS = {
   cosmos: new CosmosTileExtractor(),
   reddit: new RedditPostExtractor(),
   threads: new ThreadsPostExtractor(),
+  github: new GitHubRepoExtractor(),
   substack: new SubstackPostExtractor(),
 } as const satisfies Record<ExternalSource, Extractor>;
 

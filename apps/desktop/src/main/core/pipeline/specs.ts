@@ -30,6 +30,14 @@ export function planOps(source: Source): readonly Op[] {
       "finalize",
     ];
   }
+  if (source === "github") {
+    return UNIVERSAL_SPEC.filter(
+      (op) =>
+        op !== "capture_tweet" &&
+        op !== "archive_page" &&
+        op !== "fetch_video_ytdlp",
+    );
+  }
   if (source === "twitter" || source === "threads") {
     return UNIVERSAL_SPEC.filter(
       (op) => op !== "archive_page" && op !== "render_text_cover",
@@ -147,6 +155,10 @@ export const CAPTURE_EXPECTATIONS = {
       "capture.metrics.replies",
       "capture.author.avatarUrl",
     ],
+  },
+  github: {
+    required: ["title"],
+    recommended: ["description", "author", "capture.author.avatarUrl"],
   },
   substack: {
     required: ["title"],

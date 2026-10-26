@@ -65,6 +65,12 @@ filtered afterward.
   `listSourceCollections` and `harvestSourceCollections`
   (`harvest-window/harvest-list.ts`) load and walk them.
 - Cosmos, Are.na, and Threads import every list.
+- GitHub walks your Stars tab in the signed-in window, 30 repos a page
+  (`harvest/github/list.ts`). Stars show no date, but each page's Next cursor
+  holds its last star's time, so the `since` limit (`sinceDate: "saved"`) ends
+  on the first page that reaches past it and may bring in up to a page of older
+  stars. A walk that reads every star from the top (`complete`) takes the Saved
+  label off repos you unstarred; the saves stay.
 - Substack reads saved and liked posts in one walk of the signed-in reader API.
   Subscriptions are a third list kind (`subscription`): at most every six hours
   the run reads each subscribed publication's RSS feed and imports posts

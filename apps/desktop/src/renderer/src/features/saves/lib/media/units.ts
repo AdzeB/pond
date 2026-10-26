@@ -340,6 +340,7 @@ export function deriveTypeLabel(
   save: Save,
 ): string | null {
   if (save.source === "web") return "Web";
+  if (save.source === "github") return "Repository";
   if (save.files.some((f) => f.kind === ARTICLE_KIND)) return "Article";
   if (arenaBlockClass(save) === "text") return "Text";
   if (

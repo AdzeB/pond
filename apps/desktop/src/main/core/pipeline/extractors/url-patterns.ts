@@ -9,6 +9,7 @@ export const TIKTOK_PATTERNS = descriptorFor("tiktok").urlPatterns;
 export const YOUTUBE_PATTERNS = descriptorFor("youtube").urlPatterns;
 export const REDDIT_PATTERNS = descriptorFor("reddit").urlPatterns;
 export const THREADS_PATTERNS = descriptorFor("threads").urlPatterns;
+export const GITHUB_PATTERNS = descriptorFor("github").urlPatterns;
 export const SUBSTACK_PATTERNS = descriptorFor("substack").urlPatterns;
 
 export function firstMatch(

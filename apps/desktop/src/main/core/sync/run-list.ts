@@ -2,9 +2,15 @@ import type { ConnectedAccount, Source } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { sourceLabel } from "@pond/schema/sources";
 import log from "electron-log/main.js";
-import { accountImportScope } from "../../../shared/import-scope";
+import {
+  accountImportScope,
+  savedSinceStart,
+} from "../../../shared/import-scope";
 import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
-import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
+import {
+  dropMissingListKind,
+  mergeListKindsOntoExisting,
+} from "../pipeline/list-kinds";
 import { createQueueGeneration } from "../pipeline/queue-generations";
 import type { ListHarvestResult } from "../refresh/harvest/list-types";
 import { harvestSubstackSubscriptions } from "../refresh/harvest/substack/api";
@@ -46,6 +52,7 @@ export const LIST_HARVEST_SOURCES = new Set<Source>([
   "instagram",
   "tiktok",
   "reddit",
+  "github",
   "substack",
 ]);
 
@@ -73,7 +80,12 @@ export async function syncListSource(
   });
 
   let accountKey: string | undefined;
-  if (source === "arena" || source === "tiktok" || source === "reddit") {
+  if (
+    source === "arena" ||
+    source === "tiktok" ||
+    source === "reddit" ||
+    source === "github"
+  ) {
     accountKey = (await resolveAccountHandle(account)) ?? undefined;
     if (!accountKey) {
       log.info(`[pond sync:${source}] could not resolve account from session`);
@@ -116,6 +128,8 @@ export async function syncListSource(
   };
   if (resuming && resumeCursor) listArgs.resumeCursor = resumeCursor;
   if (plan.listKinds.length > 0) listArgs.listKinds = plan.listKinds;
+  const savedSince = savedSinceStart(source, scope);
+  if (savedSince) listArgs.savedSince = savedSince.toISOString();
   const harvest: ListHarvestResult = plan.collections
     ? await harvestSourceCollections(
         source,
@@ -290,6 +304,16 @@ export async function syncListSource(
 
   for (const id of await mergeListKindsOntoExisting(source, combined)) {
     knownIds.delete(id);
+  }
+  if (harvest.complete) {
+    const dropped = await dropMissingListKind(
+      account,
+      "saved",
+      new Set(harvest.entries.map((e) => e.sourceId)),
+    );
+    if (dropped > 0) {
+      log.info(`[pond sync:${source}] ${dropped} saves left the list`);
+    }
   }
 
   const allFresh = combined.filter((e) => !knownIds.has(e.sourceId));

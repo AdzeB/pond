@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sinceForPreset } from "./import-scope";
+import { sinceCopy, sinceForPreset } from "./import-scope";
 
 describe("sinceForPreset", () => {
   const now = new Date(2026, 9, 17, 15, 30);
@@ -10,8 +10,26 @@ describe("sinceForPreset", () => {
     expect(sinceForPreset("year", now)).toBe("2025-10-17");
   });
 
+  it("starts from today for only new items", () => {
+    expect(sinceForPreset("today", now)).toBe("2026-10-17");
+  });
+
   it("leaves the date empty for any time and a custom date", () => {
     expect(sinceForPreset("any", now)).toBe("");
     expect(sinceForPreset("custom", now)).toBe("");
+  });
+});
+
+describe("sinceCopy", () => {
+  it("offers From Today where the limit compares the day you saved", () => {
+    const copy = sinceCopy("github");
+    expect(copy.title).toBe("Saved Since");
+    expect(copy.presets.map((p) => p.value)).toContain("today");
+  });
+
+  it("keeps publish-date presets for posts", () => {
+    const copy = sinceCopy("twitter");
+    expect(copy.title).toBe("Posted Since");
+    expect(copy.presets.map((p) => p.value)).not.toContain("today");
   });
 });

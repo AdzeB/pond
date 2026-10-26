@@ -1,4 +1,6 @@
 import { IconArrowUpRight } from "@pond/icons";
+import type { Source } from "@pond/schema/db";
+import { sourceLabel } from "@pond/schema/sources";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
@@ -9,6 +11,7 @@ import styles from "./styles.module.css";
 
 interface ArticleViewerProps {
   url: string;
+  source: Source;
   fallbackUrl?: string;
   onUnavailable: () => void;
   toolbarStart?: ReactNode;
@@ -20,6 +23,7 @@ const WORDS_PER_MINUTE = 230;
 
 export function ArticleViewer({
   url,
+  source: saveSource,
   fallbackUrl,
   onUnavailable,
   toolbarStart,
@@ -51,6 +55,7 @@ export function ArticleViewer({
     [source],
   );
   const postUrl = article?.meta.url ?? fallbackUrl;
+  const site = sourceLabel(saveSource);
 
   return (
     <div className={styles.root}>
@@ -63,7 +68,7 @@ export function ArticleViewer({
               controls={
                 postUrl ? (
                   <ViewerHud.Tool
-                    label="Open on Substack"
+                    label={`Open on ${site}`}
                     onClick={() => void window.pond.openExternal(postUrl)}
                   >
                     <IconArrowUpRight />
@@ -77,7 +82,7 @@ export function ArticleViewer({
         />
       </ChromePortal>
       {article ? (
-        <ArticleBody article={article} postUrl={postUrl} />
+        <ArticleBody article={article} postUrl={postUrl} site={site} />
       ) : (
         <div className={styles.status}>Loading article</div>
       )}
@@ -88,9 +93,11 @@ export function ArticleViewer({
 function ArticleBody({
   article,
   postUrl,
+  site,
 }: {
   article: Article;
   postUrl?: string;
+  site: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { meta } = article;
@@ -153,7 +160,7 @@ function ArticleBody({
         {meta.preview && postUrl ? (
           <p className={styles.preview}>
             This is a preview.{" "}
-            <a href={postUrl}>Read the full post on Substack.</a>
+            <a href={postUrl}>Read the full post on {site}.</a>
           </p>
         ) : null}
       </article>
