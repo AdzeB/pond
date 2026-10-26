@@ -77,6 +77,10 @@ apps/desktop/resources/bin/pond-native-host.exe
 apps/desktop/resources/SafariExtension/
 apps/desktop/.safari-build/
 
+# Share extension compiled by apps/desktop/scripts/build-share-extension.mjs
+apps/desktop/resources/ShareExtension/
+apps/desktop/.share-build/
+
 # generated icon previews
 apps/desktop/src/renderer/src/generated/
 

@@ -57,8 +57,9 @@ extraResources:
     to: .
     filter:
       - "**/*"
-      # The Safari appex belongs in Contents/PlugIns only; see mac.extraFiles.
+      # App extensions belong in Contents/PlugIns only; see mac.extraFiles.
       - "!SafariExtension{,/**}"
+      - "!ShareExtension{,/**}"
   - from: ../../packages/icons/brand/tints
     to: app-icons
     filter:
@@ -110,17 +111,20 @@ mac:
   # the hardened runtime after notarization.
   entitlements: packaging/entitlements.mac.plist
   entitlementsInherit: packaging/entitlements.mac.inherit.plist
-  # Signs the Safari appex, which electron-builder skips, then the app as usual.
+  # Signs the app extensions, which electron-builder skips, then the app as usual.
   sign: scripts/sign-mac.cjs
   extraResources:
     - from: node_modules/ffmpeg-static/ffmpeg
       to: bin/ffmpeg
-  # The Safari App Extension, compiled by scripts/build-safari-extension.mjs. Safari
-  # cannot launch an external native-messaging host, so the handler ships inside the
-  # app bundle; macOS only loads a .appex from Contents/PlugIns, and sign-mac.cjs signs it.
+  # App extensions: the Safari App Extension (scripts/build-safari-extension.mjs) and
+  # the Share extension (scripts/build-share-extension.mjs). Safari cannot launch an
+  # external native-messaging host, so its handler ships inside the app bundle; macOS
+  # only loads a .appex from Contents/PlugIns, and sign-mac.cjs signs each one.
   extraFiles:
     - from: resources/SafariExtension/Pond Extension.appex
       to: PlugIns/Pond Extension.appex
+    - from: resources/ShareExtension/Pond Share.appex
+      to: PlugIns/Pond Share.appex
   # Register `.pond` as a macOS package so Finder shows a library as a
   # single bundle instead of a folder full of items/, trash/, metadata.
   # LaunchServices only honors this in packaged builds, not `dev`.

@@ -2,11 +2,19 @@ const { execFileSync } = require("node:child_process");
 const { existsSync } = require("node:fs");
 const { join, resolve } = require("node:path");
 
-const APPEX = "Contents/PlugIns/Pond Extension.appex";
-const ENTITLEMENTS = resolve(
-  __dirname,
-  "../../extension/safari/extension.entitlements",
-);
+const APPEXES = [
+  {
+    path: "Contents/PlugIns/Pond Extension.appex",
+    entitlements: resolve(
+      __dirname,
+      "../../extension/safari/extension.entitlements",
+    ),
+  },
+  {
+    path: "Contents/PlugIns/Pond Share.appex",
+    entitlements: resolve(__dirname, "../share-extension/share.entitlements"),
+  },
+];
 
 function defaultSign() {
   const builder = require.resolve("electron-builder");
@@ -17,10 +25,11 @@ function defaultSign() {
   ).sign;
 }
 
-/** electron-builder skips Contents/PlugIns, so the Safari appex is signed with its own entitlements before the app seals it. */
+/** electron-builder skips Contents/PlugIns, so each appex is signed with its own entitlements before the app seals it. */
 exports.default = async function signMac(opts) {
-  const appex = join(opts.app, APPEX);
-  if (existsSync(appex) && opts.identity) {
+  for (const { path, entitlements } of APPEXES) {
+    const appex = join(opts.app, path);
+    if (!existsSync(appex) || !opts.identity) continue;
     const args = [
       "--force",
       "--sign",
@@ -28,7 +37,7 @@ exports.default = async function signMac(opts) {
       "--options",
       "runtime",
       "--entitlements",
-      ENTITLEMENTS,
+      entitlements,
     ];
     if (opts.identity !== "-") args.push("--timestamp");
     if (opts.keychain) args.push("--keychain", opts.keychain);
