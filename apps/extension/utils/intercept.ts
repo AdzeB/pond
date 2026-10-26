@@ -53,14 +53,22 @@ interface Registry {
   patchedBeacon: boolean;
 }
 
+/**
+ * Keyed by a `Symbol` rather than a string property so a page's own scripts cannot find
+ * the registry by name. Multiple Pond injectors load on the same page, so the handle has
+ * to be shared: the symbol is stashed on `Symbol.for` to survive a second copy of this
+ * module evaluating separately.
+ */
+const REGISTRY_KEY = Symbol.for("pond.interceptors");
+
 declare global {
   interface Window {
-    __pondInterceptors?: Registry;
+    [REGISTRY_KEY]?: Registry;
   }
 }
 
 function registry(): Registry {
-  const existing = window.__pondInterceptors;
+  const existing = window[REGISTRY_KEY];
   if (existing) return existing;
   const created: Registry = {
     handlers: [],
@@ -69,7 +77,7 @@ function registry(): Registry {
     patchedXhr: false,
     patchedBeacon: false,
   };
-  window.__pondInterceptors = created;
+  window[REGISTRY_KEY] = created;
   return created;
 }
 

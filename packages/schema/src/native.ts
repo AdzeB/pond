@@ -5,6 +5,16 @@ import { extensionCookieSchema, sessionImportPayloadSchema } from "./session";
 
 export const NATIVE_HOST_NAME = "so.pond.host";
 
+/**
+ * Safari has no \`NativeMessagingHosts\` folder or \`allowed_origins\` manifest, so it
+ * cannot launch \`pond-native-host\` the way Chrome does. A Safari App Extension cannot
+ * either: \`sendNativeMessage\` there routes to the \`SafariWebExtensionHandler\` compiled
+ * into Pond's own app extension. The handler forwards the same JSON to the same Unix
+ * socket, so only this identifier differs per browser; requests and responses are
+ * unchanged and validated by the schemas below.
+ */
+export const SAFARI_HOST_NAME = "app.pond.safari.host";
+
 /** Pinned by `manifest.key` in unpacked builds; native-host `allowed_origins` must match. */
 export const EXTENSION_ID = "ihciihlcdkopghlpabpmnodncfdboplb";
 
