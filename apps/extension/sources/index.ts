@@ -2,6 +2,7 @@ import { SOURCES } from "@pond/schema/source-ids";
 import { type ExternalSource, sourceIdFromUrl } from "@pond/schema/sources";
 import { MatchPattern } from "wxt/utils/match-patterns";
 import { matches as arena } from "./arena/matches";
+import { matches as behance } from "./behance/matches";
 import { matches as cosmos } from "./cosmos/matches";
 import { matches as github } from "./github/matches";
 import { matches as instagram } from "./instagram/matches";
@@ -36,6 +37,7 @@ export const HOOK_SOURCES = {
   substack: { matches: substack, likes: ["substack:like"], item: "Post" },
   tumblr: { matches: tumblr, likes: [], item: "Post" },
   savee: { matches: savee, likes: [], item: "Item" },
+  behance: { matches: behance, likes: [], item: "Project" },
 } as const satisfies Record<ExternalSource, HookSource>;
 
 export const HOOK_SOURCE_IDS: readonly ExternalSource[] = SOURCES.filter(

@@ -133,6 +133,10 @@ export async function probeUserHandle(
     const { probeSaveeHandle } = await import("../harvest/savee/api");
     return probeSaveeHandle(partition ?? PARTITION);
   }
+  if (source === "behance") {
+    const { probeBehanceHandle } = await import("../harvest/behance/api");
+    return probeBehanceHandle(partition ?? PARTITION);
+  }
   if (source === "tiktok") {
     const { probeTiktokHandle } = await import("../harvest/tiktok/api");
     const viaApi = await probeTiktokHandle(partition ?? PARTITION);
@@ -187,6 +191,7 @@ function probeUrlForSource(source: Source): string {
   if (source === "substack") return "https://substack.com/home";
   if (source === "tumblr") return "https://www.tumblr.com/";
   if (source === "savee") return "https://savee.com/you/";
+  if (source === "behance") return "https://www.behance.net/";
   return homeUrlForSource(source);
 }
 

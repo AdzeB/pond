@@ -172,6 +172,10 @@ export const CAPTURE_EXPECTATIONS = {
     required: ["mediaUrl"],
     recommended: ["title", "author", "capture.upstream.url"],
   },
+  behance: {
+    required: ["title"],
+    recommended: ["mediaUrl", "author", "capture.publishedAt"],
+  },
   web: {
     required: ["title"],
     recommended: ["description", "mediaUrl"],

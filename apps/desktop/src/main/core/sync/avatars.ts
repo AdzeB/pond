@@ -84,6 +84,8 @@ function profilePageUrl(
       return `https://www.tumblr.com/${h}`;
     case "savee":
       return `https://savee.com/${h}/`;
+    case "behance":
+      return `https://www.behance.net/${h}`;
     default:
       return null;
   }

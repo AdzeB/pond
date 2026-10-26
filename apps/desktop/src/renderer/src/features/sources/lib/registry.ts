@@ -1,5 +1,6 @@
 import {
   IconBrandArena,
+  IconBrandBehance,
   IconBrandCosmos,
   IconBrandGithub,
   IconBrandSaveePlaceholder,
@@ -44,6 +45,7 @@ const SOURCE_LOGOS = {
   substack: null,
   tumblr: null,
   savee: null,
+  behance: null,
   web: null,
   local: null,
 } satisfies Record<Source, string | null>;
@@ -62,6 +64,7 @@ const SOURCE_ICONS = {
   substack: IconBrandSubstack,
   tumblr: IconBrandTumblr,
   savee: IconBrandSaveePlaceholder,
+  behance: IconBrandBehance,
   web: IconSourceWeb,
   local: IconSourceLocal,
 } satisfies Record<Source, IconComponent | null>;

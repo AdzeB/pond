@@ -95,6 +95,7 @@ function profileUrlFromHandle(source: string, handle: string): string | null {
   if (source === "youtube") return `https://www.youtube.com/@${h}`;
   if (source === "tumblr") return `https://www.tumblr.com/${h}`;
   if (source === "savee") return `https://savee.com/${h}/`;
+  if (source === "behance") return `https://www.behance.net/${h}`;
   return null;
 }
 

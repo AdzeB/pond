@@ -188,6 +188,12 @@ export async function harvestSourceList(
     const { harvestSaveeItems } = await import("../harvest/savee/api");
     return harvestSaveeItems(args, opts.partition);
   }
+  if (source === "behance") {
+    const { harvestBehanceAppreciations } = await import(
+      "../harvest/behance/api"
+    );
+    return harvestBehanceAppreciations(args, opts.partition);
+  }
   const target = listUrlForSource(source, args);
   if (!target) {
     return { ok: false, reason: "no_match" };
@@ -410,6 +416,8 @@ function listUrlForSource(
       return null;
     case "savee":
       return null;
+    case "behance":
+      return null;
     case "web":
       return null;
     case "local":
@@ -447,6 +455,8 @@ function buildListExpressionFor(
     case "tumblr":
       return null;
     case "savee":
+      return null;
+    case "behance":
       return null;
     case "web":
       return null;

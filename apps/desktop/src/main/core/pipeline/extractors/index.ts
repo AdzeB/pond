@@ -2,6 +2,7 @@ import type { Source } from "@pond/schema/db";
 import type { ExternalSource } from "@pond/schema/sources";
 import { UnsupportedError } from "./errors";
 import { ArenaBlockExtractor } from "./sources/arena";
+import { BehanceProjectExtractor } from "./sources/behance";
 import { CosmosTileExtractor } from "./sources/cosmos";
 import { GitHubRepoExtractor } from "./sources/github";
 import { InstagramPostExtractor } from "./sources/instagram";
@@ -30,6 +31,7 @@ const EXTRACTORS = {
   substack: new SubstackPostExtractor(),
   tumblr: new TumblrPostExtractor(),
   savee: new SaveeItemExtractor(),
+  behance: new BehanceProjectExtractor(),
 } as const satisfies Record<ExternalSource, Extractor>;
 
 const WEB_EXTRACTOR: Extractor = {

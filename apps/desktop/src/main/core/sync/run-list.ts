@@ -56,6 +56,7 @@ export const LIST_HARVEST_SOURCES = new Set<Source>([
   "substack",
   "tumblr",
   "savee",
+  "behance",
 ]);
 
 export async function syncListSource(

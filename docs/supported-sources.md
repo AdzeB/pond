@@ -23,6 +23,7 @@ The **Sync** column shows how a source's saved list is walked (`cursor` /
 | Substack | `substack` | `substack.com` | `^https?:\/\/((?!www\.|open\.)[a-z0-9-]+\.substack\.com\/p\/[A-Za-z0-9_-]+)`<br>`^https?:\/\/(?:www\.)?substack\.com\/(?:@[^/]+|home\/post)\/(p-\d+)` | `cursor` |
 | Tumblr | `tumblr` | `tumblr.com` | `^https?:\/\/(?:www\.)?tumblr\.com\/(?:blog\/view\/)?[a-z0-9-]+\/(\d{6,20})(?:[/?#]|$)`<br>`^https?:\/\/(?!www\.)[a-z0-9-]+\.tumblr\.com\/(?:post|image)\/(\d{6,20})(?:[/?#]|$)` | `cursor` |
 | Savee | `savee` | `savee.com`, `savee.it` | `^https?:\/\/(?:www\.)?savee\.(?:com|it)\/i\/([A-Za-z0-9_-]+)\/?(?:[?#]|$)` | `cursor` |
+| Behance | `behance` | `behance.net`, `be.net` | `^https?:\/\/(?:www\.)?(?:behance|be)\.net\/gallery\/(\d+)` | `cursor` |
 
 `local` is a built-in pseudo-source for files imported directly into the
 library; it has no network extractor.

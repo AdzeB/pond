@@ -173,6 +173,14 @@ export const SOURCE_DESCRIPTORS = [
     /** GraphQL allows 600 calls a minute and HTML pages only 200, so sync stays on GraphQL. */
     sync: { strategy: "cursor" },
   },
+  {
+    id: "behance",
+    label: "Behance",
+    hosts: ["behance.net", "be.net"],
+    urlPatterns: [/^https?:\/\/(?:www\.)?(?:behance|be)\.net\/gallery\/(\d+)/i],
+    /** gallery-dl paces Behance at two to four seconds a request; match its caution. */
+    sync: { strategy: "cursor", rate: { minDelayMs: 2500, maxPerWindow: 24 } },
+  },
 ] as const satisfies readonly SourceDescriptor[];
 
 export type ExternalSource = (typeof SOURCE_DESCRIPTORS)[number]["id"];

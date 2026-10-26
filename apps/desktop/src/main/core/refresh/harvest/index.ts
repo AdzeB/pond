@@ -3,6 +3,7 @@ import type { JsonValue } from "@pond/schema/json";
 import type { Capture } from "@pond/schema/raw";
 import { sourceIdFromUrl } from "@pond/schema/sources";
 import * as arena from "./arena";
+import * as behance from "./behance/item";
 import * as cosmos from "./cosmos";
 import type { HarvestAdaptCtx } from "./from-page";
 import * as github from "./github/item";
@@ -89,6 +90,11 @@ const REGISTRY = {
     buildExpression: savee.buildExpression,
     adapt: savee.adapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("savee", url),
+  },
+  behance: {
+    buildExpression: behance.buildExpression,
+    adapt: behance.adapt,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("behance", url),
   },
   web: {
     buildExpression: () => {

@@ -12,6 +12,7 @@ import {
 } from "@pond/icons";
 import {
   IconBrandArena,
+  IconBrandBehance,
   IconBrandCosmos,
   IconBrandGithub,
   IconBrandSaveePlaceholder,
@@ -147,6 +148,7 @@ const LOGOS = {
   substack: IconBrandSubstack,
   tumblr: IconBrandTumblr,
   savee: IconBrandSaveePlaceholder,
+  behance: IconBrandBehance,
 } satisfies Record<ExternalSource, ComponentType<SVGProps<SVGSVGElement>>>;
 
 function Harvest({

@@ -27,6 +27,8 @@ export function homeUrlForSource(source: Source): string {
       return "https://www.tumblr.com/login";
     case "savee":
       return "https://savee.com/login/";
+    case "behance":
+      return "https://www.behance.net/";
     case "web":
       return "";
     case "local":
