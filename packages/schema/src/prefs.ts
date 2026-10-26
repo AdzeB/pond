@@ -301,8 +301,6 @@ const api = z.object({
 
 const updates = z.object({
   autoInstall: z.boolean().catch(true),
-  /** Unset until chosen, so the desktop app can follow the installed build. */
-  channel: z.enum(["stable", "nightly"]).optional().catch(undefined),
 });
 
 const setup = z.object({
