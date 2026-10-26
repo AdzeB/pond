@@ -89,3 +89,37 @@ Not verified:
   around `HttpOnly` and session lifetime.
 - **Full-page capture.** The stitching loop in `entrypoints/background/screenshot.ts`
   depends on `captureVisibleTab` rate limits; Safari's differ.
+
+## Share extension
+
+The Share extension puts Pond in the system Share menu in Safari, Finder, Preview, and
+any app with a Share button. It lives in `apps/desktop/share-extension`, and
+`apps/desktop/scripts/build-share-extension.mjs` compiles it with `swiftc`. It has no
+Xcode project, so the Command Line Tools are enough.
+
+```bash
+pnpm --filter @pond/desktop build:share-extension
+```
+
+The script builds an arm64 and x86_64 slice, joins them with `lipo`, writes the
+`Info.plist` with the bundle ID `so.pond.desktop.Share`, and signs the appex ad hoc with
+`share.entitlements` into `apps/desktop/resources/ShareExtension`. The `dist:mac` scripts
+run it after the Safari step, electron-builder copies it to `Contents/PlugIns`, and
+`sign-mac.cjs` re-signs it with the release identity.
+
+It talks to Pond over the same socket as Safari, in the `7VFLYD5292.so.pond` container,
+so it only reaches a packaged, signed Pond. Links go through the `enqueue` request with
+the `share:url` trigger. Files never cross the socket: the extension copies each one to
+`Share Inbox/<uuid>/` in the container and sends the paths in a `files.import` request.
+Pond imports only paths of the form `Share Inbox/<uuid>/<item>`, then deletes each
+`<uuid>` folder. A shared folder becomes a Pond folder.
+
+Turn it on in **System Settings → General → Login Items & Extensions → Sharing**. To
+check whether macOS registered it, run:
+
+```bash
+pluginkit -m -p com.apple.share-services | rg pond
+```
+
+macOS registers app extensions only from a signed app, so test against a signed
+`dist:mac:arm64` build in `/Applications`.
