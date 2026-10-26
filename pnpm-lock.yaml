@@ -463,6 +463,9 @@ importers:
       jsdom:
         specifier: ^30.0.1
         version: 30.0.1(@noble/hashes@2.4.0)
+      oxc-parser:
+        specifier: 0.154.0
+        version: 0.154.0
       react:
         specifier: 'catalog:'
         version: 19.3.0

@@ -3,6 +3,7 @@ import {
   type NativeRequest,
   type NativeResponse,
   nativeResponseSchema,
+  SAFARI_HOST_NAME,
 } from "@pond/schema/native";
 
 export type NativeUnreachable =
@@ -35,12 +36,16 @@ export function unreachableFromMessage(message: string): NativeUnreachable {
   return "offline";
 }
 
+/** Safari routes native messages to the handler in Pond's app extension, not `pond-native-host`. */
+const HOST_NAME =
+  import.meta.env.BROWSER === "safari" ? SAFARI_HOST_NAME : NATIVE_HOST_NAME;
+
 export async function nativeCall(
   request: NativeRequest,
 ): Promise<NativeResponse> {
   try {
     const response = await browser.runtime.sendNativeMessage(
-      NATIVE_HOST_NAME,
+      HOST_NAME,
       request,
     );
     const parsed = nativeResponseSchema.safeParse(response);

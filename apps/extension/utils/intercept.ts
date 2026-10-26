@@ -83,14 +83,17 @@ interface Registry {
   patchedBeacon: boolean;
 }
 
+/** Every Pond injector on a page evaluates its own copy of this module, so `Symbol.for` gives them one shared registry. */
+const REGISTRY_KEY = Symbol.for("pond.interceptors");
+
 declare global {
   interface Window {
-    __pondInterceptors?: Registry;
+    [REGISTRY_KEY]?: Registry;
   }
 }
 
 function registry(): Registry {
-  const existing = window.__pondInterceptors;
+  const existing = window[REGISTRY_KEY];
   if (existing) return existing;
   const created: Registry = {
     handlers: [],
@@ -99,7 +102,7 @@ function registry(): Registry {
     patchedXhr: false,
     patchedBeacon: false,
   };
-  window.__pondInterceptors = created;
+  window[REGISTRY_KEY] = created;
   return created;
 }
 
