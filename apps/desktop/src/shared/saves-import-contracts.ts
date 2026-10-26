@@ -95,6 +95,8 @@ export interface SavesImportQueryInputs {
     path?: string;
     ids?: string[];
     fileIndex?: number | null;
+    /** Per-save file index; a save missing here uses `fileIndex`. */
+    fileIndexes?: Record<string, number>;
   };
   "saves.copyToLibrary": SavesIdsInput;
 }
