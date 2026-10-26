@@ -30,6 +30,21 @@ describe("nativeRequestSchema", () => {
     });
     expect(row).toMatchObject({ type: "enqueue", trigger: "twitter:bookmark" });
   });
+
+  it("accepts files.import with inbox paths", () => {
+    const row = nativeRequestSchema.parse({
+      type: "files.import",
+      paths: ["/tmp/a.png"],
+    });
+    expect(row).toEqual({ type: "files.import", paths: ["/tmp/a.png"] });
+  });
+
+  it("rejects files.import with no paths", () => {
+    expect(
+      nativeRequestSchema.safeParse({ type: "files.import", paths: [] })
+        .success,
+    ).toBe(false);
+  });
 });
 
 describe("dispatchNative", () => {
@@ -210,5 +225,37 @@ describe("dispatchNative", () => {
       ),
     ).resolves.toEqual({ ok: true, data: rejected });
     expect(sessionImport).toHaveBeenCalledWith("arena", []);
+  });
+});
+
+describe("files.import", () => {
+  it("hands paths to the share inbox port", async () => {
+    const importSharedFiles = vi.fn(async () => ({ ids: ["s1"] }));
+    const response = await dispatchNative(
+      { type: "files.import", paths: ["/inbox/a/b.png"] },
+      ports({ importSharedFiles }),
+    );
+    expect(importSharedFiles).toHaveBeenCalledWith(["/inbox/a/b.png"]);
+    expect(response).toEqual({ ok: true, data: { ids: ["s1"] } });
+  });
+
+  it("reports files_unavailable when the port is missing", async () => {
+    const response = await dispatchNative(
+      { type: "files.import", paths: ["/inbox/a/b.png"] },
+      ports(),
+    );
+    expect(response).toEqual({ ok: false, error: "files_unavailable" });
+  });
+
+  it("reports no_files when nothing was importable", async () => {
+    const response = await dispatchNative(
+      { type: "files.import", paths: ["/etc/hosts"] },
+      ports({
+        importSharedFiles: vi.fn(async () => {
+          throw new Error("no_files");
+        }),
+      }),
+    );
+    expect(response).toEqual({ ok: false, error: "no_files" });
   });
 });

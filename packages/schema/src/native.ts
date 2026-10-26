@@ -11,6 +11,9 @@ export const SAFARI_HOST_NAME = "so.pond.desktop.Extension";
 /** The sandboxed Safari extension can only reach a socket in this container; macOS requires the team ID prefix. */
 export const SAFARI_APP_GROUP = "7VFLYD5292.so.pond";
 
+/** Share extension drop folder inside the App Group container; keep in lockstep with `PondSocket.swift`. */
+export const SHARE_INBOX_DIR = "Share Inbox";
+
 /** Pinned by `manifest.key` in unpacked builds; native-host `allowed_origins` must match. */
 export const EXTENSION_ID = "ihciihlcdkopghlpabpmnodncfdboplb";
 
@@ -54,6 +57,10 @@ export const nativeRequestSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("session.pending") }),
   enqueueRequestSchema.extend({ type: z.literal("enqueue") }),
   sessionImportPayloadSchema.extend({ type: z.literal("session.import") }),
+  z.object({
+    type: z.literal("files.import"),
+    paths: z.array(z.string().min(1).max(4096)).min(1).max(50),
+  }),
 ]);
 
 export type NativeRequest = z.infer<typeof nativeRequestSchema>;

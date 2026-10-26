@@ -59,6 +59,7 @@ export interface NativePorts {
     source: Source,
     cookies: ExtensionCookie[],
   ) => Promise<SessionImportResponse>;
+  importSharedFiles?: (paths: string[]) => Promise<{ ids: string[] }>;
   appVersion: () => string;
 }
 
@@ -124,6 +125,17 @@ export async function dispatchNative(
       case "session.import": {
         const data = await ports.sessionImport(req.source, req.cookies);
         return { ok: true, data };
+      }
+      case "files.import": {
+        if (!ports.importSharedFiles)
+          return { ok: false, error: "files_unavailable" };
+        try {
+          return { ok: true, data: await ports.importSharedFiles(req.paths) };
+        } catch (err) {
+          if (err instanceof Error && err.message === "no_files")
+            return { ok: false, error: "no_files" };
+          throw err;
+        }
       }
     }
   } catch (err) {

@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { join, posix } from "node:path";
 import { promisify } from "node:util";
-import { SAFARI_APP_GROUP } from "@pond/schema/native";
+import { SAFARI_APP_GROUP, SHARE_INBOX_DIR } from "@pond/schema/native";
 
 const WINDOWS_SID = /^S-\d+(?:-\d+)+$/;
 export const WINDOWS_SID_LOOKUP_TIMEOUT_MS = 3_000;
@@ -80,6 +80,16 @@ export function safariSocketPath(home: string = homedir()): string {
     "Library/Group Containers",
     SAFARI_APP_GROUP,
     "native.sock",
+  );
+}
+
+/** Share extension drop folder; keep in lockstep with `PondSocket.swift`. */
+export function shareInboxPath(home: string = homedir()): string {
+  return posix.join(
+    home,
+    "Library/Group Containers",
+    SAFARI_APP_GROUP,
+    SHARE_INBOX_DIR,
   );
 }
 
