@@ -1,124 +1,77 @@
-import { type NewTask, saves, tasks } from "@pond/schema/db";
+import { saves, tasks } from "@pond/schema/db";
 import { ARTICLE_KIND } from "@shared/save-file-names";
-import { and, eq, inArray, isNull, notInArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import log from "electron-log/main.js";
-import { ulid } from "ulid";
 import { z } from "zod";
 import { getDb } from "../../db";
-import { persistSave } from "../persist-save";
-import { kickReconciler } from "../pipeline/reconciler-client";
-import { maxAttemptsFor } from "../pipeline/specs";
+import { runHarvestMetadata } from "../pipeline/workers/harvest-metadata";
 
-/** Stays on the task row so a post with no body is re-harvested once, not on every launch. */
-const BACKFILL_PAYLOAD = { force: true, backfill: ARTICLE_KIND };
+/** Stays on the harvest task row so a post with no body is fetched once, not on every launch. */
+const BACKFILL_MARKER = { backfill: ARTICLE_KIND };
 
 const MarkerSchema = z
   .object({ backfill: z.string().optional().catch(undefined) })
   .catch({});
 
-/** Re-harvests Substack saves from before posts were stored as `article` files. */
+/** Harvests in place rather than through the queue, which only runs `ingesting` saves and would hide them from the library. */
 export async function startArticleBackfill(): Promise<{
   ok: true;
-  queued: number;
+  harvested: number;
 }> {
   const db = await getDb();
-  /** Settled saves only: ingesting saves already have live tasks. */
   const rows = db
     .select({ id: saves.id, files: saves.files })
     .from(saves)
     .where(
       and(
         eq(saves.source, "substack"),
-        inArray(saves.status, ["complete", "failed"]),
+        eq(saves.status, "complete"),
         isNull(saves.deletedAt),
       ),
     )
     .all()
     .filter((row) => !row.files.some((file) => file.kind === ARTICLE_KIND));
-  if (rows.length === 0) return { ok: true, queued: 0 };
+  if (rows.length === 0) return { ok: true, harvested: 0 };
 
-  const harvestTasks = new Map<string, { id: string; backfill?: string }>();
-  for (const task of db
-    .select({ id: tasks.id, saveId: tasks.saveId, payload: tasks.payload })
-    .from(tasks)
-    .where(
-      and(
-        eq(tasks.op, "harvest_metadata"),
-        inArray(
-          tasks.saveId,
-          rows.map((row) => row.id),
-        ),
-      ),
-    )
-    .all()) {
-    harvestTasks.set(task.saveId, {
-      id: task.id,
-      backfill: MarkerSchema.parse(task.payload).backfill,
-    });
-  }
-
-  const now = new Date();
-  let queued = 0;
-  for (const { id } of rows) {
-    const existing = harvestTasks.get(id);
-    if (existing?.backfill === ARTICLE_KIND) continue;
-    const blocked = db
-      .select({ id: tasks.id })
+  const marked = new Set(
+    db
+      .select({ saveId: tasks.saveId, payload: tasks.payload })
       .from(tasks)
       .where(
         and(
-          eq(tasks.saveId, id),
-          notInArray(tasks.op, ["harvest_metadata", "finalize"]),
-          notInArray(tasks.status, ["done", "dead", "cancelled"]),
+          eq(tasks.op, "harvest_metadata"),
+          inArray(
+            tasks.saveId,
+            rows.map((row) => row.id),
+          ),
         ),
       )
-      .get();
-    if (blocked) continue;
+      .all()
+      .filter(
+        (task) => MarkerSchema.parse(task.payload).backfill === ARTICLE_KIND,
+      )
+      .map((task) => task.saveId),
+  );
 
-    if (existing) {
+  let harvested = 0;
+  for (const { id } of rows) {
+    if (marked.has(id)) continue;
+    try {
+      await runHarvestMetadata(id, { force: true });
       db.update(tasks)
-        .set({
-          status: "pending",
-          attempts: 0,
-          maxAttempts: maxAttemptsFor("harvest_metadata"),
-          payload: BACKFILL_PAYLOAD,
-          lastError: null,
-          nextRunAt: now,
-          updatedAt: now,
-        })
-        .where(eq(tasks.id, existing.id))
+        .set({ payload: BACKFILL_MARKER, updatedAt: new Date() })
+        .where(and(eq(tasks.saveId, id), eq(tasks.op, "harvest_metadata")))
         .run();
-    } else {
-      const taskRow: NewTask = {
-        id: ulid(),
-        saveId: id,
-        source: "substack",
-        op: "harvest_metadata",
-        status: "pending",
-        attempts: 0,
-        maxAttempts: maxAttemptsFor("harvest_metadata"),
-        payload: BACKFILL_PAYLOAD,
-        nextRunAt: now,
-        createdAt: now,
-        updatedAt: now,
-      };
-      db.insert(tasks).values(taskRow).onConflictDoNothing().run();
+      harvested += 1;
+    } catch (err) {
+      log.warn("[pond article-backfill] harvest failed", id, err);
     }
-    db.update(tasks)
-      .set({ status: "pending", nextRunAt: now, updatedAt: now })
-      .where(and(eq(tasks.saveId, id), eq(tasks.op, "finalize")))
-      .run();
-    await persistSave(
-      id,
-      { status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null },
-      { actorReason: "pipeline:article-backfill" },
-    );
-    queued += 1;
   }
 
-  if (queued > 0) {
-    log.info("[pond article-backfill] queued Substack saves", { queued });
-    kickReconciler();
+  if (harvested > 0) {
+    log.info("[pond article-backfill] harvested Substack articles", {
+      harvested,
+    });
   }
-  return { ok: true, queued };
+  return { ok: true, harvested };
 }
