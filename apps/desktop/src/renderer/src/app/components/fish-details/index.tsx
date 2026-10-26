@@ -2,11 +2,11 @@ import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { draftInChat } from "@/features/agent";
 import {
-  FishProfile,
   fishIdFromPath,
   useFishEditingId,
   useOpenRoutineId,
 } from "@/features/fish";
+import { FishProfile } from "@/features/fish/profile";
 import { useFolders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { useTags } from "@/features/tags";

@@ -1,5 +1,4 @@
 export { FishMark, fishMood } from "./components/mark";
-export { FishProfile } from "./components/profile";
 export { FishSection } from "./components/section";
 export { fishPaneItems } from "./lib/menu";
 export {

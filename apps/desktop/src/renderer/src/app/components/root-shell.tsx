@@ -1,6 +1,5 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect } from "react";
-import { FishDetails } from "@/app/components/fish-details";
 import { SaveDetails } from "@/app/components/save-details";
 import { Toolbar } from "@/app/components/toolbar";
 import { Tray } from "@/app/components/tray";
@@ -27,6 +26,12 @@ import {
 } from "@/features/sources/state/source-detail";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { settingsHref } from "@/shared/lib/open-settings";
+
+const FishDetails = lazy(() =>
+  import("@/app/components/fish-details").then((module) => ({
+    default: module.FishDetails,
+  })),
+);
 
 const SettingsSidebar = lazy(() =>
   import("@/features/settings/components/sidebar").then((module) => ({
@@ -89,7 +94,15 @@ export function RootShell() {
       <DuplicateImportReviewHost />
       <AppShell.Root
         header={<Toolbar />}
-        right={viewingFish ? <FishDetails /> : <SaveDetails />}
+        right={
+          viewingFish ? (
+            <Suspense fallback={null}>
+              <FishDetails />
+            </Suspense>
+          ) : (
+            <SaveDetails />
+          )
+        }
         rightOpen={viewingFish || saveIdFromPath(pathname) !== null}
         left={
           isSettings ? (

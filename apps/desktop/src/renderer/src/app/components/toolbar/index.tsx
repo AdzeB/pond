@@ -12,9 +12,8 @@ import {
 } from "@pond/icons";
 import { Button, Menu } from "@pond/ui";
 import { useRouter, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { ChromeHistoryNav } from "@/app/components/chrome-toolbar";
-import { FishChatActions } from "@/features/agent";
 import { canvasIdFromPath, useCanvas } from "@/features/canvas";
 import { fishIdFromPath } from "@/features/fish";
 import { FolderCustomizeDialog } from "@/features/library/components/folder-customize-dialog";
@@ -49,6 +48,12 @@ import { usePrefs } from "@/shared/state/prefs";
 import { type Breadcrumb, buildBreadcrumbs } from "./breadcrumbs";
 import { computeLabel } from "./labels";
 import styles from "./styles.module.css";
+
+const FishChatActions = lazy(() =>
+  import("@/features/agent/chat-actions").then((module) => ({
+    default: module.FishChatActions,
+  })),
+);
 
 const ROOT_ICONS = {
   "/": IconAlbum2,
@@ -315,7 +320,9 @@ export function Toolbar() {
         </div>
       ) : viewingFish ? (
         <div className={styles.actions}>
-          <FishChatActions />
+          <Suspense fallback={null}>
+            <FishChatActions />
+          </Suspense>
           <SidebarToggle side="right" open={detailsOpen} />
         </div>
       ) : null}
