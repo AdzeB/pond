@@ -164,6 +164,38 @@ export const CAPTURE_EXPECTATIONS = {
     required: ["title"],
     recommended: ["description", "author", "capture.publishedAt"],
   },
+  tumblr: {
+    required: ["author"],
+    recommended: ["description", "mediaUrl", "capture.publishedAt"],
+  },
+  savee: {
+    required: ["mediaUrl"],
+    recommended: ["title", "author", "capture.upstream.url"],
+  },
+  behance: {
+    required: ["title"],
+    recommended: ["mediaUrl", "author", "capture.publishedAt"],
+  },
+  vimeo: {
+    required: ["title"],
+    recommended: ["author", "capture.publishedAt", "capture.media"],
+  },
+  dribbble: {
+    required: ["mediaUrl"],
+    recommended: ["title", "author", "capture.metrics.likes"],
+  },
+  unsplash: {
+    required: ["mediaUrl"],
+    recommended: ["title", "author", "capture.publishedAt"],
+  },
+  bluesky: {
+    required: ["author"],
+    recommended: [
+      "description",
+      "capture.publishedAt",
+      "capture.author.avatarUrl",
+    ],
+  },
   web: {
     required: ["title"],
     recommended: ["description", "mediaUrl"],

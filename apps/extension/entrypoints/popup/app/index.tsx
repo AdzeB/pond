@@ -12,10 +12,17 @@ import {
 } from "@pond/icons";
 import {
   IconBrandArena,
+  IconBrandBehance,
+  IconBrandBluesky,
   IconBrandCosmos,
+  IconBrandDribbble,
   IconBrandGithub,
+  IconBrandSaveePlaceholder,
   IconBrandSubstack,
   IconBrandThreads,
+  IconBrandTumblr,
+  IconBrandUnsplash,
+  IconBrandVimeo,
   IconInstagram,
   IconPinterest,
   IconReddit,
@@ -143,6 +150,13 @@ const LOGOS = {
   threads: IconBrandThreads,
   github: IconBrandGithub,
   substack: IconBrandSubstack,
+  tumblr: IconBrandTumblr,
+  savee: IconBrandSaveePlaceholder,
+  behance: IconBrandBehance,
+  vimeo: IconBrandVimeo,
+  dribbble: IconBrandDribbble,
+  unsplash: IconBrandUnsplash,
+  bluesky: IconBrandBluesky,
 } satisfies Record<ExternalSource, ComponentType<SVGProps<SVGSVGElement>>>;
 
 function Harvest({

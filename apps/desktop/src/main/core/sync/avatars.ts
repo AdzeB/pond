@@ -80,6 +80,20 @@ function profilePageUrl(
       return `https://github.com/${h}`;
     case "substack":
       return `https://substack.com/@${h}`;
+    case "tumblr":
+      return `https://www.tumblr.com/${h}`;
+    case "savee":
+      return `https://savee.com/${h}/`;
+    case "behance":
+      return `https://www.behance.net/${h}`;
+    case "vimeo":
+      return `https://vimeo.com/${h}`;
+    case "dribbble":
+      return `https://dribbble.com/${h}`;
+    case "unsplash":
+      return `https://unsplash.com/@${h}`;
+    case "bluesky":
+      return `https://bsky.app/profile/${h}`;
     default:
       return null;
   }

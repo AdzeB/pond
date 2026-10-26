@@ -152,6 +152,76 @@ export const SOURCE_DESCRIPTORS = [
     ],
     sync: { strategy: "cursor" },
   },
+  {
+    id: "tumblr",
+    label: "Tumblr",
+    hosts: ["tumblr.com"],
+    /** Post ids are global, so the blog in the path only matters when fetching the post. */
+    urlPatterns: [
+      /^https?:\/\/(?:www\.)?tumblr\.com\/(?:blog\/view\/)?[a-z0-9-]+\/(\d{6,20})(?:[/?#]|$)/i,
+      /^https?:\/\/(?!www\.)[a-z0-9-]+\.tumblr\.com\/(?:post|image)\/(\d{6,20})(?:[/?#]|$)/i,
+    ],
+    sync: { strategy: "cursor" },
+  },
+  {
+    id: "savee",
+    label: "Savee",
+    hosts: ["savee.com", "savee.it"],
+    urlPatterns: [
+      /^https?:\/\/(?:www\.)?savee\.(?:com|it)\/i\/([A-Za-z0-9_-]+)\/?(?:[?#]|$)/i,
+    ],
+    /** GraphQL allows 600 calls a minute and HTML pages only 200, so sync stays on GraphQL. */
+    sync: { strategy: "cursor" },
+  },
+  {
+    id: "behance",
+    label: "Behance",
+    hosts: ["behance.net", "be.net"],
+    urlPatterns: [/^https?:\/\/(?:www\.)?(?:behance|be)\.net\/gallery\/(\d+)/i],
+    /** gallery-dl paces Behance at two to four seconds a request; match its caution. */
+    sync: { strategy: "cursor", rate: { minDelayMs: 2500, maxPerWindow: 24 } },
+  },
+  {
+    id: "vimeo",
+    label: "Vimeo",
+    hosts: ["vimeo.com"],
+    /** A vanity URL like `vimeo.com/staff/player` carries no id and stays a web save. */
+    urlPatterns: [
+      /^https?:\/\/(?:(?:www|player)\.)?vimeo\.com\/(?:video\/|videos\/|channels\/[^/?#]+\/|groups\/[^/?#]+\/videos\/|(?:album|showcase)\/\d+\/video\/|[^/?#]+\/review\/)?(\d{5,12})(?:\/[0-9a-f]{10})?(?:[/?#]|$)/i,
+    ],
+    sync: { strategy: "cursor" },
+  },
+  {
+    id: "dribbble",
+    label: "Dribbble",
+    hosts: ["dribbble.com", "drbl.in"],
+    /** `drbl.in` short links carry no shot id until they redirect, so they match the host but not a pattern. */
+    urlPatterns: [
+      /^https?:\/\/(?:www\.)?dribbble\.com\/shots\/(\d+)(?=[-/?#]|$)/i,
+    ],
+    sync: { strategy: "cursor" },
+  },
+  {
+    id: "unsplash",
+    label: "Unsplash",
+    hosts: ["unsplash.com"],
+    /** The id is the last 11 characters of the slug, and may itself contain `-` or `_`. */
+    urlPatterns: [
+      /^https?:\/\/(?:www\.)?unsplash\.com\/(?:photos|illustrations)\/(?:[^/?#]*-)?([A-Za-z0-9_-]{11})(?=[/?#]|$)/i,
+    ],
+    sync: { strategy: "cursor" },
+  },
+  {
+    id: "bluesky",
+    label: "Bluesky",
+    hosts: ["bsky.app"],
+    /** Keys by the post's rkey: a handle URL carries no DID, and TIDs embed a microsecond clock. */
+    urlPatterns: [
+      /^https?:\/\/(?:www\.)?bsky\.app\/profile\/[^/?#]+\/post\/([2-7a-z]{13})(?=[/?#]|$)/i,
+    ],
+    connect: "handle",
+    sync: { strategy: "cursor" },
+  },
 ] as const satisfies readonly SourceDescriptor[];
 
 export type ExternalSource = (typeof SOURCE_DESCRIPTORS)[number]["id"];

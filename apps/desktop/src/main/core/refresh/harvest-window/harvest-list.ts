@@ -4,6 +4,7 @@ import {
   type Source,
 } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
+import { LIST_KINDS } from "@pond/schema/list-kinds";
 import type { ImportCollectionOption } from "@shared/import-scope";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -11,6 +12,10 @@ import { markAtRisk, report } from "../../pipeline/rate-governor";
 import { arenaProfileUrl, buildArenaListExpression } from "../harvest/arena";
 import { addCollectionEntry } from "../harvest/collection-entries";
 import { buildCosmosListExpression, COSMOS_LIST_URL } from "../harvest/cosmos";
+import {
+  buildDribbbleListExpression,
+  dribbbleLikesUrl,
+} from "../harvest/dribbble/list";
 import {
   buildGithubStarsExpression,
   githubStarsUrl,
@@ -53,6 +58,10 @@ import {
   TWITTER_BOOKMARKS_URL,
 } from "../harvest/twitter";
 import {
+  buildUnsplashListExpression,
+  UNSPLASH_LIST_URL,
+} from "../harvest/unsplash/list";
+import {
   buildYoutubeListExpression,
   parseYoutubePlaylists,
   READ_YOUTUBE_INITIAL_DATA,
@@ -65,6 +74,7 @@ import {
   looksLikeAuthWall,
   looksLikeChallenge,
   navigateWithTimeout,
+  waitPastInterstitial,
 } from "./navigation";
 import { runOnSourcePage } from "./page-run";
 import { leaseWindow } from "./pool";
@@ -93,8 +103,18 @@ const HarvestStatsSchema = z
 
 type ListHarvestProgress = NonNullable<z.infer<typeof HarvestStatsSchema>>;
 
+const OptionalListKinds = z
+  .array(z.enum(LIST_KINDS))
+  .optional()
+  .catch(undefined);
+
 const PartialEntrySchema = z
-  .object({ sourceId: z.string(), url: z.string(), savedAt: OptionalText })
+  .object({
+    sourceId: z.string(),
+    url: z.string(),
+    savedAt: OptionalText,
+    listKinds: OptionalListKinds,
+  })
   .nullable()
   .catch(null);
 
@@ -118,6 +138,7 @@ const ListEntrySchema = z
       .optional()
       .catch(undefined),
     mediaType: z.enum(MEDIA_TYPES).optional().catch(undefined),
+    listKinds: OptionalListKinds,
   })
   .nullable()
   .catch(null);
@@ -179,6 +200,28 @@ export async function harvestSourceList(
     const { harvestSubstackLists } = await import("../harvest/substack/api");
     return harvestSubstackLists(args, opts.partition);
   }
+  if (source === "tumblr") {
+    const { harvestTumblrLikes } = await import("../harvest/tumblr/api");
+    return harvestTumblrLikes(args, opts.partition);
+  }
+  if (source === "savee") {
+    const { harvestSaveeItems } = await import("../harvest/savee/api");
+    return harvestSaveeItems(args, opts.partition);
+  }
+  if (source === "behance") {
+    const { harvestBehanceAppreciations } = await import(
+      "../harvest/behance/api"
+    );
+    return harvestBehanceAppreciations(args, opts.partition);
+  }
+  if (source === "vimeo") {
+    const { harvestVimeoLists } = await import("../harvest/vimeo/api");
+    return harvestVimeoLists(args, opts.partition);
+  }
+  if (source === "bluesky") {
+    const { harvestBlueskyLikes } = await import("../harvest/bluesky/api");
+    return harvestBlueskyLikes(args, args.accountKey);
+  }
   const target = listUrlForSource(source, args);
   if (!target) {
     return { ok: false, reason: "no_match" };
@@ -187,6 +230,9 @@ export async function harvestSourceList(
   try {
     const navOk = await navigateWithTimeout(lease.win, target, NAV_TIMEOUT_MS);
     if (!navOk) {
+      return { ok: false, reason: "timeout" };
+    }
+    if (!(await waitPastInterstitial(lease.win, 20_000))) {
       return { ok: false, reason: "timeout" };
     }
     const landedUrl = lease.win.webContents.getURL();
@@ -394,6 +440,20 @@ function listUrlForSource(
       return accountKey ? githubStarsUrl(accountKey) : null;
     case "substack":
       return null;
+    case "tumblr":
+      return null;
+    case "savee":
+      return null;
+    case "behance":
+      return null;
+    case "vimeo":
+      return null;
+    case "dribbble":
+      return accountKey ? dribbbleLikesUrl(accountKey) : null;
+    case "unsplash":
+      return UNSPLASH_LIST_URL;
+    case "bluesky":
+      return null;
     case "web":
       return null;
     case "local":
@@ -427,6 +487,20 @@ function buildListExpressionFor(
     case "github":
       return buildGithubStarsExpression(args);
     case "substack":
+      return null;
+    case "tumblr":
+      return null;
+    case "savee":
+      return null;
+    case "behance":
+      return null;
+    case "vimeo":
+      return null;
+    case "dribbble":
+      return buildDribbbleListExpression(args);
+    case "unsplash":
+      return buildUnsplashListExpression(args);
+    case "bluesky":
       return null;
     case "web":
       return null;

@@ -78,6 +78,21 @@ filtered afterward.
   pass, capped at 50 a run. Posts key by `<subdomain>.substack.com/p/<slug>`;
   a reader link that only carries an id keys by `p-<id>`, and sync keeps that
   id once it's known.
+- Tumblr, Savee, Behance, Dribbble, and Unsplash each import one list, read
+  from the site's own web API with your session: Tumblr likes (`www/api/v2`),
+  Savee saves and Behance appreciations (GraphQL), Dribbble likes (the
+  profile's XHR pages), and Unsplash bookmarks (`/napi`). Likes and
+  appreciations are stamped `liked`; saves and bookmarks stay `saved`. An
+  Unsplash walk that reads every bookmark from page 1 is `complete`, so a
+  removed bookmark loses its Saved label.
+- Vimeo reads Likes and Watch Later on separate walks of the legacy list pages,
+  then fills each page from the viewer-token API. Its resume cursor names the
+  list and page (`liked:101`), so a backfill continues the walk it stopped in.
+- Bluesky connects by handle, not session (`connect: "handle"` on the
+  descriptor). The Account keys by your DID, and the run reads your like
+  records from your own PDS, then hydrates the posts through the public
+  AppView. Nothing is signed in, so `auth_required` means the Account has no
+  DID yet.
 
 A save harvested from chosen collections is filed into Folders named
 `<Source>/<collection>` (`collection-folders.ts`). Harvesters tag each entry

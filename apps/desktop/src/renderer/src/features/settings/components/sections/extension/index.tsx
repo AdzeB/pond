@@ -25,6 +25,13 @@ const SAVES = {
   threads: "Save posts when you save them.",
   github: "Save repositories when you star them.",
   substack: "Save posts when you save them.",
+  tumblr: "Save posts with the Pond toolbar button.",
+  savee: "Save items with the Pond toolbar button.",
+  behance: "Save projects with the Pond toolbar button.",
+  vimeo: "Save videos with the Pond toolbar button.",
+  dribbble: "Save shots with the Pond toolbar button.",
+  unsplash: "Save photos with the Pond toolbar button.",
+  bluesky: "Save posts with the Pond toolbar button.",
 } satisfies Record<ExternalSource, string>;
 
 const LIKE_SOURCES: ReadonlySet<ExternalSource> = new Set(

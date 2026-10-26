@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { sinceCopy, sinceForPreset } from "./import-scope";
+import {
+  listKindDescription,
+  listKindLabel,
+  sinceCopy,
+  sinceForPreset,
+} from "./import-scope";
+
+describe("listKindLabel", () => {
+  it("names Vimeo's saved list Watch Later", () => {
+    expect(listKindLabel("vimeo", "saved")).toBe("Watch Later");
+    expect(listKindLabel("vimeo", "liked")).toBe("Likes");
+    expect(listKindDescription("vimeo", "saved")).toBe(
+      "Videos you've added to Watch Later on Vimeo.",
+    );
+  });
+});
 
 describe("sinceForPreset", () => {
   const now = new Date(2026, 9, 17, 15, 30);
@@ -25,6 +40,14 @@ describe("sinceCopy", () => {
     const copy = sinceCopy("github");
     expect(copy.title).toBe("Saved Since");
     expect(copy.presets.map((p) => p.value)).toContain("today");
+  });
+
+  it("explains page-sized save dates only where a page carries them", () => {
+    expect(sinceCopy("github").info).toBe(
+      "Dates are read a page of 30 at a time, so up to 30 older items can come in.",
+    );
+    expect(sinceCopy("savee").title).toBe("Saved Since");
+    expect(sinceCopy("savee").info).toBeUndefined();
   });
 
   it("keeps publish-date presets for posts", () => {

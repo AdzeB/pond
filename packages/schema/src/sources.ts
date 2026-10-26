@@ -41,6 +41,11 @@ export function resolveSourceId(value: string): Source | null {
   return isSource(normalized) ? normalized : null;
 }
 
+export function connectsByHandle(source: Source): boolean {
+  if (source === "web" || source === "local") return false;
+  return descriptorFor(source).connect === "handle";
+}
+
 export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
   if (source === "local") return null;
   let href: string;

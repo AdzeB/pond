@@ -11,7 +11,7 @@ import { inject as tiktok } from "./tiktok/inject";
 import { inject as twitter } from "./twitter/inject";
 import { inject as youtube } from "./youtube/inject";
 
-/** MAIN-world hooks; importing this from an isolated script would patch the wrong `fetch`. */
+/** MAIN-world hooks; importing this from an isolated script would patch the wrong `fetch`. Sources without live hooks are null. */
 export const INJECTORS = {
   twitter,
   instagram,
@@ -24,4 +24,11 @@ export const INJECTORS = {
   threads,
   github,
   substack,
-} satisfies Record<ExternalSource, () => void>;
+  tumblr: null,
+  savee: null,
+  behance: null,
+  vimeo: null,
+  dribbble: null,
+  unsplash: null,
+  bluesky: null,
+} satisfies Record<ExternalSource, (() => void) | null>;

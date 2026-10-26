@@ -1,6 +1,8 @@
 import { IconCircleCheckFill } from "@pond/icons";
+import { connectsByHandle } from "@pond/schema/sources";
 import { Button, Dialog } from "@pond/ui";
 import { useEffect, useState } from "react";
+import { HandleForm } from "@/features/sources/components/flow/connect/handle";
 import { ConnectionVisual } from "@/features/sources/components/flow/connection-visual";
 import {
   type AccountRow,
@@ -31,9 +33,11 @@ export function ConnectWaitSection() {
   useConnectArrival();
   if (!source) return null;
   const label = getSourceDef(source).label;
+  const byHandle = connectsByHandle(source);
   const step = completed ? "connected" : (problem ?? "waiting");
   const choosing = completed && account?.sync.importPending === true;
   const next = completed && !choosing;
+  const askHandle = byHandle && !completed && step !== "unavailable";
 
   return (
     <div className={styles.body}>
@@ -62,37 +66,49 @@ export function ConnectWaitSection() {
                 ? `Signed out of ${label}`
                 : `Connect ${label} to Pond`}
         </h2>
-        <p className={styles.description}>
-          {choosing ? (
-            <>
-              Next, choose what Pond imports.
-              <br />
-              Nothing syncs until you start the import.
-            </>
-          ) : next ? (
-            <>
-              Pond is syncing your saved posts now.
-              <br />
-              New saves keep arriving in your library.
-            </>
-          ) : step === "unavailable" ? (
-            "Pond couldn't open the sign-in page. Try again."
-          ) : step === "signed_out" ? (
-            <>
-              Pond's extension found a browser profile signed out of {label}.
-              <br />
-              Sign in there, or add the extension to the profile you use.
-            </>
-          ) : (
-            <>
-              Sign in to {label} in your browser.
-              <br />
-              Pond will finish the connection here.
-            </>
-          )}
-        </p>
+        {askHandle ? (
+          <HandleForm label={label} notFound={problem === "not_found"} />
+        ) : (
+          <p className={styles.description}>
+            {choosing ? (
+              <>
+                Next, choose what Pond imports.
+                <br />
+                Nothing syncs until you start the import.
+              </>
+            ) : next ? (
+              <>
+                Pond is syncing your saved posts now.
+                <br />
+                New saves keep arriving in your library.
+              </>
+            ) : step === "unavailable" ? (
+              byHandle ? (
+                `Pond couldn't reach ${label}. Check your connection and try again.`
+              ) : (
+                "Pond couldn't open the sign-in page. Try again."
+              )
+            ) : step === "signed_out" ? (
+              <>
+                Pond's extension found a browser profile signed out of {label}.
+                <br />
+                Sign in there, or add the extension to the profile you use.
+              </>
+            ) : (
+              <>
+                Sign in to {label} in your browser.
+                <br />
+                Pond will finish the connection here.
+              </>
+            )}
+          </p>
+        )}
       </div>
-      <ConnectPromises completed={completed} label={label} />
+      <ConnectPromises
+        completed={completed}
+        label={label}
+        byHandle={byHandle}
+      />
     </div>
   );
 }
@@ -100,35 +116,43 @@ export function ConnectWaitSection() {
 const RESPONSIBLE_USE_URL =
   "https://github.com/raphaelsalaja/pond/blob/main/RESPONSIBLE-USE.md";
 
+const SESSION_PROMISES = [
+  "Keep your session on this device",
+  "Read your saved posts",
+  "Add new saves to your library",
+];
+
+const HANDLE_PROMISES = [
+  "Read only what's public",
+  "Read your liked posts",
+  "Add new likes to your library",
+];
+
 function ConnectPromises({
   completed,
   label,
+  byHandle,
 }: {
   completed: boolean;
   label: string;
+  byHandle: boolean;
 }) {
   return (
     <>
       <div className={styles.details}>
         <p className={styles["details-title"]}>Pond will</p>
         <ul className={styles.checklist}>
-          <li>
-            <IconCircleCheckFill size={12} className={styles.check} />
-            <span>Keep your session on this device</span>
-          </li>
-          <li>
-            <IconCircleCheckFill size={12} className={styles.check} />
-            <span>Read your saved posts</span>
-          </li>
-          <li>
-            <IconCircleCheckFill size={12} className={styles.check} />
-            <span>Add new saves to your library</span>
-          </li>
+          {(byHandle ? HANDLE_PROMISES : SESSION_PROMISES).map((promise) => (
+            <li key={promise}>
+              <IconCircleCheckFill size={12} className={styles.check} />
+              <span>{promise}</span>
+            </li>
+          ))}
         </ul>
       </div>
       {completed ? null : (
         <>
-          <ExtensionNote />
+          {byHandle ? null : <ExtensionNote />}
           <p className={styles.note}>
             You're responsible for following {label}'s terms while Pond syncs
             your account.{" "}

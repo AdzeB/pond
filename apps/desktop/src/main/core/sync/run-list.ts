@@ -25,7 +25,12 @@ import { resolveAccountHandle } from "./account-key";
 import { getAccountSync, partitionForAccount } from "./accounts";
 import { fileIntoFolders } from "./collection-folders";
 import { NO_COLLECTION_PASS, walkEveryCollection } from "./every-collection";
-import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
+import {
+  defaultListKind,
+  mergeEntryListKinds,
+  stampListKind,
+  unionById,
+} from "./harvest-union";
 import {
   COMBINED_LISTS,
   collectionCheckDue,
@@ -54,6 +59,13 @@ export const LIST_HARVEST_SOURCES = new Set<Source>([
   "reddit",
   "github",
   "substack",
+  "tumblr",
+  "savee",
+  "behance",
+  "vimeo",
+  "dribbble",
+  "unsplash",
+  "bluesky",
 ]);
 
 export async function syncListSource(
@@ -84,9 +96,15 @@ export async function syncListSource(
     source === "arena" ||
     source === "tiktok" ||
     source === "reddit" ||
-    source === "github"
+    source === "github" ||
+    source === "dribbble" ||
+    source === "bluesky"
   ) {
-    accountKey = (await resolveAccountHandle(account)) ?? undefined;
+    /** A handle Source has no session to probe; its Account was keyed by DID when you connected. */
+    accountKey =
+      source === "bluesky"
+        ? (account.identityKey ?? undefined)
+        : ((await resolveAccountHandle(account)) ?? undefined);
     if (!accountKey) {
       log.info(`[pond sync:${source}] could not resolve account from session`);
       await patchAccountSync(accountId, { lastError: "auth_required" });
@@ -94,7 +112,10 @@ export async function syncListSource(
         accountId,
         source,
         state: "auth_required",
-        message: `Sign in to ${source} to enable background sync.`,
+        message:
+          source === "bluesky"
+            ? "Connect Bluesky with your handle to enable background sync."
+            : `Sign in to ${source} to enable background sync.`,
         lastError: "auth_required",
       });
       return;
@@ -203,7 +224,7 @@ export async function syncListSource(
   let combined =
     dualHarvest && !plan.collections
       ? harvest.entries
-      : stampListKind(harvest.entries, "saved");
+      : defaultListKind(harvest.entries, "saved");
   if (dualHarvest && plan.collections && plan.primary) {
     const rest = await harvestSourceList(source, listArgs, { partition });
     if (rest.ok) {

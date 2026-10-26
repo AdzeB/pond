@@ -93,6 +93,13 @@ function profileUrlFromHandle(source: string, handle: string): string | null {
   if (source === "pinterest") return `https://www.pinterest.com/${h}/`;
   if (source === "arena") return `https://www.are.na/${h}`;
   if (source === "youtube") return `https://www.youtube.com/@${h}`;
+  if (source === "tumblr") return `https://www.tumblr.com/${h}`;
+  if (source === "savee") return `https://savee.com/${h}/`;
+  if (source === "behance") return `https://www.behance.net/${h}`;
+  if (source === "vimeo") return `https://vimeo.com/${h}`;
+  if (source === "dribbble") return `https://dribbble.com/${h}`;
+  if (source === "unsplash") return `https://unsplash.com/@${h}`;
+  if (source === "bluesky") return `https://bsky.app/profile/${h}`;
   return null;
 }
 
