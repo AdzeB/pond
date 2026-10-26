@@ -652,3 +652,24 @@ it("sends 'send me 3 separate messages' as three ordered messages after its tool
     "And the third.",
   ]);
 });
+
+it("sends Apple Intelligence the compact prompt and only read-only tools", async () => {
+  const model = textModel("You have 3 posters.");
+  await complete({
+    ...request(model),
+    provider: "apple",
+    model: "system",
+    apiKey: null,
+    controls: {
+      fast: false,
+      contextTokens: 4_096,
+      reasoning: "provider-default",
+    },
+    tools: [tool("searchLibrary"), tool("proposeChanges")],
+  });
+
+  const call = model.doStreamCalls[0];
+  expect(call?.tools?.map((spec) => spec.name)).toEqual(["searchLibrary"]);
+  const system = call?.prompt.find((message) => message.role === "system");
+  expect(system?.content).toMatch(/^You are a fish in Pond, a library/);
+});
