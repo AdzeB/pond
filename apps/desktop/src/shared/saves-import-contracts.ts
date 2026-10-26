@@ -94,6 +94,7 @@ export interface SavesImportQueryInputs {
   "saves.importClipboard": EmptyInput;
   "saves.importBookmarks": EmptyInput;
   "saves.importMymind": EmptyInput;
+  "saves.importDataExport": EmptyInput;
   "saves.extractPageAssets": { url: string };
   "saves.quickAdd": { url?: string; note?: string | null; tags?: string[] };
   "saves.startDrag": {
@@ -158,6 +159,7 @@ export interface SavesImportQueryResults {
   "saves.importClipboard": SavesImportFilesResult;
   "saves.importBookmarks": CancellableResult<SavesImportCounts>;
   "saves.importMymind": CancellableResult<SavesImportCounts>;
+  "saves.importDataExport": CancellableResult<DataExportImportCounts>;
   "saves.extractPageAssets": SavesImportResult;
   "saves.quickAdd": OkResult<{ id: string; created?: boolean }>;
   "saves.startDrag": OkResult;
