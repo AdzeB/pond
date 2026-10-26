@@ -6,6 +6,8 @@ Pond runs an HTTP API on your Mac while the app is open. Raycast, the `pond` CLI
 http://127.0.0.1:41610/api/v2
 ```
 
+To save from Shortcuts without a token, use a `pond://save` link instead. See [Shortcuts](shortcuts.md).
+
 The TypeScript client lives in [`packages/api`](../packages/api) and is published as `pond-api`. Every endpoint below has a method on `PondApi`, and each response is validated against the schemas in [`packages/schema/src/api.ts`](../packages/schema/src/api.ts).
 
 ## Authentication
