@@ -121,6 +121,8 @@ export interface SaveFile {
   width?: number | null;
   height?: number | null;
   sourceUrl?: string | null;
+  /** Set on a thumbnail you picked, so regeneration and repairs leave it alone. */
+  custom?: boolean | null;
   family?: string | null;
   subfamily?: string | null;
   fontWeight?: number | null;
