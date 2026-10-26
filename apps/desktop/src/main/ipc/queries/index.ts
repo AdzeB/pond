@@ -21,6 +21,7 @@ import { canvasesQueries } from "./canvases";
 import { conversionQueries } from "./conversion";
 import { downloadsQueries } from "./downloads";
 import { fishQueries } from "./fish";
+import { fishMcpQueries } from "./fish-mcp";
 import { foldersQueries } from "./folders";
 import { inspectQueries } from "./inspect";
 import { libraryQueries } from "./library";
@@ -50,6 +51,7 @@ const queryRegistry = {
   ...openWithQueries,
   ...canvasesQueries,
   ...fishQueries,
+  ...fishMcpQueries,
   ...conversionQueries,
   ...savesQueries,
   ...downloadsQueries,

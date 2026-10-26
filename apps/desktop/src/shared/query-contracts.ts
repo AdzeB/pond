@@ -26,6 +26,10 @@ import type {
 import type { DownloadActivity } from "./download-activity";
 import type { FeedbackEvent } from "./feedback";
 import type { FishQueryInputs, FishQueryResults } from "./fish-contracts";
+import type {
+  FishMcpQueryInputs,
+  FishMcpQueryResults,
+} from "./fish-mcp-contracts";
 import type { FolderQueryInputs, FolderQueryResults } from "./folder-contracts";
 import type { GlobalShortcutStatus } from "./global-shortcuts";
 import type {
@@ -129,6 +133,7 @@ export interface QueryInputs
     InspectQueryInputs,
     CanvasQueryInputs,
     FishQueryInputs,
+    FishMcpQueryInputs,
     ConversionQueryInputs,
     SavesReadQueryInputs,
     SavesMutationQueryInputs,
@@ -341,6 +346,7 @@ export interface QueryResults
     InspectQueryResults,
     CanvasQueryResults,
     FishQueryResults,
+    FishMcpQueryResults,
     ConversionQueryResults,
     SavesReadQueryResults,
     SavesMutationQueryResults,
