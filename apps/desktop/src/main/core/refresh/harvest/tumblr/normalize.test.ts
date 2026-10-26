@@ -67,6 +67,7 @@ describe("tumblr normalize", () => {
     expect(post && postEntry(post)).toEqual({
       sourceId: "178735553447",
       url: "https://www.tumblr.com/pascalcampion/178735553447",
+      listKinds: ["liked"],
       savedAt: "2018-10-04T19:39:08.000Z",
       author: "pascalcampion",
       description: "Looking for inspiration\n\n#pascalcampion",

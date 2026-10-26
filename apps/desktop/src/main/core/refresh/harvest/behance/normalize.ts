@@ -63,6 +63,7 @@ export function appreciationEntry(edge: BehanceEdge): ListEntry | null {
   const entry: ListEntry = {
     sourceId: node.id,
     url: node.url ?? `https://www.behance.net/gallery/${node.id}/a`,
+    listKinds: ["liked"],
   };
   const savedAt = appreciatedAt(edge.cursor);
   if (savedAt) entry.savedAt = savedAt;

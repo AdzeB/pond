@@ -51,6 +51,7 @@ describe("behance normalize", () => {
     expect(appreciationEntry(edge)).toEqual({
       sourceId: "86248267",
       url: "https://www.behance.net/gallery/86248267/Semplice-Supply-High-Quality-device-renders",
+      listKinds: ["liked"],
       savedAt: "2019-10-01T20:32:05.000Z",
       title: "Semplice Supply \u2014 High Quality device renders",
       author: "House of van Schneider",
@@ -93,6 +94,7 @@ describe("behance normalize", () => {
     expect(appreciationEntry(kept)).toEqual({
       sourceId: "7",
       url: "https://www.behance.net/gallery/7/a",
+      listKinds: ["liked"],
       mediaType: "link",
     });
     expect(appreciationEntry(dropped)).toBe(null);

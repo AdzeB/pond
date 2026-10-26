@@ -199,6 +199,7 @@ export function postEntry(post: TumblrPost): ListEntry {
     sourceId: post.idString,
     url: tumblrPostUrl(post),
     author: post.blogName,
+    listKinds: ["liked"],
   };
   const savedAt = isoFromUnix(post.likedTimestamp);
   if (savedAt) entry.savedAt = savedAt;
