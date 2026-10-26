@@ -6,7 +6,6 @@ import { z } from "zod";
 import { IPC } from "../../../shared/constants";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { importBookmarkFile, parseBookmarkFile } from "../../core/bookmarks";
-import { importDataExport } from "../../core/data-export";
 import {
   dryRunEagleLibrary,
   importEagleLibrary,
@@ -246,6 +245,7 @@ export const savesImportSourceQueries = {
       : await dialog.showOpenDialog(options);
     const path = picked.filePaths[0];
     if (picked.canceled || !path) return { ok: false, reason: "cancelled" };
+    const { importDataExport } = await import("../../core/data-export");
     return importDataExport(path);
   },
 

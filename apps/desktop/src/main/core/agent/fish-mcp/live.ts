@@ -1,9 +1,3 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import {
-  getDefaultEnvironment,
-  StdioClientTransport,
-} from "@modelcontextprotocol/sdk/client/stdio.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { app } from "electron";
 import log from "electron-log/main.js";
 import type { FishMcpServerConfig } from "../../../../shared/fish-mcp-contracts";
@@ -21,8 +15,10 @@ const SWEEP_MS = 60_000;
 const STDERR_TAIL = 2_000;
 
 /** A GUI app on macOS gets a minimal PATH, so `npx` and friends need the user's install folders. */
-async function stdioEnvironment(secrets: Record<string, string>) {
-  const env = getDefaultEnvironment();
+async function stdioEnvironment(
+  env: Record<string, string>,
+  secrets: Record<string, string>,
+) {
   const pathKey = pathEnvKey(env);
   return {
     ...env,
@@ -40,24 +36,33 @@ async function connectLive(
   secrets: Record<string, string>,
   onClose: () => void,
 ): Promise<McpConnection> {
+  /** The MCP SDK stays out of launch; it loads with the first server Fish connects to. */
+  const [{ Client }, stdio, { StreamableHTTPClientTransport }] =
+    await Promise.all([
+      import("@modelcontextprotocol/sdk/client/index.js"),
+      import("@modelcontextprotocol/sdk/client/stdio.js"),
+      import("@modelcontextprotocol/sdk/client/streamableHttp.js"),
+    ]);
   const client = new Client({ name: "pond-fish", version: app.getVersion() });
   let stderr = "";
-  const transport =
-    server.transport === "stdio"
-      ? new StdioClientTransport({
-          command: server.command,
-          args: server.args,
-          cwd: server.cwd || undefined,
-          env: await stdioEnvironment(secrets),
-          stderr: "pipe",
-        })
-      : new StreamableHTTPClientTransport(new URL(server.url), {
-          requestInit: { headers: secrets },
-        });
-  if (transport instanceof StdioClientTransport)
-    transport.stderr?.on("data", (chunk: Buffer) => {
+  let transport: Parameters<typeof client.connect>[0];
+  if (server.transport === "stdio") {
+    const local = new stdio.StdioClientTransport({
+      command: server.command,
+      args: server.args,
+      cwd: server.cwd || undefined,
+      env: await stdioEnvironment(stdio.getDefaultEnvironment(), secrets),
+      stderr: "pipe",
+    });
+    local.stderr?.on("data", (chunk: Buffer) => {
       stderr = (stderr + chunk.toString("utf8")).slice(-STDERR_TAIL);
     });
+    transport = local;
+  } else {
+    transport = new StreamableHTTPClientTransport(new URL(server.url), {
+      requestInit: { headers: secrets },
+    });
+  }
   client.onclose = () => {
     if (stderr) log.info("[pond fish-mcp] server closed", server.name, stderr);
     onClose();
