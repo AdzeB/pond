@@ -38,6 +38,9 @@ files:
   - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
   - "!**/*.{d.ts,map}"
   - "!**/*.tsbuildinfo"
+  # better-sqlite3 loads its prebuilt binary; the SQLite and C++ sources only
+  # matter when it compiles from source.
+  - "!node_modules/better-sqlite3/{deps,src}/**"
 
 # Tray icons and any other runtime-loaded assets. At runtime we read
 # them from `process.resourcesPath` which lands inside `Contents/Resources`
