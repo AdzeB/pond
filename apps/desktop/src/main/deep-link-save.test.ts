@@ -32,8 +32,25 @@ describe("createSaveLinkHandler", () => {
       addToFolder: vi.fn(async () => ({ ok: true })),
       notify: vi.fn(),
       now: vi.fn(() => 0),
+      ready: vi.fn(async () => {}),
     };
   }
+
+  it("waits for the Library before saving", async () => {
+    const d = deps();
+    const gate = Promise.withResolvers<void>();
+    d.ready.mockReturnValueOnce(gate.promise);
+    const pending = createSaveLinkHandler(d)({
+      url: "https://example.com/a",
+      tags: [],
+      folderId: null,
+    });
+    await Promise.resolve();
+    expect(d.enqueue).not.toHaveBeenCalled();
+    gate.resolve();
+    await pending;
+    expect(d.enqueue).toHaveBeenCalledOnce();
+  });
 
   it("saves, tags, files, and notifies", async () => {
     const d = deps();

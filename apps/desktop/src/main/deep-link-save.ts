@@ -42,6 +42,7 @@ interface SaveLinkDeps {
   ) => Promise<{ ok: boolean }>;
   notify: (title: string, body: string) => void;
   now: () => number;
+  ready: () => Promise<void>;
 }
 
 export function createSaveLinkHandler(deps: SaveLinkDeps) {
@@ -56,6 +57,7 @@ export function createSaveLinkHandler(deps: SaveLinkDeps) {
     }
     recent.push(now);
     const host = new URL(link.url).hostname;
+    await deps.ready();
     try {
       const { id } = await deps.enqueue(link.url, { trigger: TRIGGER });
       if (link.tags.length > 0) await deps.addTags([id], link.tags, TRIGGER);
@@ -68,6 +70,13 @@ export function createSaveLinkHandler(deps: SaveLinkDeps) {
   };
 }
 
+/** A cold launch from a link delivers it before the Library and database are open. */
+const libraryReady = Promise.withResolvers<void>();
+
+export function markSaveLinksReady(): void {
+  libraryReady.resolve();
+}
+
 /** Core modules load on first use so the deep-link router stays light at startup. */
 export const handleSaveLink = createSaveLinkHandler({
   enqueue: async (url, opts) => (await import("./ops")).enqueue(url, opts),
@@ -78,4 +87,5 @@ export const handleSaveLink = createSaveLinkHandler({
   notify: (title, body) =>
     new Notification({ title, body, silent: true }).show(),
   now: Date.now,
+  ready: () => libraryReady.promise,
 });
