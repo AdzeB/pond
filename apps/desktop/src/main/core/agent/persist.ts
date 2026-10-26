@@ -70,6 +70,15 @@ export async function createChat(
   return created;
 }
 
+/** Each fish keeps one running conversation: its newest chat, created on first use. */
+export async function fishThread(
+  fishId: string = DEFAULT_FISH_ID,
+): Promise<ChatListing & { created: boolean }> {
+  const [latest] = await listChats(fishId);
+  if (latest) return { ...latest, created: false };
+  return { ...(await createChat(fishId)), created: true };
+}
+
 export async function fishIdForChat(chatId: string): Promise<string> {
   const db = await getDb();
   const row = await db
@@ -80,13 +89,8 @@ export async function fishIdForChat(chatId: string): Promise<string> {
   return row?.fishId ?? DEFAULT_FISH_ID;
 }
 
-/** A removed fish's chats move to the default fish instead of disappearing. */
-export async function moveFishChats(from: string, to: string): Promise<void> {
-  const db = await getDb();
-  await db
-    .update(agentChatFish)
-    .set({ fishId: to })
-    .where(eq(agentChatFish.fishId, from));
+export async function deleteFishChats(fishId: string): Promise<void> {
+  for (const chat of await listChats(fishId)) await deleteChat(chat.id);
 }
 
 export async function renameChat(id: string, title: string): Promise<OkResult> {

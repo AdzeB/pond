@@ -11,11 +11,13 @@ import {
   type AssistantActivity,
   type AssistantEvent,
   type AssistantMetadata,
+  type AssistantRoutineEvent,
   type AssistantSend,
   type AssistantSendResult,
   assistantMessages,
   assistantQuestion,
 } from "../../../shared/assistant";
+import { joinMessages, splitMessages } from "../../../shared/assistant-text";
 import { IPC } from "../../../shared/constants";
 import { DEFAULT_FISH_ID, type Fish } from "../../../shared/fish-contracts";
 import { displayName } from "../../../shared/provider-models";
@@ -23,6 +25,7 @@ import type { OkResult } from "../../../shared/query-contracts-shared";
 import { getDb } from "../../db";
 import { broadcast } from "../../lib/broadcast";
 import { setFishPresence } from "../fish/presence";
+import { routineContext, routineTools } from "../fish/routine-tools";
 import { fishScopeFilter } from "../fish/scope";
 import { listFish } from "../fish/store";
 import { listFolders } from "../folders";
@@ -57,6 +60,7 @@ const chatDependencies = {
     return fish;
   },
   setFishPresence,
+  routineTools,
   keyFor,
   async completeWithTools(input: CompletionInput) {
     const { completeWithTools } = await import("./complete");
@@ -84,6 +88,17 @@ const active = new Map<
   string,
   { requestId: string; controller: AbortController }
 >();
+
+/** A reply with breaks is stored as its ordered messages; its content stays readable as one reply. */
+function replyRow(assembled: string): {
+  content: string;
+  messages?: string[];
+} {
+  const messages = splitMessages(assembled);
+  return messages.length > 1
+    ? { content: messages.join("\n\n"), messages }
+    : { content: assembled };
+}
 
 export function stopMessage(chatId: string, requestId: string): OkResult {
   const run = active.get(chatId);
@@ -120,6 +135,7 @@ export async function sendMessage(
   let accepted = false;
   let assembled = "";
   let context: ReturnType<typeof libraryContext> | undefined;
+  const routineEvents: AssistantRoutineEvent[] = [];
   let selectedModelHasVision = false;
   try {
     if (!(await deps.conversationExists(chatId)))
@@ -297,10 +313,25 @@ export async function sendMessage(
       personalization.profile || personalization.responseInstructions
         ? `User-provided personalization (apply when relevant; the current request takes precedence): ${JSON.stringify(personalization)}`
         : "";
-    const fishContext = fishPersona(
-      fish,
-      folders.filter((entry) => fish?.scope.folderIds.includes(entry.id)),
-    );
+    const fishContext = [
+      fishPersona(
+        fish,
+        folders.filter((entry) => fish?.scope.folderIds.includes(entry.id)),
+      ),
+      input.routine ? "" : routineContext(fish),
+    ]
+      .filter(Boolean)
+      .join("\n");
+    const tools = input.routine
+      ? context.tools
+      : [
+          ...context.tools,
+          ...deps.routineTools({
+            fishId: fish.id,
+            signal: controller.signal,
+            onEvent: (event) => routineEvents.push(event),
+          }),
+        ];
     emit({ type: "activity", activity: "thinking" });
     await deps.completeWithTools({
       threadId: chatId,
@@ -312,11 +343,14 @@ export async function sendMessage(
       baseUrl: connection.baseUrl,
       messages: history.map((row) => {
         const question = assistantQuestion.safeParse(row.metadata?.question);
+        const text = row.metadata?.messages?.length
+          ? joinMessages(row.metadata.messages)
+          : row.content;
         return {
           role: z.enum(["user", "assistant"]).parse(row.role),
           content: question.success
-            ? `${row.content}\n${question.data.question}\n${question.data.options.join("; ")}`
-            : row.content,
+            ? `${text}\n${question.data.question}\n${question.data.options.join("; ")}`
+            : text,
         };
       }),
       context: `Library scope: ${scopeLabel}. ${overlay}
@@ -328,7 +362,7 @@ ${personalizationContext}`.trim(),
       files,
       sources: context.sources,
       onActivity: (activity) => emit({ type: "activity", activity }),
-      tools: context.tools,
+      tools,
       onToolExecutionStart: context.onToolExecutionStart,
       onToolExecutionEnd: context.onToolExecutionEnd,
       abortController: controller,
@@ -343,21 +377,25 @@ ${personalizationContext}`.trim(),
       !assembled.trim() &&
       !context.changes().length &&
       !context.question() &&
-      !context.results().length
+      !context.results().length &&
+      !routineEvents.length
     )
       throw new Error(
         "The model returned no reply. Try again or choose another model.",
       );
+    const reply = replyRow(assembled);
     await deps.appendMessage({
       chatId,
       role: "assistant",
-      content: assembled,
+      content: reply.content,
       metadata: {
         elapsedMs: Math.max(0, Math.round(performance.now() - startedAt)),
+        messages: reply.messages,
         sources: context.sources(),
         changes: context.changes(),
         question: context.question(),
         results: context.results(),
+        routineEvents: routineEvents.length ? routineEvents : undefined,
         steps: context.steps(),
       },
     });
@@ -370,16 +408,19 @@ ${personalizationContext}`.trim(),
       : err instanceof Error
         ? err.message
         : "Could not reply. Try again.";
+    const reply = replyRow(assembled);
     if (accepted)
       await deps.appendMessage({
         chatId,
         role: "assistant",
-        content: assembled,
+        content: reply.content,
         metadata: {
           elapsedMs: Math.max(0, Math.round(performance.now() - startedAt)),
+          messages: reply.messages,
           sources: context?.sources(),
           changes: context?.changes(),
           results: context?.results(),
+          routineEvents: routineEvents.length ? routineEvents : undefined,
           steps: context?.steps(),
           stopped,
           error,

@@ -30,6 +30,15 @@ describe("routineEventText", () => {
       "Koi looked at 4 new Saves",
     );
   });
+
+  it("names the routine when the run carries one", () => {
+    expect(
+      routineEventText("Koi", { trigger: "manual", name: "Morning Digest" }),
+    ).toBe('You ran "Morning Digest"');
+    expect(
+      routineEventText("Koi", { trigger: "schedule", name: "Morning Digest" }),
+    ).toBe('Koi ran "Morning Digest"');
+  });
 });
 
 describe("reviewOutcomeText", () => {

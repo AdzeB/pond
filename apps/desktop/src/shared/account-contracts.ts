@@ -30,6 +30,7 @@ export interface AccountQueryInputs {
     tags: string[];
   };
   "sources.overview": { id: string };
+  "sources.extensionLastSeen": EmptyInput;
 }
 
 export interface SourceOverview {
@@ -54,4 +55,6 @@ export interface AccountQueryResults {
   "sources.setSchedule": OkResult;
   "sources.setIncoming": OkResult;
   "sources.overview": SourceOverview;
+  /** Epoch ms of the last native message from any browser extension, or null since launch. */
+  "sources.extensionLastSeen": { at: number | null };
 }

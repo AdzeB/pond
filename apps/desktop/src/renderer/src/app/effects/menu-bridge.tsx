@@ -3,7 +3,7 @@ import { Dialog } from "@pond/ui";
 import { isBlankDocumentKind } from "@shared/blank-documents";
 import { DEFAULT_FISH_ID } from "@shared/fish-contracts";
 import { useEffect } from "react";
-import { fishPath } from "@/features/fish";
+import { fishIdFromPath, fishPath } from "@/features/fish";
 import {
   createBlankDocument,
   createNote,
@@ -121,10 +121,9 @@ export function MenuBridge() {
           return;
 
         case "view.inspector.toggle": {
-          const openId = saveIdFromPath(
-            getAppRouter()?.state.location.pathname ?? "",
-          );
-          if (openId) {
+          const pathname = getAppRouter()?.state.location.pathname ?? "";
+          const openId = saveIdFromPath(pathname);
+          if (openId || fishIdFromPath(pathname)) {
             libraryChrome.toggleDetails();
           } else {
             const anchor = selection.getAnchor();

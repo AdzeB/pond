@@ -11,6 +11,7 @@ import {
   type Fish,
   type FishPresence,
 } from "../../../shared/fish-contracts";
+import { routineTools } from "../fish/routine-tools";
 import {
   type ChatDependencies,
   sendMessage as send,
@@ -41,7 +42,7 @@ const koi: Fish = {
   instructions: "",
   scope: { folderIds: [], tags: [] },
   model: null,
-  routine: { kind: "off" },
+  routines: [],
   lastRun: null,
   createdAt: 0,
   updatedAt: 0,
@@ -112,6 +113,27 @@ const dependencies: ChatDependencies = {
     mock.scopes.push(input.scope);
     return libraryContextFake();
   },
+  routineTools: (input) =>
+    routineTools(input, {
+      createRoutine: (_fishId, fields) => {
+        const routine = {
+          ...fields,
+          id: "ping",
+          paused: false,
+          lastRun: null,
+          createdAt: 0,
+          updatedAt: 0,
+        };
+        return { fish: { ...mock.fish, routines: [routine] }, routine };
+      },
+      updateRoutine: () => {
+        throw new Error("Not used.");
+      },
+      deleteRoutine: () => {
+        throw new Error("Not used.");
+      },
+      announce: () => {},
+    }),
 };
 const libraryContextFake = (): ReturnType<
   ChatDependencies["libraryContext"]
@@ -644,4 +666,99 @@ it("gives the next reply the current review outcome and created IDs", async () =
       context: expect.stringContaining('"id":"created-folder"'),
     }),
   );
+});
+
+describe("separate messages", () => {
+  const ask = { ...request, content: "send me 3 separate messages" };
+
+  it("saves 'send me 3 separate messages' as exactly three ordered messages", async () => {
+    mock.complete.mockImplementation(async (input) => {
+      const reply =
+        "Hey!\n[[next]]\nHere's the second.\n[[next]]\nAnd the third.";
+      input.onText(reply);
+      return reply;
+    });
+    await sendMessage(ask);
+    expect(mock.append).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        role: "assistant",
+        content: "Hey!\n\nHere's the second.\n\nAnd the third.",
+        metadata: expect.objectContaining({
+          messages: ["Hey!", "Here's the second.", "And the third."],
+        }),
+      }),
+    );
+  });
+
+  it("keeps a numbered reply as one message, exactly as written", async () => {
+    const numbered = "1. Hey!\n2. Here's the second.\n3. And the third.";
+    mock.complete.mockImplementation(async (input) => {
+      input.onText(numbered);
+      return numbered;
+    });
+    await sendMessage(ask);
+    const saved = mock.append.mock.calls.at(-1)?.[0];
+    expect(saved?.content).toBe(numbered);
+    expect(saved?.metadata?.messages).toBeUndefined();
+  });
+
+  it("gives the model its earlier separate messages back with their breaks", async () => {
+    mock.history = [
+      { id: "u", chatId: "chat", role: "user", content: "Hi", metadata: null },
+      {
+        id: "a",
+        chatId: "chat",
+        role: "assistant",
+        content: "One\n\nTwo",
+        metadata: { messages: ["One", "Two"] },
+      },
+    ];
+    await sendMessage(request);
+    expect(
+      mock.complete.mock.calls.at(-1)?.[0].messages.map((row) => row.content),
+    ).toContain("One\n[[next]]\nTwo");
+  });
+});
+
+describe("routines", () => {
+  it("sets up a routine from chat and records it on the reply", async () => {
+    mock.complete.mockImplementation(async (input) => {
+      const create = input.tools.find((tool) => tool.name === "createRoutine");
+      await create?.execute({
+        name: "Weekday morning ping",
+        instruction: "Say good morning.",
+        when: { kind: "daily", time: "08:00", days: [1, 2, 3, 4, 5] },
+      });
+      input.onText("Done. Weekdays around 8:00 AM.");
+      return "Done.";
+    });
+    await sendMessage({ ...request, content: "Ping me every weekday at 8" });
+    expect(mock.complete.mock.calls.at(-1)?.[0].context).toContain(
+      "You have no routines yet.",
+    );
+    expect(mock.append).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        role: "assistant",
+        metadata: expect.objectContaining({
+          routineEvents: [
+            {
+              kind: "created",
+              fishId: DEFAULT_FISH_ID,
+              routineId: "ping",
+              name: "Weekday morning ping",
+            },
+          ],
+        }),
+      }),
+    );
+  });
+
+  it("leaves routine tools out of a routine's own run", async () => {
+    await sendMessage({
+      ...request,
+      routine: { trigger: "schedule", routineId: "ping", name: "Ping" },
+    });
+    const tools = mock.complete.mock.calls.at(-1)?.[0].tools ?? [];
+    expect(tools.map((tool) => tool.name)).not.toContain("createRoutine");
+  });
 });

@@ -1,21 +1,6 @@
 import type { AssistantMetadata } from "../../../shared/assistant";
+import { plainPreview } from "../../../shared/assistant-text";
 import type { FishLatest } from "../../../shared/fish-contracts";
-
-const PREVIEW_LENGTH = 140;
-
-export function plainPreview(markdown: string): string {
-  const text = markdown
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+\.)\s+/gm, "")
-    .replace(/[*_~`]+/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  return text.length > PREVIEW_LENGTH
-    ? `${text.slice(0, PREVIEW_LENGTH - 1).trimEnd()}…`
-    : text;
-}
 
 export function latestFromMessage(message: {
   role: string;

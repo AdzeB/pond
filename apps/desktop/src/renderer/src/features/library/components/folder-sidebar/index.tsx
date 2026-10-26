@@ -9,7 +9,6 @@ import { useFolders } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { useHydrateSavedViews } from "@/features/library/state/saved-views";
 import { useViewStore } from "@/features/library/state/view-store";
-import { useTags } from "@/features/tags";
 import { LibraryDestinations } from "./destinations";
 import { FolderTree } from "./folder-tree";
 import { selectLibraryNav } from "./navigation";
@@ -33,7 +32,6 @@ export function FolderSidebar() {
     select: (state) => state.location.pathname,
   });
   const folderRows = useFolders();
-  const tagRows = useTags();
   const activeCanvasId = canvasIdFromPath(pathname);
   const activeFishId = fishIdFromPath(pathname);
   const libraryPage =
@@ -60,11 +58,7 @@ export function FolderSidebar() {
           active={pathname === "/" && nav.kind === "all"}
           onSelect={() => selectLibraryNav({ kind: "all" })}
         />
-        <FishSection
-          activeId={activeFishId}
-          folders={folderRows}
-          tagNames={tagRows.map((tag) => tag.name)}
-        />
+        <FishSection activeId={activeFishId} />
         <CanvasesSection activeId={activeCanvasId} />
         <FolderTree
           folderRows={folderRows}

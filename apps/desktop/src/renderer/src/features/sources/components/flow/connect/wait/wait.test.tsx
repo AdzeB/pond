@@ -247,6 +247,34 @@ it("asks what to import before a new account syncs", async () => {
   open.mockRestore();
 });
 
+it.each([
+  ["never reaches Pond", null, true],
+  ["reaches Pond during the wait", Number.MAX_SAFE_INTEGER, false],
+])("says when the extension %s", async (_label, at, silent) => {
+  vi.useFakeTimers();
+  stubPond();
+  vi.stubGlobal("pond", {
+    ...window.pond,
+    query: async (name: string) =>
+      name === "sources.extensionLastSeen" ? { at } : { accounts: [] },
+  });
+  connectFlow.start("instagram", []);
+  await act(async () => {
+    root.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ConnectWaitSection />
+      </QueryClientProvider>,
+    );
+  });
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(21_000);
+  });
+  expect(
+    host.textContent?.includes("Pond hasn't heard from its extension yet."),
+  ).toBe(silent);
+  vi.useRealTimers();
+});
+
 it("fails when Pond cannot open the sign-in page", async () => {
   stubPond();
   vi.stubGlobal("pond", {

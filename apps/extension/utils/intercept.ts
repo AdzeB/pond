@@ -13,7 +13,37 @@ function emit(message: PondMessage): void {
   window.postMessage({ type: POND_EVENT, message }, "*");
 }
 
-export function capture(url: string, trigger: string): void {
+/** A click hook and the network interceptor both report one save, often seconds apart. */
+const CAPTURE_DEDUPE_MS = 4000;
+const recentCaptures = new Map<string, number>();
+
+/** Instagram serves one post under `/p/`, `/reel/` and `/tv/`, so the shortcode is the key there. */
+export function canonicalCaptureUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+    if (host === "instagram.com") {
+      const shortcode = /^\/(?:p|reels?|tv)\/([^/]+)/.exec(parsed.pathname);
+      if (shortcode?.[1]) return `instagram.com/p/${shortcode[1]}`;
+    }
+    return `${host}${parsed.pathname.replace(/\/+$/, "")}`;
+  } catch {
+    return url;
+  }
+}
+
+export function capture(
+  url: string,
+  trigger: string,
+  now: number = Date.now(),
+): void {
+  const intent = /:(?:like|upvote)$/.test(trigger) ? "like" : "save";
+  const key = `${intent} ${canonicalCaptureUrl(url)}`;
+  const previous = recentCaptures.get(key);
+  if (previous !== undefined && now - previous < CAPTURE_DEDUPE_MS) return;
+  for (const [entry, at] of recentCaptures)
+    if (now - at >= CAPTURE_DEDUPE_MS) recentCaptures.delete(entry);
+  recentCaptures.set(key, now);
   emit({ kind: "capture", payload: { url, trigger } });
 }
 

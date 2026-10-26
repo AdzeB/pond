@@ -19,7 +19,7 @@ import {
   type RecentMenuEntry,
 } from "../shared/constants";
 import { FilterQuery } from "../shared/filter-query";
-import type { FishEvent } from "../shared/fish-contracts";
+import type { FishEvent, FishOpen } from "../shared/fish-contracts";
 import type {
   PreviewNeighborRequest,
   PreviewWindowConfigure,
@@ -59,6 +59,11 @@ ipcRenderer.on(IPC.nav, (_: IpcRendererEvent, path: string) =>
 const openFiles = createNavigationMailbox<string[]>();
 ipcRenderer.on(IPC.openFiles, (_: IpcRendererEvent, paths: string[]) =>
   openFiles.receive(paths),
+);
+/** A browser capture for a fish can open the window before the renderer subscribes. */
+const fishOpen = createNavigationMailbox<FishOpen>();
+ipcRenderer.on(IPC.fishOpen, (_: IpcRendererEvent, open: FishOpen) =>
+  fishOpen.receive(open),
 );
 
 const query: QueryClient = (name, ...args) =>
@@ -411,6 +416,10 @@ const api = {
     const listener = (_: IpcRendererEvent, event: FishEvent) => cb(event);
     ipcRenderer.on(IPC.fish, listener);
     return () => ipcRenderer.off(IPC.fish, listener);
+  },
+
+  onFishOpen(cb: (open: FishOpen) => void): () => void {
+    return fishOpen.subscribe(cb);
   },
 
   agentStream(

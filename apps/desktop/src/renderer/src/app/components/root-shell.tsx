@@ -1,5 +1,6 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect } from "react";
+import { FishDetails } from "@/app/components/fish-details";
 import { SaveDetails } from "@/app/components/save-details";
 import { Toolbar } from "@/app/components/toolbar";
 import { Tray } from "@/app/components/tray";
@@ -7,6 +8,7 @@ import { AppHotkeys } from "@/app/effects/app-hotkeys";
 import { EditableHotkeyGuard } from "@/app/effects/editable-hotkey-guard";
 import { MenuBridge } from "@/app/effects/menu-bridge";
 import { UndoRedoBridge } from "@/app/effects/undo-redo-bridge";
+import { fishIdFromPath } from "@/features/fish";
 import { FolderSidebar } from "@/features/library/components/folder-sidebar";
 import { NewMenuDialogHost } from "@/features/library/components/new-menu";
 import { OrganizationRenameDialogHost } from "@/features/library/components/organization-rename-dialog";
@@ -44,6 +46,7 @@ export function RootShell() {
       SourceDetailsPageSchema.safeParse(state.location.search.page).data,
   });
   const sourceDetail = parseSourceDetailPath(pathname, detailPage);
+  const viewingFish = fishIdFromPath(pathname) !== null;
   useEffect(() => {
     return window.pond.onNavigate((path) => {
       const pathname = path.split("?")[0] ?? "";
@@ -86,8 +89,8 @@ export function RootShell() {
       <DuplicateImportReviewHost />
       <AppShell.Root
         header={<Toolbar />}
-        right={<SaveDetails />}
-        rightOpen={saveIdFromPath(pathname) !== null}
+        right={viewingFish ? <FishDetails /> : <SaveDetails />}
+        rightOpen={viewingFish || saveIdFromPath(pathname) !== null}
         left={
           isSettings ? (
             <Suspense fallback={null}>

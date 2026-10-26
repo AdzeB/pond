@@ -1,4 +1,4 @@
-import { IconArrowUp } from "@pond/icons";
+import { IconPaperPlaneFill } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { AnimatePresence, motion, useReducedMotionConfig } from "motion/react";
 import {
@@ -6,14 +6,13 @@ import {
   type ComponentPropsWithoutRef,
   forwardRef,
   type ReactNode,
-  useEffect,
-  useRef,
-  useState,
 } from "react";
 import { Button } from "../button";
 import { ActionHint } from "../shared/action-hint";
 import { Tooltip } from "../tooltip";
 import styles from "./styles.module.css";
+
+const GLYPH_EASE = { duration: 0.3, ease: [0.22, 1, 0.36, 1] } as const;
 
 interface RootProps extends ComponentPropsWithoutRef<"form"> {
   onSend?: () => void;
@@ -49,7 +48,14 @@ const Input = forwardRef<
 
 function Send({ children, ...props }: ComponentPropsWithoutRef<typeof Button>) {
   return (
-    <Button type="submit" icon variant="primary" size="sm" {...props}>
+    <Button
+      type="submit"
+      icon
+      variant="secondary"
+      size="md"
+      rounding="full"
+      {...props}
+    >
       {children}
     </Button>
   );
@@ -57,16 +63,20 @@ function Send({ children, ...props }: ComponentPropsWithoutRef<typeof Button>) {
 
 function Stop({ children, ...props }: ComponentPropsWithoutRef<typeof Button>) {
   return (
-    <Button type="button" icon size="sm" variant="primary" {...props}>
+    <Button
+      type="button"
+      icon
+      variant="secondary"
+      size="md"
+      rounding="full"
+      {...props}
+    >
       {children}
     </Button>
   );
 }
 
 export const Composer = { Root, Input, Send, Stop };
-
-/** Taller than one 28px line means the draft wrapped or gained a line break. */
-const SINGLE_LINE = 32;
 
 export function ComposerView({
   leading,
@@ -75,7 +85,6 @@ export function ComposerView({
   children,
   inputProps,
   editor,
-  empty,
   running,
   onSend,
   onStop,
@@ -86,43 +95,15 @@ export function ComposerView({
   editor?: ReactNode;
   placeholder?: string;
   inputProps?: ComponentProps<typeof Input>;
-  empty?: boolean;
   running?: boolean;
   onStop?: () => void;
 }) {
   const reduced = useReducedMotionConfig();
-  const field = useRef<HTMLDivElement>(null);
-  const extra = useRef<HTMLDivElement>(null);
-  const [tall, setTall] = useState(false);
-  const [attached, setAttached] = useState(false);
-  const blank = empty ?? !inputProps?.value;
-  const blankRef = useRef(blank);
-  blankRef.current = blank;
-  useEffect(() => {
-    if (blank) setTall(false);
-  }, [blank]);
-  useEffect(() => {
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => {
-      setAttached((extra.current?.offsetHeight ?? 0) > 0);
-      if (!blankRef.current && (field.current?.offsetHeight ?? 0) > SINGLE_LINE)
-        setTall(true);
-    });
-    if (field.current) observer.observe(field.current);
-    if (extra.current) observer.observe(extra.current);
-    return () => observer.disconnect();
-  }, []);
   return (
     <Tooltip.Provider>
-      <Root
-        {...props}
-        data-expanded={(tall && !blank) || attached || undefined}
-        onSend={running ? undefined : onSend}
-      >
-        <div ref={extra} className={styles.extra}>
-          {children}
-        </div>
-        <div ref={field} className={styles.field}>
+      <Root {...props} onSend={running ? undefined : onSend}>
+        <div className={styles.extra}>{children}</div>
+        <div className={styles.field}>
           {editor ?? (
             <Input
               aria-label="Message"
@@ -134,35 +115,58 @@ export function ComposerView({
         {leading ? <div className={styles.leading}>{leading}</div> : null}
         <div className={styles.trailing}>
           {toolbar}
-          <div className={styles["send-slot"]}>
-            <AnimatePresence initial={false} mode="wait">
-              <motion.div
-                key={running ? "stop" : "send"}
-                initial={reduced ? false : { opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: reduced ? 1 : 0.9 }}
-                transition={{ duration: reduced ? 0 : 0.1 }}
-              >
+          <ActionHint label={running ? "Stop response" : "Send message"}>
+            <Send
+              type={running ? "button" : "submit"}
+              aria-label={running ? "Stop" : "Send"}
+              className={styles.send}
+              onClick={running ? onStop : undefined}
+            >
+              <AnimatePresence initial={false}>
                 {running ? (
-                  <ActionHint label="Stop response">
-                    <Stop
-                      aria-label="Stop"
-                      className={styles["send-button"]}
-                      onClick={onStop}
-                    >
-                      <span className={styles["stop-icon"]} />
-                    </Stop>
-                  </ActionHint>
+                  <motion.span
+                    key="stop"
+                    className={styles.glyph}
+                    initial={{ opacity: 0, scale: 0.7, filter: "blur(2px)" }}
+                    animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                    exit={{ opacity: 0, scale: 0.7, filter: "blur(2px)" }}
+                    transition={reduced ? { duration: 0 } : GLYPH_EASE}
+                  >
+                    <span className={styles["stop-icon"]} />
+                  </motion.span>
                 ) : (
-                  <ActionHint label="Send message">
-                    <Send aria-label="Send" className={styles["send-button"]}>
-                      <IconArrowUp />
-                    </Send>
-                  </ActionHint>
+                  <motion.span
+                    key="send"
+                    className={styles.glyph}
+                    initial={{
+                      opacity: 0,
+                      x: -4,
+                      y: 4,
+                      scale: 0.8,
+                      filter: "blur(2px)",
+                    }}
+                    animate={{
+                      opacity: 1,
+                      x: 0,
+                      y: 0,
+                      scale: 1,
+                      filter: "blur(0px)",
+                    }}
+                    exit={{
+                      opacity: 0,
+                      x: 8,
+                      y: -8,
+                      scale: 0.8,
+                      filter: "blur(2px)",
+                    }}
+                    transition={reduced ? { duration: 0 } : GLYPH_EASE}
+                  >
+                    <IconPaperPlaneFill size={16} />
+                  </motion.span>
                 )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+              </AnimatePresence>
+            </Send>
+          </ActionHint>
         </div>
       </Root>
     </Tooltip.Provider>

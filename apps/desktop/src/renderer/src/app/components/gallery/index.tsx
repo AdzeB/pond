@@ -1,10 +1,28 @@
-import { Button, Toggle, ToggleGroup } from "@pond/ui";
+import {
+  IconCanvasFill,
+  IconClockFill,
+  IconImageFill,
+  IconTagFill,
+} from "@pond/icons";
+import { Button, Empty, Toggle, ToggleGroup } from "@pond/ui";
 import { Prompt } from "@pond/ui/prompt";
 import type { AssistantChange } from "@shared/assistant";
 import { createContext, type ReactNode, use, useEffect, useState } from "react";
 import { KoiQuestion } from "@/features/agent/components/pane/question";
 import { ChangeReview } from "@/features/agent/components/pane/review";
 import type { ReviewPerform } from "@/features/agent/state/review";
+import {
+  DownloadsCompletedHidden,
+  DownloadsEmpty,
+} from "@/features/downloads/components/empty";
+import {
+  FolderEmpty,
+  LibraryEmpty,
+  LibrarySectionEmpty,
+  TrashEmpty,
+  UncategorizedEmpty,
+} from "@/features/library/components/empty";
+import { MatchesEmpty } from "@/shared/components/matches-empty";
 import {
   LONG_OPTIONS,
   QUESTION,
@@ -79,6 +97,104 @@ function Specimen({
         ))}
       </div>
     </figure>
+  );
+}
+
+function EmptyState({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return <Specimen label={label}>{() => children}</Specimen>;
+}
+
+function EmptyStates() {
+  return (
+    <section className={styles.section}>
+      <h2 className={styles.heading}>Empty States</h2>
+      <EmptyState label="Library">
+        <LibraryEmpty />
+      </EmptyState>
+      <EmptyState label="Empty folder">
+        <FolderEmpty />
+      </EmptyState>
+      <EmptyState label="Folder downloading">
+        <FolderEmpty downloading={3} />
+      </EmptyState>
+      <EmptyState label="Uncategorized">
+        <UncategorizedEmpty />
+      </EmptyState>
+      <EmptyState label="Untagged">
+        <LibrarySectionEmpty mode="untagged" />
+      </EmptyState>
+      <EmptyState label="Recently Used">
+        <LibrarySectionEmpty mode="recents" />
+      </EmptyState>
+      <EmptyState label="Recently Added">
+        <LibrarySectionEmpty mode="recentlyAdded" />
+      </EmptyState>
+      <EmptyState label="Source">
+        <LibrarySectionEmpty mode="source" />
+      </EmptyState>
+      <EmptyState label="Trash">
+        <TrashEmpty />
+      </EmptyState>
+      <EmptyState label="No results">
+        <MatchesEmpty onReset={() => undefined} />
+      </EmptyState>
+      <EmptyState label="Downloads">
+        <DownloadsEmpty />
+      </EmptyState>
+      <EmptyState label="Downloads, completed hidden">
+        <DownloadsCompletedHidden onShowCompleted={() => undefined} />
+      </EmptyState>
+      <EmptyState label="Tags">
+        <Empty.Root>
+          <Empty.Media>
+            <IconTagFill size={32} />
+          </Empty.Media>
+          <Empty.Title>No tags yet</Empty.Title>
+          <Empty.Description>
+            Create your first tag to start organizing your library.
+          </Empty.Description>
+        </Empty.Root>
+      </EmptyState>
+      <EmptyState label="Combine Images">
+        <Empty.Root>
+          <Empty.Media>
+            <IconImageFill size={32} />
+          </Empty.Media>
+          <Empty.Title>No images selected</Empty.Title>
+          <Empty.Description>
+            Drag images from your library to add them.
+          </Empty.Description>
+        </Empty.Root>
+      </EmptyState>
+      <EmptyState label="Canvas not found">
+        <Empty.Root>
+          <Empty.Media>
+            <IconCanvasFill size={32} />
+          </Empty.Media>
+          <Empty.Title>Canvas not found</Empty.Title>
+          <Empty.Description>
+            It may have been deleted. Pick another canvas from the sidebar.
+          </Empty.Description>
+        </Empty.Root>
+      </EmptyState>
+      <EmptyState label="Fish runs">
+        <Empty.Root>
+          <Empty.Media>
+            <IconClockFill size={32} />
+          </Empty.Media>
+          <Empty.Title>No runs yet</Empty.Title>
+          <Empty.Description>
+            Ask Koi in chat to set a routine, and its runs show up here.
+          </Empty.Description>
+        </Empty.Root>
+      </EmptyState>
+    </section>
   );
 }
 
@@ -226,6 +342,8 @@ export function Gallery() {
 
       <Frames value={{ themes, width: WIDTHS[width] }}>
         <div className={styles.scroll}>
+          <EmptyStates />
+
           <section className={styles.section}>
             <h2 className={styles.heading}>Live</h2>
             <LiveReview

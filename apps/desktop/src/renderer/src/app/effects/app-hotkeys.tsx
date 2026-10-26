@@ -1,5 +1,6 @@
 import { useHotkeySequences, useHotkeys } from "@tanstack/react-hotkeys";
 import { useEffect } from "react";
+import { fishIdFromPath } from "@/features/fish";
 import {
   createNote,
   importPaths,
@@ -199,10 +200,9 @@ export function AppHotkeys() {
       {
         hotkey: bindingKeys(shortcuts, "view.inspector"),
         callback: () => {
-          const openId = saveIdFromPath(
-            getAppRouter()?.state.location.pathname ?? "",
-          );
-          if (openId) {
+          const pathname = getAppRouter()?.state.location.pathname ?? "";
+          const openId = saveIdFromPath(pathname);
+          if (openId || fishIdFromPath(pathname)) {
             libraryChrome.toggleDetails();
             return;
           }

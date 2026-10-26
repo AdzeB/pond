@@ -314,7 +314,6 @@ export function ImageInspector({
         }}
         data-background={prefs.transparentBackground ?? "none"}
         data-mode={mode}
-        data-zoomed={viewport.pose.zoom > 1.001 || undefined}
         {...gestures}
       >
         <div

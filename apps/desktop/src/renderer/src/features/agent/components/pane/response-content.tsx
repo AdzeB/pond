@@ -10,7 +10,6 @@ import { ConsultedSaves } from "./consulted-saves";
 import { KoiQuestion } from "./question";
 import { ResponseError } from "./response-error";
 import { ChangeReview } from "./review";
-import { WorkSummary } from "./work-summary";
 
 export function inferredLookupResult(
   content: string,
@@ -130,7 +129,6 @@ export function ResponseContent({
   const lookup = inferredLookupResult(message.content, sources);
   return (
     <>
-      <WorkSummary metadata={message.metadata} />
       {!lookup ? (
         <AssistantResponse
           content={message.content}

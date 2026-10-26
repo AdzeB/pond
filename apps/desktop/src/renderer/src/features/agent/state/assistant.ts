@@ -59,6 +59,8 @@ export interface AssistantState {
   steps: AssistantToolStep[];
   error: string | null;
   failed: DraftSnapshot | null;
+  /** Bumped when something outside the composer wants it focused. */
+  focusRequest: number;
 }
 type AssistantWorkspace = Omit<AssistantState, "busy"> & {
   sending: boolean;
@@ -81,6 +83,7 @@ const store = new Store<AssistantWorkspace>({
   steps: [],
   error: null,
   failed: null,
+  focusRequest: 0,
 });
 const patch = (value: Partial<AssistantWorkspace>) =>
   store.setState((state) => ({ ...state, ...value }));
@@ -119,7 +122,6 @@ type ComposerSnapshot = Pick<
   "draft" | "attachments" | "files" | "failed" | "error"
 >;
 const composers = new Map<string, ComposerSnapshot>();
-const lastChats = new Map<string, string>();
 let fishSelected = false;
 
 function composerKey(chatId: string | null, fishId = store.state.fishId) {
@@ -189,6 +191,9 @@ export const assistant = {
   },
   setDraft(draft: string) {
     patch({ draft });
+  },
+  requestFocus() {
+    patch({ focusRequest: store.state.focusRequest + 1 });
   },
   appendDraft(content: string) {
     const draft = [store.state.draft, content].filter(Boolean).join("\n\n");
@@ -302,13 +307,8 @@ export const assistant = {
     void refreshChats()
       .then(() => {
         if (version !== historyVersion || isBusy()) return;
-        const { chats, draft, attachments, files } = store.state;
-        const remembered = lastChats.get(fishId);
-        const chatId = chats.some((chat) => chat.id === remembered)
-          ? remembered
-          : chats[0]?.id;
-        if (!chatId || draft || attachments.length || files.length)
-          return settle();
+        const chatId = store.state.chats[0]?.id;
+        if (!chatId) return settle();
         void assistant.openChat(chatId);
       })
       .catch(() => {
@@ -318,7 +318,6 @@ export const assistant = {
   },
   newChat() {
     if (isBusy()) return;
-    lastChats.delete(store.state.fishId);
     saveComposer();
     historyVersion++;
     patch({
@@ -331,16 +330,6 @@ export const assistant = {
       steps: [],
       loading: false,
     });
-  },
-  async renameChat(chatId: string, title: string) {
-    if (isBusy()) throw new Error("Wait for the reply to finish.");
-    const result = await window.pond.query("agent.renameChat", {
-      chatId,
-      title,
-    });
-    if (!result.ok)
-      throw new Error(result.error || "Could not rename this chat.");
-    await refreshChats();
   },
   async deleteChat(chatId: string) {
     if (isBusy()) throw new Error("Wait for the reply to finish.");
@@ -359,7 +348,6 @@ export const assistant = {
     try {
       const messages = await loadMessages(chatId);
       if (version !== historyVersion) return;
-      lastChats.set(store.state.fishId, chatId);
       hydratePondChat(chatId, messages);
       patch({
         chatId,
@@ -427,7 +415,6 @@ export const assistant = {
           }),
         );
         chatId = chat.id;
-        lastChats.set(store.state.fishId, chatId);
         composers.delete(composerKey(null));
         patch({ chatId });
       }

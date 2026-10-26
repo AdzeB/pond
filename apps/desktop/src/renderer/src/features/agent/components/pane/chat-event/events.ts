@@ -1,14 +1,28 @@
-import type { AssistantChange, AssistantRoutine } from "@shared/assistant";
+import type {
+  AssistantChange,
+  AssistantRoutine,
+  AssistantRoutineEvent,
+} from "@shared/assistant";
 
 export function routineEventText(
   name: string,
   routine: AssistantRoutine,
 ): string {
-  if (routine.trigger === "manual") return `You ran ${name}'s routine`;
+  const titled = routine.name ? JSON.stringify(routine.name) : null;
+  if (routine.trigger === "manual")
+    return titled ? `You ran ${titled}` : `You ran ${name}'s routine`;
   if (routine.trigger === "schedule")
-    return `${name} ran its scheduled routine`;
+    return titled
+      ? `${name} ran ${titled}`
+      : `${name} ran its scheduled routine`;
   const saves = routine.saves ?? 0;
   return `${name} looked at ${saves} new ${saves === 1 ? "Save" : "Saves"}`;
+}
+
+export function routineChangeText(kind: AssistantRoutineEvent["kind"]): string {
+  if (kind === "created") return "Created routine";
+  if (kind === "updated") return "Updated routine";
+  return "Deleted routine";
 }
 
 function counted(verb: string, count: number, unit = true): string {

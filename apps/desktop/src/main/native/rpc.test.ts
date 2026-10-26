@@ -104,6 +104,54 @@ describe("dispatchNative", () => {
     ).resolves.toEqual({ ok: false, error: "tags_unavailable" });
   });
 
+  it("returns fish.list from the injected port", async () => {
+    const fishList = vi.fn().mockResolvedValue([{ id: "koi", name: "Koi" }]);
+    await expect(
+      dispatchNative({ type: "fish.list" }, ports({ fishList })),
+    ).resolves.toEqual({ ok: true, data: [{ id: "koi", name: "Koi" }] });
+  });
+
+  it("reports fish.list as unavailable without a port", async () => {
+    await expect(
+      dispatchNative({ type: "fish.list" }, ports()),
+    ).resolves.toEqual({ ok: false, error: "fish_unavailable" });
+  });
+
+  it("passes the chosen fish along with a capture", async () => {
+    const capture = vi.fn().mockResolvedValue({ id: "draft-1" });
+    const draft = {
+      id: "draft-1",
+      items: [{ kind: "url", url: "https://example.com" }],
+    };
+    await dispatchNative(
+      { type: "capture.accept", draft, fishId: "koi" },
+      ports({ capture }),
+    );
+    expect(capture).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "draft-1" }),
+      undefined,
+      "koi",
+    );
+  });
+
+  it("rejects a capture for a fish id outside the fish id format", async () => {
+    const capture = vi.fn();
+    await expect(
+      dispatchNative(
+        {
+          type: "capture.accept",
+          draft: {
+            id: "draft-1",
+            items: [{ kind: "url", url: "https://example.com" }],
+          },
+          fishId: "../Koi",
+        },
+        ports({ capture }),
+      ),
+    ).resolves.toEqual({ ok: false, error: "invalid" });
+    expect(capture).not.toHaveBeenCalled();
+  });
+
   it("returns the browser extension settings from the injected port", async () => {
     const settings = ExtensionSettingsSchema.parse({ altClick: false });
     const extensionSettings = vi.fn().mockResolvedValue(settings);

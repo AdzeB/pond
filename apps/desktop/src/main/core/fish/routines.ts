@@ -12,9 +12,10 @@ import {
 } from "../../../shared/assistant";
 import type {
   Fish,
-  FishInterval,
+  FishRoutine,
   FishRun,
 } from "../../../shared/fish-contracts";
+import { isRoutineDue } from "../../../shared/fish-routine";
 import type { OkSuccess } from "../../../shared/query-contracts-shared";
 import { getDb } from "../../db";
 import { libraryScopeClauses } from "../library-retrieval";
@@ -22,13 +23,6 @@ import { getPrefs } from "../prefs";
 import { announceFishChanged } from "./presence";
 import { fishScopeFilter } from "./scope";
 import { listFish, recordFishRun } from "./store";
-
-const HOUR = 60 * 60 * 1000;
-export const ROUTINE_PERIOD = {
-  hour: HOUR,
-  day: 24 * HOUR,
-  week: 7 * 24 * HOUR,
-} satisfies Record<FishInterval, number>;
 
 const MAX_NEW_SAVES = 200;
 
@@ -42,7 +36,7 @@ export interface RoutineDependencies {
   recordRun(id: string, run: FishRun): void;
   announce(): void;
   getPrefs(): Promise<Prefs>;
-  createChat(fishId: string, title: string): Promise<{ id: string }>;
+  thread(fishId: string): Promise<{ id: string; created: boolean }>;
   deleteChat(chatId: string): Promise<OkSuccess>;
   send(input: AssistantSend): Promise<AssistantSendResult>;
   listMessages(chatId: string): Promise<AssistantMessage[]>;
@@ -57,9 +51,9 @@ const defaultDependencies: RoutineDependencies = {
   },
   announce: announceFishChanged,
   getPrefs,
-  async createChat(fishId, title) {
-    const { createChat } = await import("../agent/persist");
-    return createChat(fishId, title);
+  async thread(fishId) {
+    const { fishThread } = await import("../agent/persist");
+    return fishThread(fishId);
   },
   async deleteChat(chatId) {
     const { deleteChat } = await import("../agent/persist");
@@ -94,28 +88,10 @@ const defaultDependencies: RoutineDependencies = {
 
 const running = new Set<string>();
 
-export function isRoutineDue(fish: Fish, now: number): boolean {
-  if (fish.routine.kind !== "schedule") return false;
-  const since = fish.lastRun?.at ?? fish.updatedAt;
-  return now - since >= ROUTINE_PERIOD[fish.routine.every];
-}
-
-function routineTitle(trigger: RoutineTrigger): string {
-  if (trigger.kind === "newSaves")
-    return trigger.saveIds.length === 1
-      ? "1 New Save"
-      : `${trigger.saveIds.length} New Saves`;
-  return trigger.kind === "schedule" ? "Routine" : "Routine Run";
-}
-
-function routineMessage(fish: Fish, trigger: RoutineTrigger): string {
-  const task =
-    fish.routine.kind === "off"
-      ? "Look over your Saves and tell me anything worth my attention."
-      : fish.routine.task;
+function routineMessage(routine: FishRoutine, trigger: RoutineTrigger): string {
   const lines = [
-    `This is your ${trigger.kind === "manual" ? "routine, run now" : "routine"}. Nobody is watching live, so don't ask questions; propose any Library changes for review.`,
-    task,
+    `This is your routine ${JSON.stringify(routine.name)}${trigger.kind === "manual" ? ", run now" : ""}. Nobody is watching live, so don't ask questions; propose any Library changes for review.`,
+    routine.instruction,
   ];
   if (trigger.kind === "newSaves")
     lines.push(
@@ -132,16 +108,18 @@ function providerFor(fish: Fish, prefs: Prefs) {
   return provider ? { provider, modelId: fish.model?.modelId } : null;
 }
 
-/** Runs one fish's routine in a new chat; any changes it proposes wait for review. */
+/** Runs one routine in its fish's conversation; any changes it proposes wait for review. */
 export async function runFishRoutine(
   fish: Fish,
+  routine: FishRoutine,
   trigger: RoutineTrigger,
   deps: RoutineDependencies = defaultDependencies,
 ): Promise<FishRun | null> {
   if (running.has(fish.id)) return null;
   running.add(fish.id);
   const at = deps.now();
-  const finish = (run: FishRun) => {
+  const finish = (result: Omit<FishRun, "routineId" | "routineName">) => {
+    const run = { ...result, routineId: routine.id, routineName: routine.name };
     deps.recordRun(fish.id, run);
     deps.announce();
     return run;
@@ -158,11 +136,11 @@ export async function runFishRoutine(
         changes: 0,
         seen: false,
       });
-    const chat = await deps.createChat(fish.id, routineTitle(trigger));
+    const chat = await deps.thread(fish.id);
     const result = await deps.send({
       chatId: chat.id,
       requestId: randomUUID(),
-      content: routineMessage(fish, trigger),
+      content: routineMessage(routine, trigger),
       attachmentIds: [],
       fileAttachmentIds: [],
       scope: { kind: "library" },
@@ -171,10 +149,12 @@ export async function runFishRoutine(
       routine: {
         trigger: trigger.kind,
         saves: trigger.kind === "newSaves" ? trigger.saveIds.length : undefined,
+        routineId: routine.id,
+        name: routine.name,
       },
     });
     if (!result.accepted) {
-      await deps.deleteChat(chat.id);
+      if (chat.created) await deps.deleteChat(chat.id);
       return finish({
         chatId: null,
         at,
@@ -218,8 +198,10 @@ export async function runDueRoutines(
 ): Promise<void> {
   const now = deps.now();
   for (const fish of deps.listFish()) {
-    if (isRoutineDue(fish, now))
-      await runFishRoutine(fish, { kind: "schedule" }, deps);
+    for (const routine of fish.routines) {
+      if (isRoutineDue(routine, now))
+        await runFishRoutine(fish, routine, { kind: "schedule" }, deps);
+    }
   }
 }
 
@@ -228,13 +210,18 @@ export async function runNewSaveRoutines(
   deps: RoutineDependencies = defaultDependencies,
 ): Promise<void> {
   for (const fish of deps.listFish()) {
-    if (fish.routine.kind !== "newSaves") continue;
+    const routines = fish.routines.filter(
+      (routine) => routine.when.kind === "newSaves" && !routine.paused,
+    );
+    if (!routines.length) continue;
     const inScope = await deps.savesInScope(saveIds, fish);
     if (!inScope.length) continue;
-    await runFishRoutine(
-      fish,
-      { kind: "newSaves", saveIds: inScope.slice(0, MAX_NEW_SAVES) },
-      deps,
-    );
+    for (const routine of routines)
+      await runFishRoutine(
+        fish,
+        routine,
+        { kind: "newSaves", saveIds: inScope.slice(0, MAX_NEW_SAVES) },
+        deps,
+      );
   }
 }

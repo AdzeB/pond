@@ -1,23 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { latestFromMessage, plainPreview } from "./latest";
+import { latestFromMessage } from "./latest";
 
 const createdAt = new Date(5);
-
-describe("plainPreview", () => {
-  it("reads markdown as one plain line", () => {
-    expect(
-      plainPreview(
-        "## Done\n\nTagged **3** posters, see [Dune](#save-1).\n\n```js\nx\n```\n- next",
-      ),
-    ).toBe("Done Tagged 3 posters, see Dune. next");
-  });
-
-  it("clips long replies", () => {
-    const preview = plainPreview("word ".repeat(80));
-    expect(preview.length).toBeLessThanOrEqual(140);
-    expect(preview.endsWith("…")).toBe(true);
-  });
-});
 
 describe("latestFromMessage", () => {
   it("knows who spoke", () => {

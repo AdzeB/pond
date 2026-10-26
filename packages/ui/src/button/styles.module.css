@@ -129,6 +129,10 @@
     &:where([data-width="auto"]) {
       width: var(--button-height);
     }
+
+    &:where([data-width="full"]) {
+      height: auto;
+    }
   }
 
   &:where([data-variant="primary"]) {

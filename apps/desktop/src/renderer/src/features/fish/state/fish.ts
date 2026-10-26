@@ -9,12 +9,22 @@ import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 import { getAppRouter } from "@/shared/lib/app-router";
 
+interface OpenRoutine {
+  fishId: string;
+  routineId: string;
+}
+
 interface FishState {
   school: FishSummary[];
   editingId: string | null;
+  routine: OpenRoutine | null;
 }
 
-const store = new Store<FishState>({ school: [], editingId: null });
+const store = new Store<FishState>({
+  school: [],
+  editingId: null,
+  routine: null,
+});
 
 let subscribers = 0;
 let unsubscribe: (() => void) | null = null;
@@ -78,9 +88,32 @@ export const fish = {
       fish.open(DEFAULT_FISH_ID);
     await fish.refresh();
   },
-  async run(id: string): Promise<void> {
-    const result = await window.pond.query("fish.run", { id });
+  async run(id: string, routineId: string): Promise<void> {
+    const result = await window.pond.query("fish.run", { id, routineId });
     if (!result.ok) throw new Error(result.error);
+  },
+  async pauseRoutine(
+    id: string,
+    routineId: string,
+    paused: boolean,
+  ): Promise<void> {
+    replace(
+      await window.pond.query("fish.pauseRoutine", { id, routineId, paused }),
+    );
+  },
+  async deleteRoutine(id: string, routineId: string): Promise<void> {
+    replace(await window.pond.query("fish.deleteRoutine", { id, routineId }));
+    if (store.state.routine?.routineId === routineId) fish.closeRoutine();
+  },
+  /** Opens the fish's page with one of its routines showing in the details pane. */
+  openRoutine(fishId: string, routineId: string): void {
+    const router = getAppRouter();
+    if (router && fishIdFromPath(router.state.location.pathname) !== fishId)
+      fish.open(fishId);
+    store.setState((state) => ({ ...state, routine: { fishId, routineId } }));
+  },
+  closeRoutine(): void {
+    store.setState((state) => ({ ...state, routine: null }));
   },
   async markSeen(id: string): Promise<void> {
     const current = fish.find(id);
@@ -88,7 +121,11 @@ export const fish = {
     replace({ ...current, lastRun: { ...current.lastRun, seen: true } });
     await window.pond.query("fish.markSeen", { id });
   },
+  /** Opens the fish's page with its details pane focused on the name. */
   startEditing(id: string): void {
+    const router = getAppRouter();
+    if (router && fishIdFromPath(router.state.location.pathname) !== id)
+      fish.open(id);
     store.setState((state) => ({ ...state, editingId: id }));
   },
   finishEditing(): void {
@@ -108,6 +145,14 @@ export function useFish(id: string | null): FishSummary | undefined {
 
 export function useFishEditingId(): string | null {
   return useSelector(store, (state) => state.editingId);
+}
+
+export function useOpenRoutineId(fishId: string | null): string | null {
+  return useSelector(store, (state) =>
+    state.routine && state.routine.fishId === fishId
+      ? state.routine.routineId
+      : null,
+  );
 }
 
 /** One subscription to main's fish events serves every mounted consumer. */

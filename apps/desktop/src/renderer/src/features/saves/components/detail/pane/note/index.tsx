@@ -1,4 +1,7 @@
-import { type InspectorDrafts, InspectorTextField } from "../text-field";
+import {
+  type InspectorDrafts,
+  InspectorTextField,
+} from "@/shared/components/inspector-text-field";
 import styles from "./styles.module.css";
 
 export function SaveNote({

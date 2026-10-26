@@ -30,3 +30,11 @@
   overflow-y: auto;
   overscroll-behavior: none;
 }
+
+.time {
+  display: block;
+  margin-block: 16px 6px;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-9);
+  text-align: center;
+}

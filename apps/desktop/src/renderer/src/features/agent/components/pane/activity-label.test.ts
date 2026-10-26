@@ -1,33 +1,8 @@
 import type { AssistantToolStep } from "@shared/assistant";
 import { expect, it } from "vitest";
-import { activityLines, currentActivityLabel } from "./activity-label";
+import { currentActivityLabel } from "./activity-label";
 
-it("groups repeated steps and keeps distinct searches apart", () => {
-  expect(
-    activityLines([
-      { id: "a", label: "Search library", detail: "fonts", status: "complete" },
-      { id: "b", label: "Search library", detail: "logos", status: "complete" },
-      { id: "c", label: "Read Save", status: "complete", elapsedMs: 600 },
-      { id: "d", label: "Read Save", status: "complete", elapsedMs: 600 },
-      { id: "e", label: "Read Save", status: "error" },
-      { id: "f", label: "Use Pond", status: "complete" },
-      { id: "g", label: "Use Pond", status: "complete" },
-    ]).map(({ label, detail, status, elapsedMs }) => ({
-      label,
-      detail,
-      status,
-      elapsedMs,
-    })),
-  ).toEqual([
-    { label: "Searched your library", detail: "fonts", status: "complete" },
-    { label: "Searched your library", detail: "logos", status: "complete" },
-    { label: "Read 2 Saves", status: "complete", elapsedMs: 1200 },
-    { label: "Read a Save", status: "error" },
-    { label: "Used Pond 2 times", status: "complete" },
-  ]);
-});
-
-it("follows actual tool starts, completion, and the next action", () => {
+it("follows tool starts, results, and the next action", () => {
   const steps: AssistantToolStep[] = [];
   expect(currentActivityLabel("thinking", steps)).toBe("Thinking");
   const searchStep: AssistantToolStep = {
@@ -41,9 +16,16 @@ it("follows actual tool starts, completion, and the next action", () => {
     "Searching your library: typography",
   );
   searchStep.status = "complete";
-  expect(currentActivityLabel("searching", steps)).toBe("Thinking");
+  expect(currentActivityLabel("thinking", steps)).toBe(
+    "Looking through the results",
+  );
   steps.push({ id: "read", label: "Read Save", status: "running" });
   expect(currentActivityLabel("searching", steps)).toBe("Reading a Save");
+  steps[1] = { id: "read", label: "Read Save", status: "complete" };
+  expect(currentActivityLabel("thinking", steps)).toBe(
+    "Thinking about what it read",
+  );
+  expect(currentActivityLabel("writing", steps)).toBe("Writing a response");
 });
 
 it("keeps reporting a running tool when a concurrent tool finishes", () => {
@@ -61,6 +43,6 @@ it("does not describe failed or cancelled actions as running", () => {
       { id: "1", label: "Read Save", status: "error" },
       { id: "2", label: "Search library", status: "stopped" },
     ]),
-  ).toBe("Thinking");
-  expect(currentActivityLabel("reading", [])).toBe("Reading Saves");
+  ).toBe("Reading Saves");
+  expect(currentActivityLabel("thinking", [])).toBe("Thinking");
 });

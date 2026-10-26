@@ -35,6 +35,7 @@ import { SetupHost } from "./components/setup";
 import { SupportDialog } from "./components/support-dialog";
 import { WhatsNewDialog } from "./components/whats-new-dialog";
 import { AgentLibraryBridge } from "./effects/agent-library-bridge";
+import { FishOpenBridge } from "./effects/fish-open-bridge";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
 import "./effects/save-library-bridge";
 
@@ -176,6 +177,7 @@ function LibraryApp() {
               <NotificationStatusBridge />
               <MenuRecentsBridge />
               <AgentLibraryBridge />
+              <FishOpenBridge />
               <SyncStatusBridge />
               <ExtensionCaptureToast />
               <EnrichmentSweep />

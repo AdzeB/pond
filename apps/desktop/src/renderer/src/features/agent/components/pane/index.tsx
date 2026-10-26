@@ -15,7 +15,7 @@ import {
 import { DEFAULT_FISH_NAME } from "@shared/fish-contracts";
 import { chosenModelId } from "@shared/provider-models";
 import { MotionConfig, useReducedMotion } from "motion/react";
-import { Fragment, type ReactNode, useRef, useState } from "react";
+import { Fragment, type ReactNode, useEffect, useRef } from "react";
 import {
   type AssistantState,
   assistant,
@@ -35,13 +35,13 @@ import { notify } from "@/shared/lib/toast";
 import { usePrefs } from "@/shared/state/prefs";
 import type { ComposerEditorHandle } from "../composer";
 import { AgentMessage } from "./agent-message";
-import { ChatActions } from "./chat-actions";
 import { ChatEvent } from "./chat-event";
 import { reviewOutcomeText, routineEventText } from "./chat-event/events";
-import { ChatHeader } from "./chat-header";
-import { useRememberedChatScroll } from "./chat-scroll";
+import { useOpenAtBottom } from "./chat-scroll";
 import { ComposeArea } from "./compose-area";
+import { RoutineEvents } from "./routine-events";
 import styles from "./styles.module.css";
+import { timeBreaks, timeLabel, turnMarks } from "./timeline";
 
 export { AgentMessage } from "./agent-message";
 
@@ -70,11 +70,10 @@ function AgentPaneContent({
   patchModelOptions: (next: AgentModelOptions) => void;
   reduceMotion: boolean;
 }) {
-  const [renamingChat, setRenamingChat] = useState(false);
   const input = useRef<ComposerEditorHandle>(null);
   const chat = pondChatSession(state.chatId ?? "draft");
   const { messages, status, error: chatError } = useChat({ chat });
-  const viewportRef = useRememberedChatScroll(state.chatId ?? "draft");
+  const viewportRef = useOpenAtBottom();
   const running =
     status === "submitted" || status === "streaming" || state.busy;
   /** Only messages that first render mid-run pop in, so loaded history and post-run rehydration stay still. */
@@ -120,9 +119,21 @@ function AgentPaneContent({
         ? `${persona.name} has changes ready for review.`
         : undefined;
 
+  const createdAt = new Map(
+    state.messages.map((message) => [message.id, message.createdAt]),
+  );
+  const breaks = timeBreaks(
+    messages.map((message) => createdAt.get(message.id)),
+  );
+  const now = new Date();
+  const marks = turnMarks(messages, state.chatId ?? "pending", persona.name);
+
   function focus() {
     input.current?.focus();
   }
+  useEffect(() => {
+    if (state.focusRequest) requestAnimationFrame(() => input.current?.focus());
+  }, [state.focusRequest]);
   function attach(sources: AssistantSource[]) {
     assistant.attach(sources);
     requestAnimationFrame(focus);
@@ -153,35 +164,11 @@ function AgentPaneContent({
         data-reduced-motion={reduceMotion || undefined}
         aria-label={persona.name}
       >
-        <ChatHeader
-          icon={persona.icon}
-          subtitle={persona.name}
-          chatId={state.chatId}
-          chats={state.chats}
-          disabled={running || state.loading}
-          renaming={renamingChat}
-          onFinishRenaming={() => setRenamingChat(false)}
-          onNewChat={() => {
-            assistant.newChat();
-            requestAnimationFrame(focus);
-          }}
-          onOpenChat={(id) => void assistant.openChat(id)}
-        >
-          <ChatActions
-            chatId={state.chatId}
-            title={
-              state.chats.find((chat) => chat.id === state.chatId)?.title ??
-              null
-            }
-            messages={state.messages}
-            disabled={running || state.loading}
-            onRename={() => setRenamingChat(true)}
-          />
-        </ChatHeader>
         <div className={styles["assistant-workspace"]}>
           <Thread.Conversation
             key={state.chatId ?? "new"}
             className={styles["assistant-body"]}
+            marks={marks}
             viewportProps={{
               className: styles["chat-viewport"],
               ref: viewportRef,
@@ -191,6 +178,7 @@ function AgentPaneContent({
             }
             composer={
               <ComposeArea
+                name={persona.name}
                 state={state}
                 provider={provider}
                 modelId={modelId}
@@ -212,16 +200,28 @@ function AgentPaneContent({
               />
             }
           >
-            {messages.map((message) => {
+            {messages.map((message, index) => {
               const metadata = fromUIMessage(
                 message,
                 state.chatId ?? "pending",
               ).metadata;
+              const at = breaks[index] ? createdAt.get(message.id) : undefined;
+              const stamp = at ? (
+                <time className={styles.time} dateTime={at.toISOString()}>
+                  {timeLabel(at, now)}
+                </time>
+              ) : null;
               if (message.role === "user" && metadata?.routine)
                 return (
-                  <ChatEvent key={message.id} icon={persona.icon}>
-                    {routineEventText(persona.name, metadata.routine)}
-                  </ChatEvent>
+                  <Fragment key={message.id}>
+                    {stamp}
+                    <ChatEvent
+                      icon={persona.icon}
+                      data-thread-mark={message.id}
+                    >
+                      {routineEventText(persona.name, metadata.routine)}
+                    </ChatEvent>
+                  </Fragment>
                 );
               const outcome =
                 message.role === "assistant" && metadata?.changes
@@ -229,7 +229,11 @@ function AgentPaneContent({
                   : null;
               return (
                 <Fragment key={message.id}>
+                  {stamp}
                   <article
+                    data-thread-mark={
+                      message.role === "user" ? message.id : undefined
+                    }
                     aria-label={
                       message.role === "assistant"
                         ? `Response from ${persona.name}`
@@ -253,6 +257,10 @@ function AgentPaneContent({
                       avatar={persona.avatar}
                     />
                   </article>
+                  {message.role === "assistant" &&
+                  metadata?.routineEvents?.length ? (
+                    <RoutineEvents events={metadata.routineEvents} />
+                  ) : null}
                   {outcome ? <ChatEvent>{outcome}</ChatEvent> : null}
                 </Fragment>
               );
@@ -285,7 +293,7 @@ export function AgentPane() {
             species={fish.species}
             activity={activity}
             mood="busy"
-            size={14}
+            size={18}
           />
         )
       : undefined,

@@ -24,7 +24,7 @@ describe("folder sidebar navigation", () => {
         instructions: "",
         scope: { folderIds: [], tags: [] },
         model: null,
-        routine: { kind: "off" },
+        routines: [],
         lastRun: null,
         createdAt: 0,
         updatedAt: 0,

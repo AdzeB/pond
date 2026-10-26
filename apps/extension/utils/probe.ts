@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { nativeCall } from "@/utils/native";
+import {
+  isUnreachable,
+  type NativeUnreachable,
+  nativeCall,
+} from "@/utils/native";
 import { themeVarsSchema } from "@/utils/theme";
 
 const libraryInfoSchema = z.object({
@@ -11,13 +15,22 @@ const libraryInfoSchema = z.object({
 type LibraryInfo = z.infer<typeof libraryInfoSchema>;
 
 export type ProbeResult =
-  | { state: "offline" }
+  | { state: "offline"; reason: NativeUnreachable }
   | { state: "connected"; library: LibraryInfo };
+
+export const OFFLINE: ProbeResult = { state: "offline", reason: "offline" };
 
 export async function probe(): Promise<ProbeResult> {
   const result = await nativeCall({ type: "library.info" });
-  if (!result.ok) return { state: "offline" };
+  if (!result.ok) {
+    if (isUnreachable(result.error))
+      return { state: "offline", reason: result.error };
+    /** Pond answered but rejected the request, so it's older than this extension. */
+    if (result.error === "invalid")
+      return { state: "offline", reason: "incompatible" };
+    return OFFLINE;
+  }
   const library = libraryInfoSchema.safeParse(result.data);
-  if (!library.success) return { state: "offline" };
+  if (!library.success) return { state: "offline", reason: "incompatible" };
   return { state: "connected", library: library.data };
 }

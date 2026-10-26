@@ -4,133 +4,74 @@ import {
   ASSISTANT_ACTIVITY_LABELS as activities,
 } from "@shared/assistant";
 
-export type ActivityIcon =
-  | "search"
-  | "read"
-  | "folder"
-  | "filter"
-  | "view"
-  | "cite"
-  | "open"
-  | "duplicate"
-  | "image"
-  | "review"
-  | "explore"
-  | "operation";
-
 interface StepCopy {
+  /** While the tool runs. */
   live: string;
-  done: string;
-  many?: (count: number) => string;
-  icon: ActivityIcon;
+  /** Once it returns and the fish works with the result. */
+  after: string;
 }
 
 const copy = new Map<string, StepCopy>([
   [
     "Search library",
-    {
-      live: "Searching your library",
-      done: "Searched your library",
-      icon: "search",
-    },
+    { live: "Searching your library", after: "Looking through the results" },
   ],
   [
     "Read Save",
-    {
-      live: "Reading a Save",
-      done: "Read a Save",
-      many: (count) => `Read ${count} Saves`,
-      icon: "read",
-    },
+    { live: "Reading a Save", after: "Thinking about what it read" },
   ],
   [
     "Grep library",
-    {
-      live: "Searching saved text",
-      done: "Searched saved text",
-      icon: "search",
-    },
+    { live: "Searching saved text", after: "Looking through the matches" },
   ],
   [
     "Library overview",
     {
       live: "Reading your library overview",
-      done: "Read your library overview",
-      icon: "read",
+      after: "Getting a feel for your library",
     },
   ],
   [
     "Read folders",
-    { live: "Reading folders", done: "Read your folders", icon: "folder" },
+    { live: "Reading folders", after: "Thinking about your folders" },
   ],
   [
     "Apply filter",
-    { live: "Applying filters", done: "Applied filters", icon: "filter" },
+    { live: "Applying filters", after: "Checking the filtered view" },
   ],
-  [
-    "Set overlay",
-    { live: "Updating the view", done: "Updated the view", icon: "view" },
-  ],
+  ["Set overlay", { live: "Updating the view", after: "Checking the view" }],
   [
     "Cite Saves",
-    {
-      live: "Collecting references",
-      done: "Collected references",
-      icon: "cite",
-    },
+    { live: "Collecting references", after: "Putting the reply together" },
   ],
-  [
-    "Open Save",
-    { live: "Opening a Save", done: "Opened a Save", icon: "open" },
-  ],
+  ["Open Save", { live: "Opening a Save", after: "Looking at the Save" }],
   [
     "Find duplicates",
-    {
-      live: "Finding duplicates",
-      done: "Looked for duplicates",
-      icon: "duplicate",
-    },
+    { live: "Finding duplicates", after: "Comparing the duplicates" },
   ],
   [
     "Describe images",
-    {
-      live: "Examining images",
-      done: "Examined images",
-      icon: "image",
-    },
+    { live: "Examining images", after: "Thinking about the images" },
   ],
   [
     "Prepare changes for review",
     {
       live: "Preparing changes for review",
-      done: "Prepared changes for review",
-      icon: "review",
+      after: "Double-checking the changes",
     },
   ],
   [
     "Find Pond capabilities",
-    {
-      live: "Finding Pond capabilities",
-      done: "Checked what Pond can do",
-      icon: "explore",
-    },
+    { live: "Checking what Pond can do", after: "Picking the right tool" },
   ],
   [
     "Read operation details",
-    {
-      live: "Checking operation details",
-      done: "Checked operation details",
-      icon: "operation",
-    },
+    { live: "Checking operation details", after: "Planning the next step" },
   ],
-  ["Use Pond", { live: "Using Pond", done: "Used Pond", icon: "operation" }],
+  ["Use Pond", { live: "Using Pond", after: "Checking how it went" }],
   [
     "Read operation result",
-    {
-      live: "Reading operation results",
-      done: "Read the results",
-      icon: "operation",
-    },
+    { live: "Reading operation results", after: "Checking how it went" },
   ],
 ]);
 
@@ -139,57 +80,11 @@ export function currentActivityLabel(
   steps: readonly AssistantToolStep[],
 ) {
   const running = steps.findLast((step) => step.status === "running");
-  if (!running)
-    return steps.length ? activities.thinking : activities[activity];
-  const label = copy.get(running.label)?.live ?? running.label;
-  return running.detail ? `${label}: ${running.detail}` : label;
-}
-
-export interface ActivityLine {
-  id: string;
-  label: string;
-  detail?: string;
-  status: AssistantToolStep["status"];
-  icon: ActivityIcon;
-  elapsedMs?: number;
-}
-
-/** Collapses consecutive identical steps so five reads become one line. */
-export function activityLines(
-  steps: readonly AssistantToolStep[],
-): ActivityLine[] {
-  const groups: { step: AssistantToolStep; count: number; elapsed: number }[] =
-    [];
-  for (const step of steps) {
-    const last = groups.at(-1);
-    if (
-      last &&
-      last.step.label === step.label &&
-      last.step.detail === step.detail &&
-      last.step.status === step.status
-    ) {
-      last.count += 1;
-      last.elapsed += step.elapsedMs ?? 0;
-      continue;
-    }
-    groups.push({ step, count: 1, elapsed: step.elapsedMs ?? 0 });
+  if (running) {
+    const label = copy.get(running.label)?.live ?? running.label;
+    return running.detail ? `${label}: ${running.detail}` : label;
   }
-  return groups.map(({ step, count, elapsed }) => {
-    const text = copy.get(step.label);
-    const label = !text
-      ? step.label
-      : step.status === "running"
-        ? text.live
-        : count > 1
-          ? (text.many?.(count) ?? `${text.done} ${count} times`)
-          : text.done;
-    return {
-      id: step.id,
-      label,
-      detail: step.detail,
-      status: step.status,
-      icon: text?.icon ?? "operation",
-      elapsedMs: elapsed || undefined,
-    };
-  });
+  if (activity === "writing") return activities.writing;
+  const last = steps.findLast((step) => step.status === "complete");
+  return (last && copy.get(last.label)?.after) ?? activities[activity];
 }

@@ -4,37 +4,16 @@ import { useState } from "react";
 import { SidebarSectionMenu } from "@/features/settings";
 import { usePrefs } from "@/shared/state/prefs";
 import { createFish, sectionItems } from "../../lib/menu";
-import {
-  fish as fishStore,
-  useFish,
-  useFishEditingId,
-  useFishList,
-  useHydrateFish,
-} from "../../state/fish";
-import { FishEditor, type FishScopeOptions } from "../editor";
+import { useFishList, useHydrateFish } from "../../state/fish";
 import { FishRow } from "../row";
 
-export function FishSection({
-  activeId,
-  folders,
-  tagNames,
-}: FishScopeOptions & { activeId: string | null }) {
+export function FishSection({ activeId }: { activeId: string | null }) {
   useHydrateFish();
   const school = useFishList();
-  const editing = useFish(useFishEditingId());
   const [open, setOpen] = useState(true);
   const [sidebar] = usePrefs("sidebar");
-  const editor = editing ? (
-    <FishEditor
-      key={editing.id}
-      fish={editing}
-      folders={folders}
-      tagNames={tagNames}
-      onClose={fishStore.finishEditing}
-    />
-  ) : null;
 
-  if (!sidebar.sections.fish) return editor;
+  if (!sidebar.sections.fish) return null;
 
   return (
     <Sidebar.CollapsibleGroup open={open} onOpenChange={setOpen}>
@@ -69,7 +48,6 @@ export function FishSection({
           <FishRow key={fish.id} fish={fish} active={fish.id === activeId} />
         ))}
       </Sidebar.CollapsibleGroupContent>
-      {editor}
     </Sidebar.CollapsibleGroup>
   );
 }

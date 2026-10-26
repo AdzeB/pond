@@ -6,6 +6,7 @@ import type {
   AssistantProvider,
   AssistantSource,
 } from "@shared/assistant";
+import { MESSAGE_BREAK, splitMessages } from "@shared/assistant-text";
 import { type ReactNode, useRef } from "react";
 import {
   type AssistantState,
@@ -22,7 +23,11 @@ import { currentActivityLabel } from "./activity-label";
 import { AssistantResponse } from "./assistant-response";
 import { FileAttachments } from "./file-attachments";
 import { inferredLookupResult, ResponseExtras } from "./response-content";
-import { ActivityLog, WorkSummary } from "./work-summary";
+
+async function copyText(text: string): Promise<void> {
+  const result = await window.pond.query("clipboard.writeText", { text });
+  if (!result.ok) throw new Error(result.error);
+}
 
 export function AgentMessage({
   message,
@@ -57,6 +62,13 @@ export function AgentMessage({
   );
   const responseText = message.role === "assistant" ? reveal.text : text;
   const settled = !streaming && !reveal.pending;
+  const saved = domain.metadata?.messages;
+  const bubbles =
+    message.role !== "assistant"
+      ? []
+      : settled && saved?.length
+        ? saved
+        : splitMessages(responseText);
   const animatedResponse = useRef(false);
   if (message.role === "assistant" && (streaming || reveal.pending))
     animatedResponse.current = true;
@@ -66,7 +78,9 @@ export function AgentMessage({
   const showActivity =
     message.role === "assistant" &&
     streaming &&
-    (!text || steps.some((step) => step.status === "running"));
+    (!text ||
+      text.trimEnd().endsWith(MESSAGE_BREAK) ||
+      steps.some((step) => step.status === "running"));
   const sources = domain.metadata?.sources?.length
     ? domain.metadata.sources
     : streaming
@@ -87,6 +101,17 @@ export function AgentMessage({
       ? state.messages.find((row) => row.id === message.id)?.metadata
           ?.attachments
       : undefined);
+  const actionBar =
+    message.role === "assistant" && (!text || !settled) ? null : (
+      <Message.ActionBar
+        text={message.role === "assistant" ? bubbles.join("\n\n") : text}
+        onCopy={copyText}
+        onQuote={() => {
+          if (sources.length) attach(sources);
+          else if (text) assistant.quote(text);
+        }}
+      />
+    );
   return (
     <Message.View
       animateEntrance={entering}
@@ -109,45 +134,37 @@ export function AgentMessage({
           />
         ) : null
       }
-      actions={
-        message.role === "assistant" && (!text || !settled) ? null : (
-          <Message.ActionBar
-            text={text}
-            onQuote={() => {
-              if (sources.length) attach(sources);
-              else if (text) assistant.quote(text);
-            }}
-          />
-        )
-      }
+      actions={message.role === "user" ? actionBar : null}
     >
-      {message.role !== "assistant" ? null : streaming && steps.length ? (
-        <ActivityLog
-          steps={steps}
-          thinking={
-            showActivity && !steps.some((step) => step.status === "running")
-              ? currentActivityLabel(activity, steps)
-              : undefined
-          }
-          avatar={avatar?.(activity)}
-          live
-        />
-      ) : (
-        <WorkSummary metadata={extras.metadata} streaming={streaming} />
-      )}
       {message.role === "user" ? (
         <FileAttachments files={domain.metadata?.files ?? []} />
       ) : null}
       {message.role === "assistant" &&
       inferredLookupResult(text, sources) ? null : responseText ? (
-        <AssistantResponse
-          content={responseText}
-          streaming={animatedResponse.current}
-          sources={message.role === "user" ? (attachments ?? []) : sources}
-          onOpenSave={openSave}
-        />
+        message.role === "assistant" ? (
+          bubbles.map((bubble, index) => (
+            <Message.Bubble
+              // biome-ignore lint/suspicious/noArrayIndexKey: messages only ever append, so position is their identity.
+              key={index}
+              trailing={index === bubbles.length - 1 ? actionBar : undefined}
+            >
+              <AssistantResponse
+                content={bubble}
+                streaming={animatedResponse.current}
+                sources={sources}
+                onOpenSave={openSave}
+              />
+            </Message.Bubble>
+          ))
+        ) : (
+          <AssistantResponse
+            content={responseText}
+            sources={attachments ?? []}
+            onOpenSave={openSave}
+          />
+        )
       ) : null}
-      {showActivity && !steps.length ? (
+      {showActivity ? (
         <RunStatus icon={avatar?.(activity)}>
           {currentActivityLabel(activity, steps)}
         </RunStatus>

@@ -2,7 +2,10 @@ import { IconExternalLink } from "@pond/icons";
 import { Button, Tooltip } from "@pond/ui";
 import { mutateSave } from "@/features/saves/lib/mutate";
 import type { Save } from "@/features/saves/types";
-import { type InspectorDrafts, InspectorTextField } from "../text-field";
+import {
+  type InspectorDrafts,
+  InspectorTextField,
+} from "@/shared/components/inspector-text-field";
 import styles from "./styles.module.css";
 
 export function SaveIdentity({

@@ -9,16 +9,17 @@ import {
   assistant,
 } from "@/features/agent/state/assistant";
 import { isLibrarySaveDrag, saveDropIds } from "@/features/saves";
+import { ModelPicker } from "@/shared/components/model-picker";
 import { openSettings } from "@/shared/lib/open-settings";
 import { ComposerEditor, type ComposerEditorHandle } from "../../composer";
-import { AttachFilesButton } from "../attach-files";
+import { AddMenu } from "../add-menu";
 import { ReferencedSavesPopover } from "../consulted-saves";
 import { FileAttachments } from "../file-attachments";
-import { ModelPicker } from "../model-picker";
 import { ResponseAnnouncement } from "../response-announcement";
 import styles from "./styles.module.css";
 
 interface ComposeAreaProps {
+  name: string;
   state: AssistantState;
   provider: AssistantProvider | "";
   modelId: string;
@@ -40,6 +41,7 @@ interface ComposeAreaProps {
 }
 
 export function ComposeArea({
+  name,
   state,
   provider,
   modelId,
@@ -149,21 +151,19 @@ export function ComposeArea({
         }}
       >
         <ComposerView
-          placeholder={
-            running ? "Draft your next message" : "Ask about your Saves"
-          }
+          placeholder={`Message ${name}`}
           running={running}
-          empty={!state.draft}
           data-dragging={dropping || undefined}
           onSend={() => submit()}
           onStop={assistant.stop}
           leading={
-            <AttachFilesButton
+            <AddMenu
               disabled={state.loading}
               onAttach={(files) => {
                 assistant.attachFiles(files);
                 requestAnimationFrame(focus);
               }}
+              onAddSaves={() => inputRef.current?.mention()}
             />
           }
           toolbar={
@@ -183,9 +183,7 @@ export function ComposeArea({
               value={state.draft}
               disabled={state.loading || !provider}
               running={running}
-              placeholder={
-                running ? "Draft your next message" : "Ask about your Saves"
-              }
+              placeholder={`Message ${name}`}
               attachments={state.attachments}
               anchorRef={composer}
               onChange={(value) => assistant.setDraft(value)}

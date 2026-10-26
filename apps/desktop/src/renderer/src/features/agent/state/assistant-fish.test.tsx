@@ -12,7 +12,7 @@ const chats: Record<string, { id: string; title: string }[]> = {
   guppy: [],
 };
 
-it("opens a fish on its last chat and keeps a new-chat draft", async () => {
+it("opens each fish on its one conversation and keeps its draft", async () => {
   vi.stubGlobal("pond", {
     query: async (name: string, args: { fishId?: string; chatId?: string }) =>
       name === "agent.chats"
@@ -32,6 +32,7 @@ it("opens a fish on its last chat and keeps a new-chat draft", async () => {
   });
   const harness = createAssistantHarness((state) => ({
     chatId: state.chatId,
+    draft: state.draft,
     loading: state.loading,
   }));
   const shown = () => JSON.parse(harness.host.textContent || "{}");
@@ -51,20 +52,16 @@ it("opens a fish on its last chat and keeps a new-chat draft", async () => {
     await open("carp");
     expect(shown().chatId).toBe("carp-only");
     await open("koi");
-    expect(shown().chatId).toBe("koi-older");
+    expect(shown().chatId).toBe("koi-latest");
 
     await open("guppy");
     expect(shown().chatId).toBeNull();
 
+    await act(async () => assistant.setDraft("Keep this"));
     await open("carp");
-    expect(shown().chatId).toBe("carp-only");
-    await act(async () => {
-      assistant.newChat();
-      assistant.setDraft("Keep this");
-    });
-    await open("koi");
-    await open("carp");
+    await open("guppy");
     expect(shown().chatId).toBeNull();
+    expect(shown().draft).toBe("Keep this");
   } finally {
     await harness.unmount();
     assistant.setDraft("");

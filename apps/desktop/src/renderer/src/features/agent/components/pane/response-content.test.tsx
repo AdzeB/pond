@@ -250,7 +250,7 @@ it("asks for Empty Trash in its own destructive card", async () => {
   expect(host.querySelector('[aria-label^="Apply"]')).toBeNull();
 });
 
-it("keeps the completed work summary above the response", async () => {
+it("leaves a finished reply without a work summary", async () => {
   const state: AssistantState = {
     fishId: "default",
     chatId: "chat",
@@ -269,6 +269,7 @@ it("keeps the completed work summary above the response", async () => {
     steps: [],
     error: null,
     failed: null,
+    focusRequest: 0,
   };
   await act(async () =>
     root.render(
@@ -291,15 +292,85 @@ it("keeps the completed work summary above the response", async () => {
     ),
   );
 
-  const response = [...host.querySelectorAll("p")].find(
-    (element) => element.textContent === "A completed response.",
+  expect(host.textContent).toContain("A completed response.");
+  expect(host.textContent).not.toContain("Worked for");
+});
+
+const idle: AssistantState = {
+  fishId: "default",
+  chatId: "chat",
+  chats: [],
+  referenceMessageId: null,
+  messages: [],
+  draft: "",
+  attachments: [],
+  files: [],
+  busy: false,
+  loading: false,
+  requestId: null,
+  sources: [],
+  activity: "thinking",
+  results: [],
+  steps: [],
+  error: null,
+  failed: null,
+  focusRequest: 0,
+};
+
+async function renderReply(content: string, messages?: string[]) {
+  await act(async () =>
+    root.render(
+      <AgentMessage
+        message={toUIMessage({
+          id: "reply",
+          chatId: "chat",
+          role: "assistant",
+          content,
+          metadata: messages ? { messages } : null,
+        })}
+        state={idle}
+        provider="openai"
+        attachedIds={[]}
+        attach={vi.fn()}
+        streaming={false}
+        latest
+        onAnswer={vi.fn()}
+      />,
+    ),
   );
-  const summary = [...host.querySelectorAll("button")].find(
-    (element) => element.textContent === "Worked for 30s",
+  return [
+    ...host.querySelectorAll<HTMLElement>('[data-slot="message-bubble"]'),
+  ].map((bubble) => bubble.textContent);
+}
+
+it("shows 'send me 3 separate messages' as exactly three bubbles in order", async () => {
+  const messages = ["Hey!", "Here's the second.", "And the third."];
+  expect(await renderReply(messages.join("\n\n"), messages)).toEqual(messages);
+  expect(
+    await renderReply(
+      "Hey!\n[[next]]\nHere's the second.\n[[next]]\nAnd the third.",
+    ),
+  ).toEqual(messages);
+});
+
+it("keeps a numbered single reply in one bubble", async () => {
+  const bubbles = await renderReply(
+    "1. Hey!\n2. Here's the second.\n3. And the third.",
   );
-  if (!response || !summary)
-    throw new Error("Missing response or work summary");
-  expect(response.compareDocumentPosition(summary)).toBe(
-    Node.DOCUMENT_POSITION_PRECEDING,
-  );
+  expect(bubbles).toHaveLength(1);
+  expect(host.querySelectorAll("li")).toHaveLength(3);
+});
+
+it("copies the whole reply through Pond and sits beside the last bubble", async () => {
+  const query = vi.fn(async () => ({ ok: true }));
+  vi.stubGlobal("pond", { query });
+  const messages = ["Hey!", "Here's the second."];
+  await renderReply(messages.join("\n\n"), messages);
+  const copy = host.querySelector<HTMLButtonElement>('[aria-label="Copy"]');
+  const bubbles = host.querySelectorAll('[data-slot="message-bubble"]');
+  expect(copy?.parentElement?.parentElement).toBe(bubbles[1]?.parentElement);
+  await act(async () => copy?.click());
+  expect(query).toHaveBeenCalledWith("clipboard.writeText", {
+    text: "Hey!\n\nHere's the second.",
+  });
 });

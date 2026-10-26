@@ -17,6 +17,10 @@ import { pool } from "@/features/saves/state/pool";
 import { useSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
 import { useTagGroups, useTags } from "@/features/tags";
 import { Section } from "@/shared/components/inspector-section";
+import {
+  type InspectorDrafts,
+  InspectorTextField,
+} from "@/shared/components/inspector-text-field";
 import { PropertyList } from "@/shared/components/property-list";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { useStableStrings } from "@/shared/hooks/use-stable-array";
@@ -35,7 +39,6 @@ import { SourceCard } from "./source-card";
 import { StyleSection } from "./style-section";
 import styles from "./styles.module.css";
 import { SuggestedTags } from "./suggested-tags";
-import { type InspectorDrafts, InspectorTextField } from "./text-field";
 
 export interface SaveInspectorProps {
   saveId: string;

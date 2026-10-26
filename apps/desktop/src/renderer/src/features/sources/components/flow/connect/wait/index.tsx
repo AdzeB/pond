@@ -146,12 +146,46 @@ function ConnectPromises({
   );
 }
 
+/** The extension pushes cookies as soon as a sign-in page finishes loading, so this long without a message means it can't reach Pond. */
+const EXTENSION_SILENT_MS = 20_000;
+const EXTENSION_POLL_MS = 3_000;
+
+function useExtensionSilent(): boolean {
+  const waiting = useConnectWaiting();
+  const problem = useConnectProblem();
+  const [silent, setSilent] = useState(false);
+
+  useEffect(() => {
+    setSilent(false);
+    if (!waiting || problem) return;
+    const startedAt = Date.now();
+    let cancelled = false;
+    const check = async () => {
+      const result = await window.pond
+        .query("sources.extensionLastSeen", {})
+        .catch(() => null);
+      if (cancelled || !result) return;
+      const heard = result.at !== null && result.at >= startedAt;
+      setSilent(!heard && Date.now() - startedAt >= EXTENSION_SILENT_MS);
+    };
+    const timer = setInterval(() => void check(), EXTENSION_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [waiting, problem]);
+
+  return silent;
+}
+
 function ExtensionNote() {
   const [open, setOpen] = useState(false);
+  const silent = useExtensionSilent();
   return (
-    <p className={styles.note}>
-      Pond gets your session through its browser extension. Install it in the
-      browser you sign in with.{" "}
+    <p className={styles.note} data-state={silent ? "silent" : undefined}>
+      {silent
+        ? "Pond hasn't heard from its extension yet. Open the extension in the browser you sign in with to check that it can reach Pond."
+        : "Pond gets your session through its browser extension. Install it in the browser you sign in with."}{" "}
       <Button variant="link" size="xs" onClick={() => setOpen(true)}>
         Get Extension
       </Button>

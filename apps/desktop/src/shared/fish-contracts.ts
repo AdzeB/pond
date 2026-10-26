@@ -34,22 +34,6 @@ export const FishIdSchema = z
   .string()
   .regex(/^[a-z0-9-]{1,64}$/, "Invalid fish id");
 
-export const FISH_INTERVALS = ["hour", "day", "week"] as const;
-export type FishInterval = (typeof FISH_INTERVALS)[number];
-
-const FishTaskSchema = z.string().trim().min(1).max(4000);
-
-export const FishRoutineSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("off") }),
-  z.object({ kind: z.literal("newSaves"), task: FishTaskSchema }),
-  z.object({
-    kind: z.literal("schedule"),
-    every: z.enum(FISH_INTERVALS),
-    task: FishTaskSchema,
-  }),
-]);
-export type FishRoutine = z.infer<typeof FishRoutineSchema>;
-
 export const FishScopeSchema = z.object({
   folderIds: z.array(z.string().min(1).max(200)).max(200),
   tags: z.array(z.string().min(1).max(200)).max(200),
@@ -63,6 +47,8 @@ export const FishModelSchema = z.object({
 export type FishModel = z.infer<typeof FishModelSchema>;
 
 export const FishRunSchema = z.object({
+  routineId: z.string().min(1).max(64).optional(),
+  routineName: z.string().max(60).optional(),
   chatId: z.string().min(1).nullable(),
   at: z.number(),
   status: z.enum(["done", "failed"]),
@@ -72,6 +58,42 @@ export const FishRunSchema = z.object({
 });
 export type FishRun = z.infer<typeof FishRunSchema>;
 
+export const FISH_ROUTINE_CAP = 50;
+
+/** Days use `Date.getDay()` numbering, so 0 is Sunday. */
+export const FishWhenSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("newSaves") }),
+  z.object({
+    kind: z.literal("every"),
+    hours: z.number().int().min(1).max(168),
+  }),
+  z.object({
+    kind: z.literal("daily"),
+    time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use 24-hour HH:MM"),
+    days: z.array(z.number().int().min(0).max(6)).min(1).max(7),
+  }),
+]);
+export type FishWhen = z.infer<typeof FishWhenSchema>;
+
+export const FishRoutineInputSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  instruction: z.string().trim().min(1).max(4000),
+  when: FishWhenSchema,
+});
+export type FishRoutineInput = z.infer<typeof FishRoutineInputSchema>;
+
+export const FishRoutinePatchSchema = FishRoutineInputSchema.partial();
+export type FishRoutinePatch = z.infer<typeof FishRoutinePatchSchema>;
+
+export const FishRoutineSchema = FishRoutineInputSchema.extend({
+  id: z.string().min(1).max(64),
+  paused: z.boolean(),
+  lastRun: FishRunSchema.nullable(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+export type FishRoutine = z.infer<typeof FishRoutineSchema>;
+
 const FishFieldsSchema = z.object({
   name: z.string().trim().min(1).max(40),
   color: FishColorSchema,
@@ -79,11 +101,11 @@ const FishFieldsSchema = z.object({
   instructions: z.string().max(8000),
   scope: FishScopeSchema,
   model: FishModelSchema.nullable(),
-  routine: FishRoutineSchema,
 });
 export const FishSchema = FishFieldsSchema.extend({
   species: FishSpeciesSchema.default("koi"),
   id: FishIdSchema,
+  routines: z.array(FishRoutineSchema).max(FISH_ROUTINE_CAP),
   lastRun: FishRunSchema.nullable(),
   createdAt: z.number(),
   updatedAt: z.number(),
@@ -99,6 +121,12 @@ export type FishPresence = AssistantActivity | null;
 export type FishEvent =
   | { kind: "changed" }
   | { kind: "presence"; fishId: string; activity: FishPresence };
+
+/** Saves captured in the browser for a fish, to attach in its chat. */
+export interface FishOpen {
+  fishId: string;
+  saveIds: string[];
+}
 
 export interface FishLatest {
   from: "you" | "fish" | "routine";
@@ -117,7 +145,9 @@ export interface FishQueryInputs {
   "fish.update": { id: string; patch: FishPatch };
   "fish.delete": { id: string };
   "fish.markSeen": { id: string };
-  "fish.run": { id: string };
+  "fish.run": { id: string; routineId: string };
+  "fish.pauseRoutine": { id: string; routineId: string; paused: boolean };
+  "fish.deleteRoutine": { id: string; routineId: string };
 }
 
 export interface FishQueryResults {
@@ -127,4 +157,6 @@ export interface FishQueryResults {
   "fish.delete": { ok: true } | { ok: false; error: string };
   "fish.markSeen": { ok: true };
   "fish.run": { ok: true } | { ok: false; error: string };
+  "fish.pauseRoutine": Fish;
+  "fish.deleteRoutine": Fish;
 }

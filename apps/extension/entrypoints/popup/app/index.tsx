@@ -13,7 +13,9 @@ import {
 import {
   IconBrandArena,
   IconBrandCosmos,
+  IconBrandSubstack,
   IconBrandThreads,
+  IconGithub,
   IconInstagram,
   IconPinterest,
   IconReddit,
@@ -21,6 +23,7 @@ import {
   IconXTwitter,
   IconYoutube,
 } from "@pond/icons/social-media";
+import { CHROME_WEB_STORE_URL, FIREFOX_ADDONS_URL } from "@pond/schema/native";
 import type { ExternalSource } from "@pond/schema/sources";
 import { BrandTile } from "@pond/ui/brand-tile";
 import { Button } from "@pond/ui/button";
@@ -39,12 +42,44 @@ import {
   sendMessage,
   type ToolResult,
 } from "@/utils/messaging";
+import type { NativeUnreachable } from "@/utils/native";
 import { useLibrary } from "@/utils/use-library";
 import { useActiveTab, useShortcuts } from "../hooks";
 import { ShortcutsPanel } from "./shortcuts";
 import styles from "./styles.module.css";
 
 const BUY_ME_A_COFFEE = "https://buymeacoffee.com/raphaelsalaja";
+
+const STORE_URL = import.meta.env.FIREFOX
+  ? FIREFOX_ADDONS_URL
+  : CHROME_WEB_STORE_URL;
+
+const UNREACHABLE_COPY = {
+  offline: {
+    title: "Pond isn't running",
+    description: "Open Pond on your computer to save from the browser.",
+  },
+  host_missing: {
+    title: "Pond isn't set up for this browser",
+    description:
+      "Open Pond so it can add its connection to this browser, then try again.",
+  },
+  host_forbidden: {
+    title: "Pond doesn't recognize this extension",
+    description:
+      "This copy has a different ID than the one Pond trusts. Install the extension from the store, then remove this copy.",
+  },
+  host_failed: {
+    title: "Pond's browser connection stopped",
+    description:
+      "Pond is installed but its connection to the browser failed. Update or reinstall Pond, then try again.",
+  },
+  incompatible: {
+    title: "Pond needs an update",
+    description:
+      "This extension needs a newer version of Pond. Update Pond, then try again.",
+  },
+} satisfies Record<NativeUnreachable, { title: string; description: string }>;
 
 interface Command {
   tool: CaptureTool;
@@ -106,6 +141,8 @@ const LOGOS = {
   youtube: IconYoutube,
   reddit: IconReddit,
   threads: IconBrandThreads,
+  github: IconGithub,
+  substack: IconBrandSubstack,
 } satisfies Record<ExternalSource, ComponentType<SVGProps<SVGSVGElement>>>;
 
 function Harvest({
@@ -242,20 +279,28 @@ function Commands({ result, refresh, returned, onShortcuts }: CommandsProps) {
   }
 
   if (result.state === "offline") {
+    const copy = UNREACHABLE_COPY[result.reason];
     return (
       <Shell returned={returned}>
         <Empty.Root className={styles.center}>
-          <Empty.Title>Pond isn't running</Empty.Title>
-          <Empty.Description>
-            Open Pond on your computer to save from the browser.
-          </Empty.Description>
+          <Empty.Title>{copy.title}</Empty.Title>
+          <Empty.Description>{copy.description}</Empty.Description>
           <Empty.Action className={styles.actions}>
-            <Button
-              variant="secondary"
-              onClick={() => void sendMessage("openPond", undefined)}
-            >
-              Open Pond
-            </Button>
+            {result.reason === "host_forbidden" ? (
+              <Button
+                variant="secondary"
+                onClick={() => void browser.tabs.create({ url: STORE_URL })}
+              >
+                Get Extension
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                onClick={() => void sendMessage("openPond", undefined)}
+              >
+                Open Pond
+              </Button>
+            )}
             <Button variant="primary" onClick={() => void refresh()}>
               Try Again
             </Button>

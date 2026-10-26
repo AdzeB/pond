@@ -25,13 +25,13 @@ interface RootProps {
   className?: string;
 }
 
-/** Leaving a save snaps Details shut so the library mounts at its final width instead of reflowing through the collapse. */
-function useInstantRouteClose(rightActive: boolean) {
+/** Entering or leaving a save snaps Details so the content mounts at its final width instead of reflowing through the resize. */
+function useInstantRouteChange(rightActive: boolean) {
   const [previous, setPrevious] = useState(rightActive);
   const [instant, setInstant] = useState(false);
   if (previous !== rightActive) {
     setPrevious(rightActive);
-    setInstant(!rightActive);
+    setInstant(true);
   }
 
   useEffect(() => {
@@ -57,7 +57,7 @@ function Root({
   const detailsOpen = useDetailsOpen();
   const leftOpen = sidebarOpen && Boolean(left);
   const rightOpen = detailsOpen && rightActive && Boolean(right);
-  const instant = useInstantRouteClose(rightActive);
+  const instant = useInstantRouteChange(rightActive);
 
   return (
     <Window.Root

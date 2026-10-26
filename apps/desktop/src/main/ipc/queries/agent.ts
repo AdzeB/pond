@@ -90,8 +90,9 @@ export const agentQueries = {
   "agent.newChat": query(
     z.object({ fishId: FishIdSchema.optional() }),
     async ({ fishId }) => {
-      const { createChat } = await import("../../core/agent/persist");
-      return await createChat(fishId);
+      const { fishThread } = await import("../../core/agent/persist");
+      const { created: _created, ...chat } = await fishThread(fishId);
+      return chat;
     },
   ),
 

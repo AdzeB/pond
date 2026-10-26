@@ -56,6 +56,7 @@ describe("breadcrumb toolbar", () => {
           }));
         return [];
       },
+      onAgentChunk: () => () => {},
     });
     resetFilters();
     await folders.refresh();
@@ -124,8 +125,12 @@ describe("breadcrumb toolbar", () => {
     return router;
   }
 
+  it("leaves the fish page without a breadcrumb", async () => {
+    await mount("/fish/default");
+    expect(host.querySelector('nav[aria-label="Breadcrumb"]')).toBeNull();
+  });
+
   it.each([
-    ["/fish/default", "Fish"],
     ["/sources", "Sources"],
     ["/tags", "Tags"],
     ["/untagged", "Untagged"],
