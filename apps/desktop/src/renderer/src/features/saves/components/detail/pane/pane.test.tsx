@@ -565,3 +565,26 @@ it("loads Related Saves only when its tab opens and opens a selected Save", asyn
   await act(async () => related?.click());
   expect(primarySelection.get()).toBe("related");
 });
+
+it("clamps a long source description behind Read More and sizes the source icon", async () => {
+  const scroll = vi
+    .spyOn(HTMLParagraphElement.prototype, "scrollHeight", "get")
+    .mockReturnValue(400);
+  await act(async () => root.render(<SaveInspector saveId="a" />));
+
+  const card = host.querySelector('[aria-label="Source"]');
+  const body = [...(card?.querySelectorAll("p") ?? [])].find(
+    (paragraph) => paragraph.textContent === "Captured page description",
+  );
+  const more = [...(card?.querySelectorAll("button") ?? [])].find(
+    (button) => button.textContent === "Read More",
+  );
+  expect(body?.hasAttribute("data-clamped")).toBe(true);
+  expect(card?.querySelector("footer svg")?.getAttribute("width")).toBe("14");
+
+  await act(async () => more?.click());
+
+  expect(body?.hasAttribute("data-clamped")).toBe(false);
+  expect(card?.textContent).not.toContain("Read More");
+  scroll.mockRestore();
+});

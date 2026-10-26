@@ -1,6 +1,6 @@
-import { IconExternalLink } from "@pond/icons";
+import { IconChevronDown, IconExternalLink } from "@pond/icons";
 import { Button } from "@pond/ui";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useSaveDetail } from "@/features/saves/hooks/use-save-detail";
 import { pickAuthorColor } from "@/features/saves/lib/presentation";
 import { getSourceLabel } from "@/features/saves/lib/source-labels";
@@ -38,7 +38,7 @@ export function SourceCard({ save }: { save: Save }) {
           </span>
         </header>
       ) : null}
-      {description ? <p className={styles.body}>{description}</p> : null}
+      {description ? <Description key={save.id} text={description} /> : null}
       <footer className={styles.footer}>
         <span className={styles.platform}>
           {sourceLogo ? (
@@ -51,7 +51,7 @@ export function SourceCard({ save }: { save: Save }) {
             />
           ) : SourceIcon ? (
             <span className={styles.logo} aria-hidden>
-              <SourceIcon size={14} />
+              <SourceIcon width={14} height={14} />
             </span>
           ) : null}
           <span>{getSourceLabel(save.source)}</span>
@@ -76,6 +76,51 @@ export function SourceCard({ save }: { save: Save }) {
         ) : null}
       </footer>
     </article>
+  );
+}
+
+function Description({ text }: { text: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+
+  useLayoutEffect(() => {
+    void text;
+    const body = ref.current;
+    if (expanded || !body) {
+      setOverflowing(false);
+      return;
+    }
+    const measure = () =>
+      setOverflowing(body.scrollHeight > body.clientHeight + 1);
+    measure();
+    if (!globalThis.ResizeObserver) return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(body);
+    return () => observer.disconnect();
+  }, [expanded, text]);
+
+  return (
+    <>
+      <p
+        ref={ref}
+        className={styles.body}
+        data-clamped={expanded ? undefined : true}
+      >
+        {text}
+      </p>
+      {overflowing ? (
+        <Button
+          className={styles.more}
+          size="sm"
+          variant="ghost"
+          onClick={() => setExpanded(true)}
+        >
+          Read More
+          <IconChevronDown size={12} />
+        </Button>
+      ) : null}
+    </>
   );
 }
 
