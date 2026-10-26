@@ -15,6 +15,7 @@ import { matches as threads } from "./threads/matches";
 import { matches as tiktok } from "./tiktok/matches";
 import { matches as tumblr } from "./tumblr/matches";
 import { matches as twitter } from "./twitter/matches";
+import { matches as unsplash } from "./unsplash/matches";
 import { matches as vimeo } from "./vimeo/matches";
 import { matches as youtube } from "./youtube/matches";
 
@@ -42,6 +43,7 @@ export const HOOK_SOURCES = {
   behance: { matches: behance, likes: [], item: "Project" },
   vimeo: { matches: vimeo, likes: [], item: "Video" },
   dribbble: { matches: dribbble, likes: [], item: "Shot" },
+  unsplash: { matches: unsplash, likes: [], item: "Photo" },
 } as const satisfies Record<ExternalSource, HookSource>;
 
 export const HOOK_SOURCE_IDS: readonly ExternalSource[] = SOURCES.filter(

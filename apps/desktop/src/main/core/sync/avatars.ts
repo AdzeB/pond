@@ -90,6 +90,8 @@ function profilePageUrl(
       return `https://vimeo.com/${h}`;
     case "dribbble":
       return `https://dribbble.com/${h}`;
+    case "unsplash":
+      return `https://unsplash.com/@${h}`;
     default:
       return null;
   }

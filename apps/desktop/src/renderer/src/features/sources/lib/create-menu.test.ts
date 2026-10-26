@@ -30,6 +30,7 @@ describe("source create menu", () => {
       "Behance",
       "Vimeo",
       "Dribbble",
+      "Unsplash",
       "New Watch",
       "Twitter",
       "Instagram",

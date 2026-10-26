@@ -21,6 +21,7 @@ export { IconBrandThreads } from "./custom/threads";
 export { IconBrandTikTok as IconTikTok } from "./custom/tiktok";
 export { IconBrandTumblr } from "./custom/tumblr";
 export { IconBrandTwitter as IconXTwitter } from "./custom/twitter";
+export { IconBrandUnsplash } from "./custom/unsplash";
 export { IconBrandVimeo } from "./custom/vimeo";
 export { IconSourceWeb } from "./custom/web";
 export { IconXTwitterGlyph } from "./custom/x-twitter-glyph";

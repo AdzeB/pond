@@ -198,6 +198,7 @@ function probeUrlForSource(source: Source): string {
   if (source === "behance") return "https://www.behance.net/";
   if (source === "vimeo") return "https://vimeo.com/";
   if (source === "dribbble") return "https://dribbble.com/";
+  if (source === "unsplash") return "https://unsplash.com/";
   return homeUrlForSource(source);
 }
 

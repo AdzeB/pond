@@ -15,6 +15,7 @@ import { ThreadsPostExtractor } from "./sources/threads";
 import { TikTokVideoExtractor } from "./sources/tiktok";
 import { TumblrPostExtractor } from "./sources/tumblr";
 import { TwitterTweetExtractor } from "./sources/twitter";
+import { UnsplashAssetExtractor } from "./sources/unsplash";
 import { VimeoVideoExtractor } from "./sources/vimeo";
 import { YouTubeWatchExtractor } from "./sources/youtube";
 import type { ExtractInput, Extractor } from "./types";
@@ -36,6 +37,7 @@ const EXTRACTORS = {
   behance: new BehanceProjectExtractor(),
   vimeo: new VimeoVideoExtractor(),
   dribbble: new DribbbleShotExtractor(),
+  unsplash: new UnsplashAssetExtractor(),
 } as const satisfies Record<ExternalSource, Extractor>;
 
 const WEB_EXTRACTOR: Extractor = {

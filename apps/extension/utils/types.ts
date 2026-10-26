@@ -72,6 +72,7 @@ const ALL_SOURCES_ON = {
   behance: true,
   vimeo: true,
   dribbble: true,
+  unsplash: true,
   web: false,
   local: false,
 } satisfies SourceFlags;

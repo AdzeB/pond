@@ -129,6 +129,7 @@ const IMPORT_SCOPE_OPTIONS = {
     mediaKinds: ["image", "video"],
     since: true,
   },
+  unsplash: { ...EVERYTHING_ONLY, mediaKinds: ["image"] },
   web: EVERYTHING_ONLY,
   local: EVERYTHING_ONLY,
 } satisfies Record<Source, ImportScopeOptions>;

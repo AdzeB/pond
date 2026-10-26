@@ -17,6 +17,7 @@ import * as threads from "./threads";
 import * as tiktok from "./tiktok";
 import * as tumblr from "./tumblr/item";
 import * as twitter from "./twitter";
+import * as unsplash from "./unsplash/item";
 import * as vimeo from "./vimeo/item";
 import * as youtube from "./youtube";
 
@@ -107,6 +108,11 @@ const REGISTRY = {
     buildExpression: dribbble.buildExpression,
     adapt: dribbble.adapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("dribbble", url),
+  },
+  unsplash: {
+    buildExpression: unsplash.buildExpression,
+    adapt: unsplash.adapt,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("unsplash", url),
   },
   web: {
     buildExpression: () => {

@@ -184,6 +184,10 @@ export const CAPTURE_EXPECTATIONS = {
     required: ["mediaUrl"],
     recommended: ["title", "author", "capture.metrics.likes"],
   },
+  unsplash: {
+    required: ["mediaUrl"],
+    recommended: ["title", "author", "capture.publishedAt"],
+  },
   web: {
     required: ["title"],
     recommended: ["description", "mediaUrl"],

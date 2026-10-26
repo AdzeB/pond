@@ -16,6 +16,7 @@ export const SAVEE_PATTERNS = descriptorFor("savee").urlPatterns;
 export const BEHANCE_PATTERNS = descriptorFor("behance").urlPatterns;
 export const VIMEO_PATTERNS = descriptorFor("vimeo").urlPatterns;
 export const DRIBBBLE_PATTERNS = descriptorFor("dribbble").urlPatterns;
+export const UNSPLASH_PATTERNS = descriptorFor("unsplash").urlPatterns;
 
 export function firstMatch(
   url: URL,

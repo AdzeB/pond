@@ -58,6 +58,10 @@ import {
   TWITTER_BOOKMARKS_URL,
 } from "../harvest/twitter";
 import {
+  buildUnsplashListExpression,
+  UNSPLASH_LIST_URL,
+} from "../harvest/unsplash/list";
+import {
   buildYoutubeListExpression,
   parseYoutubePlaylists,
   READ_YOUTUBE_INITIAL_DATA,
@@ -442,6 +446,8 @@ function listUrlForSource(
       return null;
     case "dribbble":
       return accountKey ? dribbbleLikesUrl(accountKey) : null;
+    case "unsplash":
+      return UNSPLASH_LIST_URL;
     case "web":
       return null;
     case "local":
@@ -486,6 +492,8 @@ function buildListExpressionFor(
       return null;
     case "dribbble":
       return buildDribbbleListExpression(args);
+    case "unsplash":
+      return buildUnsplashListExpression(args);
     case "web":
       return null;
     case "local":

@@ -201,6 +201,16 @@ export const SOURCE_DESCRIPTORS = [
     ],
     sync: { strategy: "cursor" },
   },
+  {
+    id: "unsplash",
+    label: "Unsplash",
+    hosts: ["unsplash.com"],
+    /** The id is the last 11 characters of the slug, and may itself contain `-` or `_`. */
+    urlPatterns: [
+      /^https?:\/\/(?:www\.)?unsplash\.com\/(?:photos|illustrations)\/(?:[^/?#]*-)?([A-Za-z0-9_-]{11})(?=[/?#]|$)/i,
+    ],
+    sync: { strategy: "cursor" },
+  },
 ] as const satisfies readonly SourceDescriptor[];
 
 export type ExternalSource = (typeof SOURCE_DESCRIPTORS)[number]["id"];

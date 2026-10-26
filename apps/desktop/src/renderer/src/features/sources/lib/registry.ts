@@ -8,6 +8,7 @@ import {
   IconBrandSubstack,
   IconBrandThreads,
   IconBrandTumblr,
+  IconBrandUnsplash,
   IconBrandVimeo,
   IconInstagram,
   IconPinterest,
@@ -50,6 +51,7 @@ const SOURCE_LOGOS = {
   behance: null,
   vimeo: null,
   dribbble: null,
+  unsplash: null,
   web: null,
   local: null,
 } satisfies Record<Source, string | null>;
@@ -71,6 +73,7 @@ const SOURCE_ICONS = {
   behance: IconBrandBehance,
   vimeo: IconBrandVimeo,
   dribbble: IconBrandDribbble,
+  unsplash: IconBrandUnsplash,
   web: IconSourceWeb,
   local: IconSourceLocal,
 } satisfies Record<Source, IconComponent | null>;

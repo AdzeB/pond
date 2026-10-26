@@ -20,6 +20,7 @@ import {
   IconBrandSubstack,
   IconBrandThreads,
   IconBrandTumblr,
+  IconBrandUnsplash,
   IconBrandVimeo,
   IconInstagram,
   IconPinterest,
@@ -153,6 +154,7 @@ const LOGOS = {
   behance: IconBrandBehance,
   vimeo: IconBrandVimeo,
   dribbble: IconBrandDribbble,
+  unsplash: IconBrandUnsplash,
 } satisfies Record<ExternalSource, ComponentType<SVGProps<SVGSVGElement>>>;
 
 function Harvest({
