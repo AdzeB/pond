@@ -40,10 +40,9 @@ export interface McpConnection {
   close(): Promise<void>;
 }
 
-export interface McpToolResult {
-  text: string;
-  structured?: JsonObject;
-}
+export type McpToolResult =
+  | { text: string }
+  | { text: string; structured: JsonObject };
 
 interface ManagerDeps {
   list(): Promise<FishMcpServerConfig[]>;
