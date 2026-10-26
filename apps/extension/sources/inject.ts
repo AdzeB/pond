@@ -1,7 +1,6 @@
 import type { ExternalSource } from "@pond/schema/sources";
 import { inject as arena } from "./arena/inject";
 import { inject as cosmos } from "./cosmos/inject";
-import { inject as github } from "./github/inject";
 import { inject as instagram } from "./instagram/inject";
 import { inject as pinterest } from "./pinterest/inject";
 import { inject as reddit } from "./reddit/inject";
@@ -22,6 +21,5 @@ export const INJECTORS = {
   youtube,
   reddit,
   threads,
-  github,
   substack,
 } satisfies Record<ExternalSource, () => void>;

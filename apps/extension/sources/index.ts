@@ -3,7 +3,6 @@ import { type ExternalSource, sourceIdFromUrl } from "@pond/schema/sources";
 import { MatchPattern } from "wxt/utils/match-patterns";
 import { matches as arena } from "./arena/matches";
 import { matches as cosmos } from "./cosmos/matches";
-import { matches as github } from "./github/matches";
 import { matches as instagram } from "./instagram/matches";
 import { matches as pinterest } from "./pinterest/matches";
 import { matches as reddit } from "./reddit/matches";
@@ -30,7 +29,6 @@ export const HOOK_SOURCES = {
   youtube: { matches: youtube, likes: ["youtube:like"], item: "Video" },
   reddit: { matches: reddit, likes: ["reddit:upvote"], item: "Post" },
   threads: { matches: threads, likes: ["threads:like"], item: "Post" },
-  github: { matches: github, likes: [], item: "Repository" },
   substack: { matches: substack, likes: ["substack:like"], item: "Post" },
 } as const satisfies Record<ExternalSource, HookSource>;
 

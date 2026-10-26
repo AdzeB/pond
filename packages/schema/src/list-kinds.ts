@@ -17,9 +17,6 @@ const ALIASES = new Map<string, ListKind>([
   ["favorites", "saved"],
   ["favourite", "saved"],
   ["favourites", "saved"],
-  ["star", "saved"],
-  ["starred", "saved"],
-  ["stars", "saved"],
   ["subscription", "subscription"],
   ["subscriptions", "subscription"],
 ]);

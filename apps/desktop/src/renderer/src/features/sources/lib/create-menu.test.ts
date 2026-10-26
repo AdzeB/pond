@@ -23,7 +23,6 @@ describe("source create menu", () => {
       "YouTube",
       "Reddit",
       "Threads",
-      "GitHub",
       "Substack",
       "New Watch",
       "Twitter",

@@ -170,10 +170,6 @@ export async function harvestSourceList(
     const { harvestCosmosLibrary } = await import("../harvest/cosmos/api");
     return harvestCosmosLibrary(args, opts.partition);
   }
-  if (source === "github") {
-    const { harvestGithubStars } = await import("../harvest/github/api");
-    return harvestGithubStars(args, opts.partition);
-  }
   if (source === "substack") {
     const { harvestSubstackLists } = await import("../harvest/substack/api");
     return harvestSubstackLists(args, opts.partition);
@@ -388,7 +384,6 @@ function listUrlForSource(
       return accountKey ? redditSavedUrl(accountKey) : null;
     case "threads":
       return THREADS_LIST_URL;
-    case "github":
     case "substack":
       return null;
     case "web":
@@ -421,7 +416,6 @@ function buildListExpressionFor(
       return buildRedditListExpression(args);
     case "threads":
       return buildThreadsListExpression(args);
-    case "github":
     case "substack":
       return null;
     case "web":

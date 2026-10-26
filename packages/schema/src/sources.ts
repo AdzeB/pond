@@ -12,7 +12,6 @@ export {
   descriptorFor,
   EXTERNAL_SOURCE_IDS,
   type ExternalSource,
-  GITHUB_REPO_PATTERN,
   SOURCE_DESCRIPTORS,
   syncConfigFor,
 } from "./sources/registry";

@@ -76,8 +76,6 @@ function profilePageUrl(
       return `https://www.pinterest.com/${h}/`;
     case "cosmos":
       return `https://www.cosmos.so/${h}`;
-    case "github":
-      return `https://github.com/${h}`;
     case "substack":
       return `https://substack.com/@${h}`;
     default:

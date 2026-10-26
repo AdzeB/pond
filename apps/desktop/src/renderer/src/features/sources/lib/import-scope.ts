@@ -160,7 +160,6 @@ export function hasImportFilters(source: Source): boolean {
 
 export type SincePreset =
   | "any"
-  | "today"
   | "month"
   | "quarter"
   | "half"
@@ -172,9 +171,9 @@ const SINCE_PRESET_MONTHS = {
   quarter: 3,
   half: 6,
   year: 12,
-} satisfies Record<Exclude<SincePreset, "any" | "today" | "custom">, number>;
+} satisfies Record<Exclude<SincePreset, "any" | "custom">, number>;
 
-const SINCE_PRESETS = [
+export const SINCE_PRESETS = [
   { value: "any", label: "Any Time" },
   { value: "month", label: "Past Month" },
   { value: "quarter", label: "Past 3 Months" },
@@ -183,41 +182,9 @@ const SINCE_PRESETS = [
   { value: "custom", label: "Custom Date" },
 ] as const satisfies ReadonlyArray<{ value: SincePreset; label: string }>;
 
-const SAVED_SINCE_PRESETS = [
-  { value: "any", label: "Any Time" },
-  { value: "today", label: "From Today" },
-  ...SINCE_PRESETS.slice(1),
-] as const satisfies ReadonlyArray<{ value: SincePreset; label: string }>;
-
-interface SinceCopy {
-  title: string;
-  description: string;
-  presets: ReadonlyArray<{ value: SincePreset; label: string }>;
-  /** Shown beside the title when some items have no date to compare. */
-  info?: string;
-}
-
-/** Sources without publish dates compare the day you saved an item, and can start from today. */
-export function sinceCopy(source: Source): SinceCopy {
-  if (importScopeOptions(source).sinceDate === "saved") {
-    return {
-      title: "Saved Since",
-      description: "Skips items you saved before this date.",
-      presets: SAVED_SINCE_PRESETS,
-    };
-  }
-  return {
-    title: "Posted Since",
-    description: "Skips older posts by publish date.",
-    presets: SINCE_PRESETS,
-    info: "Posts without a publish date are always imported.",
-  };
-}
-
 /** The local `YYYY-MM-DD` a preset starts from; empty for any time or a custom date. */
 export function sinceForPreset(preset: SincePreset, now = new Date()): string {
   if (preset === "any" || preset === "custom") return "";
-  if (preset === "today") return localDay(now);
   const start = new Date(
     now.getFullYear(),
     now.getMonth() - SINCE_PRESET_MONTHS[preset],

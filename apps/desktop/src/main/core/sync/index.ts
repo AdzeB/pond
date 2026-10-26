@@ -57,7 +57,6 @@ const SYNC_WATCHDOG_MS = {
   tiktok: 20 * 60_000,
   reddit: 20 * 60_000,
   threads: 20 * 60_000,
-  github: 20 * 60_000,
   substack: 20 * 60_000,
   web: 20 * 60_000,
   local: 20 * 60_000,
@@ -73,7 +72,6 @@ const SYNCABLE_SOURCES: readonly Source[] = [
   "tiktok",
   "reddit",
   "threads",
-  "github",
   "substack",
 ];
 

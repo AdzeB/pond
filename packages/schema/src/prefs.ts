@@ -17,6 +17,7 @@ import {
   type WindowBounds,
 } from "./prefs.types";
 import { SavedViewPresentationSchema } from "./saved-view-presentation";
+import { isSource } from "./sources";
 import { ViewerPrefsSchema } from "./viewer-prefs";
 
 export * from "./prefs.types";
@@ -322,7 +323,16 @@ export const FetchRecurrenceSchema = z
   });
 
 const sync = z.object({
-  accounts: z.custom<SyncAccounts>().default({}),
+  /** Accounts for a source this build doesn't know are dropped, so sync never looks up a missing source. */
+  accounts: z
+    .custom<SyncAccounts>()
+    .default({})
+    .transform((accounts) => {
+      const known: SyncAccounts = {};
+      for (const [id, account] of Object.entries(accounts))
+        if (isSource(account.source)) known[id] = account;
+      return known;
+    }),
   watches: z.custom<SyncWatches>().default({}),
   cron: z
     .object({

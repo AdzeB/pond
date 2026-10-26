@@ -135,6 +135,18 @@ describe("mergePondSlice (sync account registry)", () => {
     expect(next.sync.accounts).toEqual({ [account.id]: account });
     expect(next.sync.cron).toEqual({ enabled: false, intervalHours: 12 });
   });
+
+  it("drops accounts for a source Pond doesn't know", () => {
+    const prefs = PrefsSchema.parse({
+      sync: {
+        accounts: {
+          [account.id]: account,
+          "02GONE": { ...account, id: "02GONE", source: "gone" },
+        },
+      },
+    });
+    expect(prefs.sync.accounts).toEqual({ [account.id]: account });
+  });
 });
 
 it("persists shortcut and viewer patches while allowing overrides to be reset", () => {

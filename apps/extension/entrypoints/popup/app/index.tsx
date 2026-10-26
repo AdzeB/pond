@@ -13,7 +13,6 @@ import {
 import {
   IconBrandArena,
   IconBrandCosmos,
-  IconBrandGithub,
   IconBrandSubstack,
   IconBrandThreads,
   IconInstagram,
@@ -141,7 +140,6 @@ const LOGOS = {
   youtube: IconYoutube,
   reddit: IconReddit,
   threads: IconBrandThreads,
-  github: IconBrandGithub,
   substack: IconBrandSubstack,
 } satisfies Record<ExternalSource, ComponentType<SVGProps<SVGSVGElement>>>;
 

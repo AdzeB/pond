@@ -18,8 +18,6 @@ export interface ImportScopeOptions {
   mediaKinds: readonly ImportMediaKind[];
   /** Whether captures carry a publish date the `since` limit can compare. */
   since: boolean;
-  /** Set when `since` compares the day you saved an item, because the Source has no publish date. */
-  sinceDate?: "saved";
 }
 
 export type ImportCollectionKind =
@@ -89,7 +87,6 @@ const IMPORT_SCOPE_OPTIONS = {
     since: true,
   },
   threads: { ...EVERYTHING_ONLY, mediaKinds: ALL_MEDIA, since: true },
-  github: { ...EVERYTHING_ONLY, since: true, sinceDate: "saved" },
   substack: {
     listKinds: ["saved", "liked", "subscription"],
     collections: null,
@@ -249,17 +246,6 @@ export function listFilterReason(
   return listKinds.some((kind) => scope.listKinds?.includes(kind))
     ? null
     : "list";
-}
-
-/** Where a `since` limit that compares the day you saved an item starts, or null when the Source compares publish dates. */
-export function savedSinceStart(
-  source: Source,
-  scope: ImportScope | undefined,
-): Date | null {
-  if (importScopeOptions(source).sinceDate !== "saved" || !scope?.since) {
-    return null;
-  }
-  return sinceStart(scope.since);
 }
 
 /** Why the scope skips a captured save, or null to keep it. A missing publish date keeps the save. */

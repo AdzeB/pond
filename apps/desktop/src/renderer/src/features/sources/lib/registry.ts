@@ -1,7 +1,6 @@
 import {
   IconBrandArena,
   IconBrandCosmos,
-  IconBrandGithub,
   IconBrandSubstack,
   IconBrandThreads,
   IconInstagram,
@@ -38,7 +37,6 @@ const SOURCE_LOGOS = {
   youtube: null,
   reddit: null,
   threads: null,
-  github: null,
   substack: null,
   web: null,
   local: null,
@@ -54,7 +52,6 @@ const SOURCE_ICONS = {
   youtube: IconYoutube,
   reddit: IconReddit,
   threads: IconBrandThreads,
-  github: IconBrandGithub,
   substack: IconBrandSubstack,
   web: IconSourceWeb,
   local: IconSourceLocal,

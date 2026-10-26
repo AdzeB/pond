@@ -21,8 +21,8 @@ import {
   listKindLabel,
   localDay,
   mediaKindLabel,
+  SINCE_PRESETS,
   saveImportScope,
-  sinceCopy,
 } from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
@@ -112,7 +112,7 @@ export function ImportScopeFilters({ accountId }: { accountId: string }) {
       {options.mediaKinds.length > 0 ? (
         <MediaKindsRow kinds={options.mediaKinds} />
       ) : null}
-      {options.since ? <SinceRows source={source} /> : null}
+      {options.since ? <SinceRows /> : null}
     </Settings.List>
   );
 }
@@ -372,39 +372,36 @@ function MediaKindsRow({ kinds }: { kinds: readonly ImportMediaKind[] }) {
   );
 }
 
-function SinceRows({ source }: { source: Source }) {
+function SinceRows() {
   const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
   const custom = draft.sincePreset === "custom";
-  const copy = sinceCopy(source);
   return (
     <>
       <Settings.Item>
         <Settings.ItemDetails>
           <Settings.ItemTitle className={styles.titled}>
-            {copy.title}
-            {copy.info ? (
-              <Tooltip.Info
-                label={copy.info}
-                aria-label={`About ${copy.title}`}
-              />
-            ) : null}
+            Posted Since
+            <Tooltip.Info
+              label="Posts without a publish date are always imported."
+              aria-label="About Posted Since"
+            />
           </Settings.ItemTitle>
           <Settings.ItemDescription>
-            {copy.description}
+            Skips older posts by publish date.
           </Settings.ItemDescription>
         </Settings.ItemDetails>
         <Settings.ItemControl>
           <Select.Root
             value={draft.sincePreset}
-            items={[...copy.presets]}
+            items={[...SINCE_PRESETS]}
             onValueChange={(next) => {
               if (next) flow.setSincePreset(next);
             }}
           >
             <Select.Trigger
               size="sm"
-              aria-label={copy.title}
+              aria-label="Posted Since"
               className={styles.control}
             >
               <Select.Value />
@@ -412,7 +409,7 @@ function SinceRows({ source }: { source: Source }) {
             <Select.Portal>
               <Select.Positioner align="end">
                 <Select.Popup>
-                  <Select.Items items={[...copy.presets]} />
+                  <Select.Items items={[...SINCE_PRESETS]} />
                 </Select.Popup>
               </Select.Positioner>
             </Select.Portal>
@@ -423,7 +420,7 @@ function SinceRows({ source }: { source: Source }) {
         <Settings.ItemDetails>
           <Settings.ItemTitle>Date</Settings.ItemTitle>
           <Settings.ItemDescription>
-            Used when {copy.title} is Custom Date.
+            Used when Posted Since is Custom Date.
           </Settings.ItemDescription>
         </Settings.ItemDetails>
         <Settings.ItemControl>

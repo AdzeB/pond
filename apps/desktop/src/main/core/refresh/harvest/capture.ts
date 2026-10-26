@@ -39,13 +39,6 @@ export async function captureFromSource(args: CaptureArgs): Promise<Capture> {
     if (result.ok) return result.capture;
   }
 
-  /** A private repo 404s without a token, so a miss falls through to the signed-in window. */
-  if (args.source === "github" && args.sourceId) {
-    const { fetchGithubCapture } = await import("./github/api");
-    const result = await fetchGithubCapture({ sourceId: args.sourceId });
-    if (result.ok) return result.capture;
-  }
-
   if (args.source === "substack" && args.sourceId) {
     const { fetchSubstackCapture } = await import("./substack/api");
     const result = await fetchSubstackCapture({

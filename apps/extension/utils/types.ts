@@ -65,7 +65,6 @@ const ALL_SOURCES_ON = {
   youtube: true,
   reddit: true,
   threads: true,
-  github: true,
   substack: true,
   web: false,
   local: false,
