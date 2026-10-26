@@ -1,12 +1,10 @@
 import {
-  IconArchiveDownload,
   IconDownload,
   IconFile,
   IconFolderImport,
-  IconFolderOpen,
   IconGlobe,
 } from "@pond/icons";
-import { ContentRow, Loader } from "@pond/ui";
+import { Button, ContentRow, Loader } from "@pond/ui";
 import { type ReactNode, useState } from "react";
 import {
   importBookmarks,
@@ -23,12 +21,15 @@ import styles from "./styles.module.css";
 interface ImportSource {
   id: string;
   title: string;
-  description: string;
-  icon: ReactNode;
   run: () => Promise<void>;
 }
 
-const SOURCES: readonly ImportSource[] = [
+interface FeaturedSource extends ImportSource {
+  description: string;
+  icon: ReactNode;
+}
+
+const FEATURED: readonly FeaturedSource[] = [
   {
     id: "eagle",
     title: "Eagle Library",
@@ -39,51 +40,33 @@ const SOURCES: readonly ImportSource[] = [
   {
     id: "mymind",
     title: "mymind",
-    description: "Import your mymind export with its tags and notes.",
+    description: "Your cards come with their tags and notes.",
     icon: <IconFolderImport />,
     run: importMymind,
   },
   {
     id: "bookmarks",
     title: "Bookmarks",
-    description:
-      "Import an HTML export from your browser. Folders stay intact.",
+    description: "Any browser's HTML export. Folders stay intact.",
     icon: <IconGlobe />,
     run: importBookmarks,
   },
   {
-    id: "eagle-package",
-    title: "Eagle Package",
-    description: "Import a package someone shared from Eagle.",
-    icon: <IconArchiveDownload />,
-    run: importEaglePackage,
-  },
-  {
-    id: "pond-package",
-    title: "Pond Package",
-    description: "Import a package someone shared from Pond.",
-    icon: <IconArchiveDownload />,
-    run: importPondPackage,
-  },
-  {
     id: "files",
     title: "Files",
-    description: "Add images, videos, PDFs, and any other files.",
+    description: "Images, videos, PDFs, and anything else.",
     icon: <IconFile />,
     run: () => importPaths("files"),
   },
-  {
-    id: "folders",
-    title: "Folders",
-    description: "Add a folder and everything inside it.",
-    icon: <IconFolderOpen />,
-    run: () => importPaths("folders"),
-  },
+];
+
+const MORE: readonly ImportSource[] = [
+  { id: "folders", title: "Folders", run: () => importPaths("folders") },
+  { id: "eagle-package", title: "Eagle Package", run: importEaglePackage },
+  { id: "pond-package", title: "Pond Package", run: importPondPackage },
   ...(["ArtStation", "Huaban", "Pixave", "Inboard"] as const).map((source) => ({
     id: source.toLowerCase(),
     title: source,
-    description: `Import the files from your ${source} export.`,
-    icon: <IconFolderImport />,
     run: () => importLegacyLibrary(source),
   })),
 ];
@@ -103,35 +86,53 @@ export function Imports() {
   };
 
   return (
-    <div className={styles.grid}>
-      {SOURCES.map((source) => {
-        const busy = running.has(source.id);
-        return (
-          <ContentRow.Root
-            key={source.id}
-            hover="row"
-            className={styles.row}
-            aria-busy={busy || undefined}
-          >
-            <ContentRow.Trigger
-              aria-label={`Import ${source.title}`}
-              disabled={busy}
-              onClick={() => void start(source)}
+    <div className={styles.root}>
+      <div className={styles.featured}>
+        {FEATURED.map((source) => {
+          const busy = running.has(source.id);
+          return (
+            <ContentRow.Root
+              key={source.id}
+              hover="row"
+              className={styles.card}
+              aria-busy={busy || undefined}
             >
-              <ContentRow.Media className={styles.icon}>
-                {source.icon}
-              </ContentRow.Media>
-              <ContentRow.Content>
-                <ContentRow.Title>{source.title}</ContentRow.Title>
-                <ContentRow.Description>
-                  {source.description}
-                </ContentRow.Description>
-              </ContentRow.Content>
-            </ContentRow.Trigger>
-            {busy ? <Loader.Spinner className={styles.spinner} /> : null}
-          </ContentRow.Root>
-        );
-      })}
+              <ContentRow.Trigger
+                aria-label={`Import ${source.title}`}
+                disabled={busy}
+                className={styles.trigger}
+                onClick={() => void start(source)}
+              >
+                <ContentRow.Media className={styles.icon}>
+                  {source.icon}
+                </ContentRow.Media>
+                <ContentRow.Content>
+                  <ContentRow.Title>{source.title}</ContentRow.Title>
+                  <ContentRow.Description>
+                    {source.description}
+                  </ContentRow.Description>
+                </ContentRow.Content>
+              </ContentRow.Trigger>
+              {busy ? <Loader.Spinner className={styles.spinner} /> : null}
+            </ContentRow.Root>
+          );
+        })}
+      </div>
+      <div className={styles.more}>
+        <span className={styles.label}>Also from</span>
+        {MORE.map((source) => (
+          <Button
+            key={source.id}
+            size="sm"
+            variant="secondary"
+            loading={running.has(source.id)}
+            aria-label={`Import ${source.title}`}
+            onClick={() => void start(source)}
+          >
+            {source.title}
+          </Button>
+        ))}
+      </div>
     </div>
   );
 }
