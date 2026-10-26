@@ -168,6 +168,10 @@ export const CAPTURE_EXPECTATIONS = {
     required: ["author"],
     recommended: ["description", "mediaUrl", "capture.publishedAt"],
   },
+  savee: {
+    required: ["mediaUrl"],
+    recommended: ["title", "author", "capture.upstream.url"],
+  },
   web: {
     required: ["title"],
     recommended: ["description", "mediaUrl"],

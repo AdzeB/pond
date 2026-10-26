@@ -94,6 +94,7 @@ function profileUrlFromHandle(source: string, handle: string): string | null {
   if (source === "arena") return `https://www.are.na/${h}`;
   if (source === "youtube") return `https://www.youtube.com/@${h}`;
   if (source === "tumblr") return `https://www.tumblr.com/${h}`;
+  if (source === "savee") return `https://savee.com/${h}/`;
   return null;
 }
 

@@ -68,6 +68,7 @@ const ALL_SOURCES_ON = {
   github: true,
   substack: true,
   tumblr: true,
+  savee: true,
   web: false,
   local: false,
 } satisfies SourceFlags;

@@ -9,6 +9,7 @@ import * as github from "./github/item";
 import * as instagram from "./instagram";
 import * as pinterest from "./pinterest";
 import * as reddit from "./reddit";
+import * as savee from "./savee/item";
 import * as substack from "./substack/item";
 import * as threads from "./threads";
 import * as tiktok from "./tiktok";
@@ -83,6 +84,11 @@ const REGISTRY = {
     buildExpression: tumblr.buildExpression,
     adapt: tumblr.adapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("tumblr", url),
+  },
+  savee: {
+    buildExpression: savee.buildExpression,
+    adapt: savee.adapt,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("savee", url),
   },
   web: {
     buildExpression: () => {

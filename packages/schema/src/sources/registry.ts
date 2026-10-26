@@ -163,6 +163,16 @@ export const SOURCE_DESCRIPTORS = [
     ],
     sync: { strategy: "cursor" },
   },
+  {
+    id: "savee",
+    label: "Savee",
+    hosts: ["savee.com", "savee.it"],
+    urlPatterns: [
+      /^https?:\/\/(?:www\.)?savee\.(?:com|it)\/i\/([A-Za-z0-9_-]+)\/?(?:[?#]|$)/i,
+    ],
+    /** GraphQL allows 600 calls a minute and HTML pages only 200, so sync stays on GraphQL. */
+    sync: { strategy: "cursor" },
+  },
 ] as const satisfies readonly SourceDescriptor[];
 
 export type ExternalSource = (typeof SOURCE_DESCRIPTORS)[number]["id"];

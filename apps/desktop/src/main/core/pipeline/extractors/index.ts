@@ -7,6 +7,7 @@ import { GitHubRepoExtractor } from "./sources/github";
 import { InstagramPostExtractor } from "./sources/instagram";
 import { PinterestPinExtractor } from "./sources/pinterest";
 import { RedditPostExtractor } from "./sources/reddit";
+import { SaveeItemExtractor } from "./sources/savee";
 import { SubstackPostExtractor } from "./sources/substack";
 import { ThreadsPostExtractor } from "./sources/threads";
 import { TikTokVideoExtractor } from "./sources/tiktok";
@@ -28,6 +29,7 @@ const EXTRACTORS = {
   github: new GitHubRepoExtractor(),
   substack: new SubstackPostExtractor(),
   tumblr: new TumblrPostExtractor(),
+  savee: new SaveeItemExtractor(),
 } as const satisfies Record<ExternalSource, Extractor>;
 
 const WEB_EXTRACTOR: Extractor = {

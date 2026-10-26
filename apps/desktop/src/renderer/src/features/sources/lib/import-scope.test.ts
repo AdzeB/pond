@@ -27,6 +27,14 @@ describe("sinceCopy", () => {
     expect(copy.presets.map((p) => p.value)).toContain("today");
   });
 
+  it("explains page-sized save dates only where a page carries them", () => {
+    expect(sinceCopy("github").info).toBe(
+      "Dates are read a page of 30 at a time, so up to 30 older items can come in.",
+    );
+    expect(sinceCopy("savee").title).toBe("Saved Since");
+    expect(sinceCopy("savee").info).toBeUndefined();
+  });
+
   it("keeps publish-date presets for posts", () => {
     const copy = sinceCopy("twitter");
     expect(copy.title).toBe("Posted Since");

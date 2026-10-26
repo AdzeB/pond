@@ -20,6 +20,8 @@ export interface ImportScopeOptions {
   since: boolean;
   /** Set when `since` compares the day you saved an item, because the Source has no publish date. */
   sinceDate?: "saved";
+  /** Set when save dates only come a page at a time, so a `since` limit can bring in up to this many older items. */
+  sincePageSize?: number;
 }
 
 export type ImportCollectionKind =
@@ -89,7 +91,12 @@ const IMPORT_SCOPE_OPTIONS = {
     since: true,
   },
   threads: { ...EVERYTHING_ONLY, mediaKinds: ALL_MEDIA, since: true },
-  github: { ...EVERYTHING_ONLY, since: true, sinceDate: "saved" },
+  github: {
+    ...EVERYTHING_ONLY,
+    since: true,
+    sinceDate: "saved",
+    sincePageSize: 30,
+  },
   substack: {
     listKinds: ["saved", "liked", "subscription"],
     collections: null,
@@ -98,6 +105,12 @@ const IMPORT_SCOPE_OPTIONS = {
     since: true,
   },
   tumblr: { ...EVERYTHING_ONLY, mediaKinds: ALL_MEDIA, since: true },
+  savee: {
+    ...EVERYTHING_ONLY,
+    mediaKinds: ["image", "video"],
+    since: true,
+    sinceDate: "saved",
+  },
   web: EVERYTHING_ONLY,
   local: EVERYTHING_ONLY,
 } satisfies Record<Source, ImportScopeOptions>;

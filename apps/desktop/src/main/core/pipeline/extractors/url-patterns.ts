@@ -12,6 +12,7 @@ export const THREADS_PATTERNS = descriptorFor("threads").urlPatterns;
 export const GITHUB_PATTERNS = descriptorFor("github").urlPatterns;
 export const SUBSTACK_PATTERNS = descriptorFor("substack").urlPatterns;
 export const TUMBLR_PATTERNS = descriptorFor("tumblr").urlPatterns;
+export const SAVEE_PATTERNS = descriptorFor("savee").urlPatterns;
 
 export function firstMatch(
   url: URL,

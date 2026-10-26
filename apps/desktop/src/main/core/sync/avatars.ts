@@ -82,6 +82,8 @@ function profilePageUrl(
       return `https://substack.com/@${h}`;
     case "tumblr":
       return `https://www.tumblr.com/${h}`;
+    case "savee":
+      return `https://savee.com/${h}/`;
     default:
       return null;
   }

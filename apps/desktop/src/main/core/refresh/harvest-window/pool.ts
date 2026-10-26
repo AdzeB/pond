@@ -23,6 +23,7 @@ const PER_SOURCE_CAP = {
   github: 2,
   substack: 2,
   tumblr: 2,
+  savee: 2,
   web: 2,
   local: 0,
 } satisfies Record<Source, number>;
@@ -55,6 +56,7 @@ const busyBySource = {
   github: 0,
   substack: 0,
   tumblr: 0,
+  savee: 0,
   web: 0,
   local: 0,
 } satisfies Record<Source, number>;

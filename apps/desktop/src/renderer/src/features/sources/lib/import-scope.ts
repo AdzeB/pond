@@ -199,13 +199,17 @@ interface SinceCopy {
 
 /** Sources without publish dates compare the day you saved an item, and can start from today. */
 export function sinceCopy(source: Source): SinceCopy {
-  if (importScopeOptions(source).sinceDate === "saved") {
-    return {
+  const options = importScopeOptions(source);
+  if (options.sinceDate === "saved") {
+    const copy: SinceCopy = {
       title: "Saved Since",
       description: "Skips items you saved before this date.",
       presets: SAVED_SINCE_PRESETS,
-      info: "Dates are read a page of 30 at a time, so up to 30 older items can come in.",
     };
+    if (options.sincePageSize) {
+      copy.info = `Dates are read a page of ${options.sincePageSize} at a time, so up to ${options.sincePageSize} older items can come in.`;
+    }
+    return copy;
   }
   return {
     title: "Posted Since",

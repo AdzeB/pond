@@ -184,6 +184,10 @@ export async function harvestSourceList(
     const { harvestTumblrLikes } = await import("../harvest/tumblr/api");
     return harvestTumblrLikes(args, opts.partition);
   }
+  if (source === "savee") {
+    const { harvestSaveeItems } = await import("../harvest/savee/api");
+    return harvestSaveeItems(args, opts.partition);
+  }
   const target = listUrlForSource(source, args);
   if (!target) {
     return { ok: false, reason: "no_match" };
@@ -404,6 +408,8 @@ function listUrlForSource(
       return null;
     case "tumblr":
       return null;
+    case "savee":
+      return null;
     case "web":
       return null;
     case "local":
@@ -439,6 +445,8 @@ function buildListExpressionFor(
     case "substack":
       return null;
     case "tumblr":
+      return null;
+    case "savee":
       return null;
     case "web":
       return null;

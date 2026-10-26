@@ -26,6 +26,8 @@ export function cookieDomainsForSource(source: Source): string[] {
       return ["substack.com"];
     case "tumblr":
       return ["tumblr.com"];
+    case "savee":
+      return ["savee.com", "savee.it"];
     case "web":
     case "local":
       return [];

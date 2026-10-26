@@ -25,4 +25,5 @@ export const INJECTORS = {
   github,
   substack,
   tumblr: null,
+  savee: null,
 } satisfies Record<ExternalSource, (() => void) | null>;

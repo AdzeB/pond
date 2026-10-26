@@ -7,6 +7,7 @@ import { matches as github } from "./github/matches";
 import { matches as instagram } from "./instagram/matches";
 import { matches as pinterest } from "./pinterest/matches";
 import { matches as reddit } from "./reddit/matches";
+import { matches as savee } from "./savee/matches";
 import { matches as substack } from "./substack/matches";
 import { matches as threads } from "./threads/matches";
 import { matches as tiktok } from "./tiktok/matches";
@@ -34,6 +35,7 @@ export const HOOK_SOURCES = {
   github: { matches: github, likes: [], item: "Repository" },
   substack: { matches: substack, likes: ["substack:like"], item: "Post" },
   tumblr: { matches: tumblr, likes: [], item: "Post" },
+  savee: { matches: savee, likes: [], item: "Item" },
 } as const satisfies Record<ExternalSource, HookSource>;
 
 export const HOOK_SOURCE_IDS: readonly ExternalSource[] = SOURCES.filter(

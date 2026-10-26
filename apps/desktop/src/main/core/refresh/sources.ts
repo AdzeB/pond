@@ -25,6 +25,8 @@ export function homeUrlForSource(source: Source): string {
       return "https://substack.com/sign-in";
     case "tumblr":
       return "https://www.tumblr.com/login";
+    case "savee":
+      return "https://savee.com/login/";
     case "web":
       return "";
     case "local":

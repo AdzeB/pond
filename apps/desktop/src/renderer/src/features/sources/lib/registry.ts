@@ -2,6 +2,7 @@ import {
   IconBrandArena,
   IconBrandCosmos,
   IconBrandGithub,
+  IconBrandSaveePlaceholder,
   IconBrandSubstack,
   IconBrandThreads,
   IconBrandTumblr,
@@ -42,6 +43,7 @@ const SOURCE_LOGOS = {
   github: null,
   substack: null,
   tumblr: null,
+  savee: null,
   web: null,
   local: null,
 } satisfies Record<Source, string | null>;
@@ -59,6 +61,7 @@ const SOURCE_ICONS = {
   github: IconBrandGithub,
   substack: IconBrandSubstack,
   tumblr: IconBrandTumblr,
+  savee: IconBrandSaveePlaceholder,
   web: IconSourceWeb,
   local: IconSourceLocal,
 } satisfies Record<Source, IconComponent | null>;

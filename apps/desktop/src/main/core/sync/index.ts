@@ -60,6 +60,7 @@ const SYNC_WATCHDOG_MS = {
   github: 20 * 60_000,
   substack: 20 * 60_000,
   tumblr: 20 * 60_000,
+  savee: 20 * 60_000,
   web: 20 * 60_000,
   local: 20 * 60_000,
 } satisfies Record<Source, number>;
@@ -77,6 +78,7 @@ const SYNCABLE_SOURCES: readonly Source[] = [
   "github",
   "substack",
   "tumblr",
+  "savee",
 ];
 
 function isSyncableSource(source: Source): boolean {
