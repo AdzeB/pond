@@ -9,6 +9,7 @@ import {
   type FishMcpServerDraft,
   type FishMcpToolAccess,
 } from "../../../../shared/fish-mcp-contracts";
+import { userError } from "../../../../shared/user-error";
 import { deleteSecret, getSecret, setSecret } from "../../../keychain";
 import { renameWithRetry } from "../../../lib/rename-retry";
 
@@ -78,7 +79,7 @@ export function createFishMcpStore(
       const servers = await list();
       const id = input.id ?? newId();
       if (servers.some((s) => s.name === input.name && s.id !== id))
-        throw new Error(`A server named ${input.name} already exists.`);
+        throw userError(`A server named ${input.name} already exists.`);
       const server = FishMcpServerConfig.parse({ ...input, id });
       const previous = await secrets(id);
       const next: Record<string, string> = {};
@@ -107,7 +108,7 @@ export function createFishMcpStore(
     return serial(async () => {
       const servers = await list();
       const server = servers.find((s) => s.id === id);
-      if (!server) throw new Error("That server no longer exists.");
+      if (!server) throw userError("That server no longer exists.");
       const updated = {
         ...server,
         toolAccess: { ...server.toolAccess, [tool]: access },

@@ -4,6 +4,7 @@ import {
   type FishMcpServerStatus,
   FishMcpToolAccess,
 } from "../../../shared/fish-mcp-contracts";
+import { userError } from "../../../shared/user-error";
 import type { FishMcpManager } from "../../core/agent/fish-mcp/client";
 import { fishMcp } from "../../core/agent/fish-mcp/live";
 import {
@@ -39,7 +40,7 @@ export function createFishMcpQueries(
 
   async function statusFor(id: string): Promise<FishMcpServerStatus> {
     const found = (await statuses()).find((s) => s.server.id === id);
-    if (!found) throw new Error("That server no longer exists.");
+    if (!found) throw userError("That server no longer exists.");
     return found;
   }
 
