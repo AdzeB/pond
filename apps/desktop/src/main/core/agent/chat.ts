@@ -1,5 +1,6 @@
 import { agentChats } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
+import log from "electron-log/main.js";
 import { z } from "zod";
 import {
   agentModelOptionsFor,
@@ -32,6 +33,7 @@ import { listFolders } from "../folders";
 import { getPrefs } from "../prefs";
 import type { CompletionInput } from "./complete";
 import { libraryContext } from "./context";
+import { fishMcp } from "./fish-mcp/live";
 import { keyFor, listProviderModels, parseProvider } from "./keys";
 import { catalogModelsForProvider, loadModelCatalog } from "./model-catalog";
 import { appendMessage, fishIdForChat, listMessages } from "./persist";
@@ -61,6 +63,7 @@ const chatDependencies = {
   },
   setFishPresence,
   routineTools,
+  prepareTools: () => fishMcp.ensure(),
   keyFor,
   async completeWithTools(input: CompletionInput) {
     const { completeWithTools } = await import("./complete");
@@ -332,6 +335,10 @@ export async function sendMessage(
             onEvent: (event) => routineEvents.push(event),
           }),
         ];
+    await deps
+      .prepareTools()
+      .catch((error) => log.warn("[pond fish] MCP prepare failed", error));
+    controller.signal.throwIfAborted();
     emit({ type: "activity", activity: "thinking" });
     await deps.completeWithTools({
       threadId: chatId,

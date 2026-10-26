@@ -6,6 +6,7 @@ import log from "electron-log/main.js";
 import { DEFAULT_APP_ICON } from "../shared/app-icons";
 import { IPC, type RecentMenuEntry } from "../shared/constants";
 import type { ShortcutId } from "../shared/shortcuts";
+import { fishMcp } from "./core/agent/fish-mcp/live";
 import { startAutoImport, stopAutoImport } from "./core/auto-import";
 import { captures } from "./core/captures";
 import {
@@ -624,6 +625,11 @@ app.on("before-quit", async (event) => {
     await withDeadline(runtimeControls.closeHttpServer(), SERVER_CLOSE_MS);
   } catch (err) {
     log.warn("[pond] http server close failed", err);
+  }
+  try {
+    await withDeadline(fishMcp.closeAll(), SERVER_CLOSE_MS);
+  } catch (err) {
+    log.warn("[pond] fish MCP close failed", err);
   }
   log.info("[pond] quit prepared");
   quitPrepared = true;
