@@ -27,6 +27,7 @@ interface ChatTestState {
   broadcast: ReturnType<typeof vi.fn<ChatDependencies["broadcast"]>>;
   key: ReturnType<typeof vi.fn<ChatDependencies["keyFor"]>>;
   loadFiles: ReturnType<typeof vi.fn<ChatDependencies["loadLocalAttachments"]>>;
+  prepare: ReturnType<typeof vi.fn<ChatDependencies["prepareTools"]>>;
   read: ReturnType<typeof vi.fn<ToolSpec["execute"]>>;
   history: AssistantMessage[];
   question: AssistantQuestion | undefined;
@@ -57,6 +58,7 @@ const mock: ChatTestState = {
   broadcast: vi.fn<ChatDependencies["broadcast"]>(),
   key: vi.fn<ChatDependencies["keyFor"]>(),
   loadFiles: vi.fn<ChatDependencies["loadLocalAttachments"]>(),
+  prepare: vi.fn<ChatDependencies["prepareTools"]>(async () => {}),
   read: vi.fn<ToolSpec["execute"]>().mockResolvedValue({}),
   history: [],
   question: undefined,
@@ -71,6 +73,7 @@ const dependencies: ChatDependencies = {
   listFolders: async () => [],
   imagesForSaves: async () => [],
   loadLocalAttachments: mock.loadFiles,
+  prepareTools: mock.prepare,
   broadcast: mock.broadcast,
   keyFor: mock.key,
   completeWithTools: mock.complete,
@@ -192,6 +195,17 @@ it("speaks as the chat's fish, follows its instructions, and searches only its s
   });
   expect(mock.presence[0]).toEqual(["librarian", "thinking"]);
   expect(mock.presence.at(-1)).toEqual(["librarian", null]);
+});
+
+it("connects MCP servers before the model runs and replies even when that fails", async () => {
+  mock.prepare.mockRejectedValueOnce(new Error("spawn npx ENOENT"));
+  expect(await sendMessage(request)).toMatchObject({ accepted: true });
+  expect(mock.append).toHaveBeenLastCalledWith(
+    expect.objectContaining({ role: "assistant", content: "Reply" }),
+  );
+  const [prepared] = mock.prepare.mock.invocationCallOrder;
+  const [completed] = mock.complete.mock.invocationCallOrder;
+  expect(prepared).toBeLessThan(completed ?? 0);
 });
 
 it("leaves explicitly attached Saves outside the fish's scope filter", async () => {
