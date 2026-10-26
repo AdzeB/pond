@@ -118,25 +118,6 @@ brew install --cask raphaelsalaja/pond/pond
 The release workflow updates the version and checksums on `main` after both
 macOS artifacts are available.
 
-## Nightly
-
-[`.github/workflows/nightly.yml`](.github/workflows/nightly.yml) publishes a signed, notarized arm64 build of `main` every night as a GitHub prerelease. A scheduled run skips when `main` hasn't changed since the last nightly. Run it from the Actions tab to build now.
-
-The workflow runs the same checks as `macos`, then stamps a version such as `1.0.2-nightly.20261018.42` into `apps/desktop/package.json` without committing it. The version is the next patch, the UTC date, and the run number. [`electron-builder.nightly.yml`](apps/desktop/electron-builder.nightly.yml) extends the stable config and only changes the update feed, so a nightly is the same Pond app with the same data and Library.
-
-**Settings → Preferences → Update Channel** picks the feed:
-
-- **Stable** reads `latest-mac.yml` from `releases/latest`, which never points at a prerelease.
-- **Nightly** reads `nightly-mac.yml` from the newest nightly prerelease.
-
-Until you pick one, the channel follows the installed build, so a nightly DMG from GitHub keeps getting nightlies.
-
-Downgrades are off. Switching back to Stable keeps the current nightly until a newer stable release ships. The next stable patch always sorts after the nightlies built for it.
-
-Nightlies never touch `latest` or the Homebrew cask. The workflow keeps the last 7 and deletes older nightly releases and tags.
-
-Artifacts: `Pond-<version>-arm64.dmg`, `Pond-<version>-arm64.zip`, and `nightly-mac.yml`.
-
 ## Local packaging (without publish)
 
 ```bash
