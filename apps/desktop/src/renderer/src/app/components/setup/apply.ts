@@ -119,16 +119,35 @@ function bundleName(path: string): string {
   );
 }
 
+function libraryChange(
+  choices: SetupChoices,
+  library: LibraryFacts,
+  profile: SetupProfile,
+) {
+  const name = choices.libraryName.trim() || library.name;
+  const moved = choices.libraryLocation !== library.parent;
+  const renamed = profile === "new" && name !== library.name;
+  const kept = profile === "existing" && !(choices.moveLibrary && moved);
+  return { name, moved: moved && !kept, renamed: renamed && !kept };
+}
+
+/** Moving or renaming the Library relaunches Pond into it. */
+export function relaunchesLibrary(
+  choices: SetupChoices,
+  library: LibraryFacts,
+  profile: SetupProfile,
+): boolean {
+  const { moved, renamed } = libraryChange(choices, library, profile);
+  return moved || renamed;
+}
+
 /** Moves or renames the Library when asked; both relaunch Pond into it, so this runs last. */
 async function saveLibrary(
   choices: SetupChoices,
   library: LibraryFacts,
   profile: SetupProfile,
 ): Promise<string> {
-  const name = choices.libraryName.trim() || library.name;
-  const moved = choices.libraryLocation !== library.parent;
-  const renamed = profile === "new" && name !== library.name;
-  if (profile === "existing" && !(choices.moveLibrary && moved)) return "";
+  const { name, moved, renamed } = libraryChange(choices, library, profile);
   if (moved) {
     if (renamed) {
       const identity = await window.pond.query("library.identity.update", {

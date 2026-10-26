@@ -5,6 +5,7 @@ import { ThemeOptions, ThemePreview } from "./appearance";
 import { AssistantOptions, AssistantPreview } from "./assistant";
 import { Customize } from "./customize";
 import { Features } from "./features";
+import { Imports } from "./import";
 import { Library, Links } from "./library";
 import { Mark, Owner } from "./welcome";
 
@@ -92,6 +93,15 @@ const STEPS = {
     },
     primary: { new: "Create Library", existing: "Open Library" },
     Body: Library,
+  },
+  import: {
+    layout: "hero",
+    title: same("Bring Your Saves"),
+    description: same(
+      `Import from Eagle, mymind, your browser, or files on ${THIS_DEVICE}. Imports keep running after you finish, and you can import more from the New menu.`,
+    ),
+    primary: { new: "Start Using Pond", existing: "Done" },
+    Body: Imports,
     Extras: Links,
   },
 } satisfies Record<StepId, StepSpec>;
