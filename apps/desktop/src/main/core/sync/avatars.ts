@@ -86,6 +86,8 @@ function profilePageUrl(
       return `https://savee.com/${h}/`;
     case "behance":
       return `https://www.behance.net/${h}`;
+    case "vimeo":
+      return `https://vimeo.com/${h}`;
     default:
       return null;
   }

@@ -70,6 +70,7 @@ const ALL_SOURCES_ON = {
   tumblr: true,
   savee: true,
   behance: true,
+  vimeo: true,
   web: false,
   local: false,
 } satisfies SourceFlags;

@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { sinceCopy, sinceForPreset } from "./import-scope";
+import {
+  listKindDescription,
+  listKindLabel,
+  sinceCopy,
+  sinceForPreset,
+} from "./import-scope";
+
+describe("listKindLabel", () => {
+  it("names Vimeo's saved list Watch Later", () => {
+    expect(listKindLabel("vimeo", "saved")).toBe("Watch Later");
+    expect(listKindLabel("vimeo", "liked")).toBe("Likes");
+    expect(listKindDescription("vimeo", "saved")).toBe(
+      "Videos you've added to Watch Later on Vimeo.",
+    );
+  });
+});
 
 describe("sinceForPreset", () => {
   const now = new Date(2026, 9, 17, 15, 30);

@@ -181,6 +181,7 @@ export const SOURCE_SYNONYMS = new Map<string, string>([
   ["tumblr", "tumblr.com"],
   ["savee", "savee.com"],
   ["behance", "behance.net"],
+  ["vimeo", "vimeo.com"],
   ["local", "local"],
 ]);
 

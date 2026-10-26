@@ -28,6 +28,7 @@ describe("source create menu", () => {
       "Tumblr",
       "Savee",
       "Behance",
+      "Vimeo",
       "New Watch",
       "Twitter",
       "Instagram",

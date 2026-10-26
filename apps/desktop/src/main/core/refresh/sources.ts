@@ -29,6 +29,8 @@ export function homeUrlForSource(source: Source): string {
       return "https://savee.com/login/";
     case "behance":
       return "https://www.behance.net/";
+    case "vimeo":
+      return "https://vimeo.com/log_in";
     case "web":
       return "";
     case "local":

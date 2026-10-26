@@ -29,6 +29,7 @@ const SOURCE_LIST_KIND_LABELS = new Map<Source, ListKindCopy>([
       subscription: "Subscriptions",
     },
   ],
+  ["vimeo", { saved: "Watch Later", liked: "Likes" }],
 ]);
 
 const SOURCE_LIST_KIND_DESCRIPTIONS = new Map<Source, ListKindCopy>([
@@ -74,6 +75,13 @@ const SOURCE_LIST_KIND_DESCRIPTIONS = new Map<Source, ListKindCopy>([
       liked: "Posts you've liked on Substack.",
       subscription:
         "New posts from publications you subscribe to, from the week you connect onward.",
+    },
+  ],
+  [
+    "vimeo",
+    {
+      saved: "Videos you've added to Watch Later on Vimeo.",
+      liked: "Videos you've liked on Vimeo.",
     },
   ],
 ]);

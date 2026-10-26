@@ -176,6 +176,10 @@ export const CAPTURE_EXPECTATIONS = {
     required: ["title"],
     recommended: ["mediaUrl", "author", "capture.publishedAt"],
   },
+  vimeo: {
+    required: ["title"],
+    recommended: ["author", "capture.publishedAt", "capture.media"],
+  },
   web: {
     required: ["title"],
     recommended: ["description", "mediaUrl"],

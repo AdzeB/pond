@@ -206,6 +206,10 @@ export async function harvestSourceList(
     );
     return harvestBehanceAppreciations(args, opts.partition);
   }
+  if (source === "vimeo") {
+    const { harvestVimeoLists } = await import("../harvest/vimeo/api");
+    return harvestVimeoLists(args, opts.partition);
+  }
   const target = listUrlForSource(source, args);
   if (!target) {
     return { ok: false, reason: "no_match" };
@@ -430,6 +434,8 @@ function listUrlForSource(
       return null;
     case "behance":
       return null;
+    case "vimeo":
+      return null;
     case "web":
       return null;
     case "local":
@@ -469,6 +475,8 @@ function buildListExpressionFor(
     case "savee":
       return null;
     case "behance":
+      return null;
+    case "vimeo":
       return null;
     case "web":
       return null;

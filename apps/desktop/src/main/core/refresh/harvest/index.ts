@@ -16,6 +16,7 @@ import * as threads from "./threads";
 import * as tiktok from "./tiktok";
 import * as tumblr from "./tumblr/item";
 import * as twitter from "./twitter";
+import * as vimeo from "./vimeo/item";
 import * as youtube from "./youtube";
 
 interface Harvester {
@@ -95,6 +96,11 @@ const REGISTRY = {
     buildExpression: behance.buildExpression,
     adapt: behance.adapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("behance", url),
+  },
+  vimeo: {
+    buildExpression: vimeo.buildExpression,
+    adapt: vimeo.adapt,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("vimeo", url),
   },
   web: {
     buildExpression: () => {

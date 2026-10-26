@@ -24,6 +24,7 @@ export const COMBINED_LISTS: ReadonlySet<Source> = new Set([
   "reddit",
   "tiktok",
   "substack",
+  "vimeo",
 ]);
 
 /** Sources that can also import new posts from what you subscribe to, as their own pass. */

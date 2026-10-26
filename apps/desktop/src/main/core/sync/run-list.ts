@@ -62,6 +62,7 @@ export const LIST_HARVEST_SOURCES = new Set<Source>([
   "tumblr",
   "savee",
   "behance",
+  "vimeo",
 ]);
 
 export async function syncListSource(

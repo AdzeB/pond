@@ -137,6 +137,10 @@ export async function probeUserHandle(
     const { probeBehanceHandle } = await import("../harvest/behance/api");
     return probeBehanceHandle(partition ?? PARTITION);
   }
+  if (source === "vimeo") {
+    const { probeVimeoHandle } = await import("../harvest/vimeo/api");
+    return probeVimeoHandle(partition ?? PARTITION);
+  }
   if (source === "tiktok") {
     const { probeTiktokHandle } = await import("../harvest/tiktok/api");
     const viaApi = await probeTiktokHandle(partition ?? PARTITION);
@@ -192,6 +196,7 @@ function probeUrlForSource(source: Source): string {
   if (source === "tumblr") return "https://www.tumblr.com/";
   if (source === "savee") return "https://savee.com/you/";
   if (source === "behance") return "https://www.behance.net/";
+  if (source === "vimeo") return "https://vimeo.com/";
   return homeUrlForSource(source);
 }
 

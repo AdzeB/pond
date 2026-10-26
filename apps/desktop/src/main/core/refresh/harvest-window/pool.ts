@@ -25,6 +25,7 @@ const PER_SOURCE_CAP = {
   tumblr: 2,
   savee: 2,
   behance: 1,
+  vimeo: 1,
   web: 2,
   local: 0,
 } satisfies Record<Source, number>;
@@ -59,6 +60,7 @@ const busyBySource = {
   tumblr: 0,
   savee: 0,
   behance: 0,
+  vimeo: 0,
   web: 0,
   local: 0,
 } satisfies Record<Source, number>;

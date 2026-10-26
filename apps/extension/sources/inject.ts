@@ -27,4 +27,5 @@ export const INJECTORS = {
   tumblr: null,
   savee: null,
   behance: null,
+  vimeo: null,
 } satisfies Record<ExternalSource, (() => void) | null>;

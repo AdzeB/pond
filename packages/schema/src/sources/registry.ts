@@ -181,6 +181,16 @@ export const SOURCE_DESCRIPTORS = [
     /** gallery-dl paces Behance at two to four seconds a request; match its caution. */
     sync: { strategy: "cursor", rate: { minDelayMs: 2500, maxPerWindow: 24 } },
   },
+  {
+    id: "vimeo",
+    label: "Vimeo",
+    hosts: ["vimeo.com"],
+    /** A vanity URL like `vimeo.com/staff/player` carries no id and stays a web save. */
+    urlPatterns: [
+      /^https?:\/\/(?:(?:www|player)\.)?vimeo\.com\/(?:video\/|videos\/|channels\/[^/?#]+\/|groups\/[^/?#]+\/videos\/|(?:album|showcase)\/\d+\/video\/|[^/?#]+\/review\/)?(\d{5,12})(?:\/[0-9a-f]{10})?(?:[/?#]|$)/i,
+    ],
+    sync: { strategy: "cursor" },
+  },
 ] as const satisfies readonly SourceDescriptor[];
 
 export type ExternalSource = (typeof SOURCE_DESCRIPTORS)[number]["id"];
