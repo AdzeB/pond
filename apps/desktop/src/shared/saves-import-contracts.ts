@@ -35,6 +35,12 @@ export interface DuplicateImportCandidate {
 
 export type DuplicateImportChoice = "use-existing" | "keep-both";
 
+export interface DataExportImportCounts extends SavesImportCounts {
+  platforms: string[];
+  /** Sources in the export with no connected Account; their Saves capture once you connect one. */
+  connect: Source[];
+}
+
 export interface EagleImportProgress {
   id: string;
   processed: number;
