@@ -65,6 +65,7 @@ import {
   looksLikeAuthWall,
   looksLikeChallenge,
   navigateWithTimeout,
+  waitPastInterstitial,
 } from "./navigation";
 import { runOnSourcePage } from "./page-run";
 import { leaseWindow } from "./pool";
@@ -187,6 +188,9 @@ export async function harvestSourceList(
   try {
     const navOk = await navigateWithTimeout(lease.win, target, NAV_TIMEOUT_MS);
     if (!navOk) {
+      return { ok: false, reason: "timeout" };
+    }
+    if (!(await waitPastInterstitial(lease.win, 20_000))) {
       return { ok: false, reason: "timeout" };
     }
     const landedUrl = lease.win.webContents.getURL();
