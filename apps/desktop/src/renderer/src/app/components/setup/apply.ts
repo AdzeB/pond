@@ -35,7 +35,7 @@ export async function connectAssistant(choices: SetupChoices): Promise<string> {
     );
     if (group === "cloud" && !key && !connected)
       return "Enter an API key to connect, or choose Not Now.";
-    if (group === "local" && !choices.endpoint.trim())
+    if (group === "local" && provider !== "apple" && !choices.endpoint.trim())
       return "Enter the address of your model server.";
     if (group === "local")
       await savePrefsSection("agent", endpointPatch(choices));

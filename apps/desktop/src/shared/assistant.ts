@@ -244,6 +244,18 @@ export const ASSISTANT_MODELS = [
     capabilities: chat,
   },
   {
+    id: "apple",
+    name: "Apple Intelligence",
+    provider: "Apple",
+    model: "system",
+    local: true,
+    needsKey: false,
+    macOnly: true,
+    setupUrl: "https://support.apple.com/en-us/121115",
+    quality: "custom",
+    capabilities: text,
+  },
+  {
     id: "ollama",
     name: "Llama 3.2",
     provider: "Ollama",
