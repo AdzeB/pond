@@ -105,6 +105,8 @@ export const queryOperationAccess = {
   "library.mergeFrom": "review",
   "library.move": "hidden",
   "library.openInFinder": "read",
+  "extension.safariStatus": "hidden",
+  "extension.openSafari": "hidden",
   "library.pickExisting": "read",
   "library.pickFolder": "read",
   "library.recent": "read",
