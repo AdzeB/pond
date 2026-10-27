@@ -106,6 +106,7 @@ export const queryOperationAccess = {
   "library.move": "hidden",
   "library.openInFinder": "read",
   "extension.safariStatus": "hidden",
+  "extension.openSafariSettings": "hidden",
   "extension.openSafari": "hidden",
   "library.pickExisting": "read",
   "library.pickFolder": "read",

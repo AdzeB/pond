@@ -4,7 +4,10 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { shell } from "electron";
 import log from "electron-log/main.js";
-import type { OkResult } from "../../shared/query-contracts-shared";
+import type {
+  OkResult,
+  OpenSafariResult,
+} from "../../shared/query-contracts-shared";
 
 const execFileAsync = promisify(execFile);
 
@@ -23,9 +26,17 @@ export type SafariExtensionState =
   | "not_registered"
   | "not_bundled";
 
+/**
+ * Safari builds its extension list from the code signature. A Developer ID build is listed
+ * without help; an ad-hoc one is refused unless Safari's "Allow unsigned extensions" is on,
+ * which is why a locally built app appears to have no extension at all.
+ */
+export type SafariExtensionSignature = "developer-id" | "ad-hoc" | "unknown";
+
 export interface SafariExtensionStatus {
   state: SafariExtensionState;
   bundleId: string | null;
+  signature: SafariExtensionSignature;
 }
 
 export interface RegisteredExtension {
@@ -135,25 +146,126 @@ async function registeredExtensions(): Promise<RegisteredExtension[]> {
   }
 }
 
+/**
+ * The output a failed `execFile` captured. Node rejects with an `Error` carrying `stdout`
+ * and `stderr` strings, but the error type does not say so.
+ */
+function captureOf(cause: unknown) {
+  // SAFETY: execFile always attaches both buffers to its rejection; the fallbacks cover a
+  // non-Error throw, and String() keeps either from being undefined.
+  const captured = (cause ?? {}) as { stdout?: unknown; stderr?: unknown };
+  return {
+    stdout: String(captured.stdout ?? ""),
+    stderr: String(captured.stderr ?? ""),
+  };
+}
+
+/** How the appex is signed, which decides whether Safari lists it unaided. */
+async function signatureKind(
+  appexPath: string,
+): Promise<SafariExtensionSignature> {
+  try {
+    const { stdout } = await execFileAsync("codesign", ["-dvv", appexPath]);
+    return stdout.includes("Authority=Developer ID Application")
+      ? "developer-id"
+      : "ad-hoc";
+  } catch (cause) {
+    /** `codesign -d` writes its report to stderr, so a non-zero exit still carries it. */
+    const { stdout, stderr } = captureOf(cause);
+    const report = `${stdout}\n${stderr}`;
+    if (report.includes("Authority=Developer ID Application"))
+      return "developer-id";
+    if (report.includes("Signature=adhoc")) return "ad-hoc";
+    return "unknown";
+  }
+}
+
 export async function safariExtensionStatus(): Promise<SafariExtensionStatus> {
   if (process.platform !== "darwin") {
-    return { state: "not_bundled", bundleId: null };
+    return { state: "not_bundled", bundleId: null, signature: "unknown" };
   }
   const appex = await bundledExtension();
-  if (!appex) return { state: "not_bundled", bundleId: null };
+  if (!appex) {
+    return { state: "not_bundled", bundleId: null, signature: "unknown" };
+  }
+  const signature = await signatureKind(appex.path);
 
   const registered = await registeredExtensions();
   const match = appex.bundleId
     ? registered.find((extension) => extension.id === appex.bundleId)
     : registered.find((extension) => extension.path === appex.path);
-  if (!match) return { state: "not_registered", bundleId: appex.bundleId };
+  if (!match) {
+    return { state: "not_registered", bundleId: appex.bundleId, signature };
+  }
   return {
     state: match.enabled ? "enabled" : "disabled",
     bundleId: appex.bundleId,
+    signature,
   };
 }
 
-/** Opens Safari so the extension can be switched on; there is no public deep link to it. */
+/** Where `build-safari-extension.mjs` puts the settings helper. */
+function settingsHelper(): string {
+  const resources = process.resourcesPath;
+  if (!resources) return "";
+  return join(resources, "bin", "pond-safari-settings");
+}
+
+/**
+ * Opens Safari's settings at Pond's extension.
+ *
+ * `SFSafariApplication.showPreferencesForExtension` is the only supported way in; it is
+ * reached through a small signed helper because Electron cannot call it directly. Safari
+ * refuses the call when it does not list the extension — which is exactly the case a
+ * locally built, ad-hoc signed copy hits — so the failure is reported with the reason
+ * instead of silently opening Safari's start page.
+ */
+export async function openSafariSettings(
+  status: SafariExtensionStatus,
+): Promise<OpenSafariResult> {
+  if (process.platform !== "darwin") {
+    return {
+      ok: false,
+      reason: "unsupported",
+      error: "Safari is only on macOS.",
+    };
+  }
+  if (!status.bundleId) {
+    return {
+      ok: false,
+      reason: "not-bundled",
+      error: "This build does not include the Safari extension.",
+    };
+  }
+
+  const helper = settingsHelper();
+  if (!helper || !existsSync(helper)) {
+    return {
+      ok: false,
+      reason: "helper-missing",
+      error: "This build does not include the Safari settings helper.",
+    };
+  }
+
+  const args = [status.bundleId];
+  try {
+    await execFileAsync(helper, args, { timeout: 15_000 });
+    return { ok: true };
+  } catch (cause) {
+    const { stderr } = captureOf(cause);
+    const detail = stderr.trim();
+    log.warn("[pond safari] settings helper failed", helper, detail, cause);
+    /** An ad-hoc build is refused for the signature reason, so point at that setting. */
+    return {
+      ok: false,
+      reason:
+        status.signature === "ad-hoc" ? "unsigned-build" : "safari-refused",
+      error: detail || "Safari did not open Pond's extension settings.",
+    };
+  }
+}
+
+/** Plain launch, used as the fallback when Safari will not jump to the extension. */
 export async function openSafari(): Promise<OkResult> {
   if (process.platform !== "darwin") {
     return { ok: false, error: "Safari is only available on macOS." };

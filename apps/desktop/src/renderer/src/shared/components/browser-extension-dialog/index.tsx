@@ -22,8 +22,8 @@ const STORES = [
 
 /**
  * Safari has no store page: the extension ships inside Pond.app, so there is nothing to
- * download and no link to follow. Whether it runs is decided by a switch in Safari's own
- * settings, which is why this row reports state instead of offering an install.
+ * download. Whether it runs is decided by a switch in Safari's own settings, which is why
+ * this row reports state and opens Safari instead of offering an install.
  */
 function safariDetail(status: SafariExtensionStatus | null): string {
   switch (status?.state) {
@@ -32,7 +32,9 @@ function safariDetail(status: SafariExtensionStatus | null): string {
     case "disabled":
       return "Installed, but switched off in Safari";
     case "not_registered":
-      return "Open Safari once to finish setting it up";
+      return status.signature === "ad-hoc"
+        ? "Safari ignores unsigned builds"
+        : "Open Safari once to finish setting it up";
     case "not_bundled":
       return "Not included in this build";
     default:
@@ -46,6 +48,14 @@ const SAFARI_STEPS = [
   "Allow it for the sites you save from, or choose Always Allow on Every Website.",
 ];
 
+/** Safari only lists an ad-hoc appex once this is on, and it is off by default. */
+const UNSIGNED_STEPS = [
+  "Open Safari, then Settings and Advanced.",
+  "Turn on Show features for web developers.",
+  "In the Developer tab, turn on Allow unsigned extensions.",
+  "Then turn on Pond in Extensions.",
+];
+
 export function BrowserExtensionDialog({
   open,
   onOpenChange,
@@ -55,6 +65,7 @@ export function BrowserExtensionDialog({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [safari, setSafari] = useState<SafariExtensionStatus | null>(null);
+  const [needsUnsigned, setNeedsUnsigned] = useState(false);
 
   const refreshSafari = useCallback(() => {
     if (!IS_MAC) return;
@@ -67,6 +78,7 @@ export function BrowserExtensionDialog({
   useEffect(() => {
     if (!open) return;
     setSafari(null);
+    setNeedsUnsigned(false);
     refreshSafari();
     /** Enabling happens in Safari; re-read on return so the row updates without a reopen. */
     window.addEventListener("focus", refreshSafari);
@@ -81,16 +93,28 @@ export function BrowserExtensionDialog({
     }
   }
 
-  async function openSafari(): Promise<void> {
+  /**
+   * Jumps straight to Pond in Safari's settings. When Safari refuses — which it does for a
+   * build it does not list — fall back to opening Safari and explain the likely reason
+   * rather than leaving the button looking broken.
+   */
+  async function openSafariSettings(): Promise<void> {
     setError(null);
-    const result = await window.pond.query("extension.openSafari", {});
-    if (!result.ok) setError(result.error);
+    const result = await window.pond.query("extension.openSafariSettings", {});
+    if (result.ok) return;
+    setNeedsUnsigned(result.reason === "unsigned-build");
+    setError(result.error);
+    await window.pond.query("extension.openSafari", {});
   }
 
   const safariState = safari?.state ?? null;
   const safariOff =
     safariState === "disabled" || safariState === "not_registered";
-  const showSafariSteps = safariOff;
+  const steps = needsUnsigned
+    ? UNSIGNED_STEPS
+    : safariOff
+      ? SAFARI_STEPS
+      : null;
 
   return (
     <Dialog.Root
@@ -136,16 +160,16 @@ export function BrowserExtensionDialog({
                   </div>
                   {safariState === "enabled" ||
                   safariState === "not_bundled" ? null : (
-                    <Button onClick={() => void openSafari()}>
-                      Open Safari
+                    <Button onClick={() => void openSafariSettings()}>
+                      Open Safari Settings
                     </Button>
                   )}
                 </li>
               ) : null}
             </ul>
-            {showSafariSteps ? (
+            {steps ? (
               <ol className={styles.steps}>
-                {SAFARI_STEPS.map((step) => (
+                {steps.map((step) => (
                   <li key={step}>{step}</li>
                 ))}
               </ol>

@@ -125,6 +125,10 @@ app.on("web-contents-created", (_, contents) => {
         ),
         `unexpected state: ${result.status.state}`,
       );
+      assert.ok(
+        ["developer-id", "ad-hoc", "unknown"].includes(result.status.signature),
+        `unexpected signature: ${result.status.signature}`,
+      );
       if (process.platform === "darwin") {
         assert.ok(
           result.platform.toLowerCase().includes("mac"),
@@ -137,16 +141,16 @@ app.on("web-contents-created", (_, contents) => {
             "enabled should show a badge",
           );
           assert.ok(
-            !result.buttons.includes("Open Safari"),
-            "enabled should not offer Open Safari",
+            !result.buttons.includes("Open Safari Settings"),
+            "enabled should not offer to open Safari settings",
           );
         } else if (
           result.status.state === "disabled" ||
           result.status.state === "not_registered"
         ) {
           assert.ok(
-            result.buttons.includes("Open Safari"),
-            "off state should offer Open Safari",
+            result.buttons.includes("Open Safari Settings"),
+            "off state should offer to open Safari settings",
           );
           assert.ok(
             result.text.includes("Turn on Pond."),
@@ -157,7 +161,7 @@ app.on("web-contents-created", (_, contents) => {
             result.text.includes("Not included in this build"),
             "missing appex should say so",
           );
-          assert.ok(!result.buttons.includes("Open Safari"));
+          assert.ok(!result.buttons.includes("Open Safari Settings"));
         }
       }
 
