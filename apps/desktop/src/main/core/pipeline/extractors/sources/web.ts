@@ -8,6 +8,7 @@ import metascraperLogoFavicon from "metascraper-logo-favicon";
 import metascraperPublisher from "metascraper-publisher";
 import metascraperTitle from "metascraper-title";
 import metascraperUrl from "metascraper-url";
+import { z } from "zod";
 import {
   browserUserAgent,
   renderPageHtml,
@@ -20,9 +21,104 @@ type WebExtras = {
   faviconUrl?: string;
 };
 
+const AMAZON_HOST = /(^|\.)amazon\.[a-z]{2,3}(\.[a-z]{2})?$/;
+const AMAZON_COVER_SELECTOR = "#landingImage, #imgBlkFront, #ebooksImgBlkFront";
+
+/** Amazon product pages carry no og:image; the item photo or cover lives in the image block. */
+const amazonProductImage: metascraper.Rules = {
+  test: ({ url }) => AMAZON_HOST.test(new URL(url).hostname),
+  image: ({ htmlDom: $, url }) => {
+    const img = $(AMAZON_COVER_SELECTOR).first();
+    return (
+      resolveHttpUrl(img.attr("data-old-hires"), url) ??
+      resolveHttpUrl(img.attr("src"), url)
+    );
+  },
+};
+
+/** A throwing rule makes metascraper skip every later image rule, so bad candidates resolve to undefined. */
+function resolveHttpUrl(
+  src: string | undefined,
+  base: string,
+): string | undefined {
+  const picked = pickString(src);
+  if (!picked) return undefined;
+  try {
+    const resolved = new URL(picked, base);
+    return resolved.protocol === "http:" || resolved.protocol === "https:"
+      ? resolved.href
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const PRODUCT_TYPES = new Set([
+  "Product",
+  "ProductGroup",
+  "IndividualProduct",
+  "Book",
+  "MusicAlbum",
+  "MusicRelease",
+  "Periodical",
+  "PublicationIssue",
+]);
+
+const JsonLdImageRef = z.union([
+  z.string(),
+  z
+    .object({ url: z.string().optional(), contentUrl: z.string().optional() })
+    .transform((image) => image.url ?? image.contentUrl),
+]);
+const JsonLdProduct = z.object({
+  "@type": z.union([z.string(), z.array(z.string())]),
+  image: z.union([JsonLdImageRef, z.array(JsonLdImageRef)]),
+});
+const JsonLdGraph = z.object({ "@graph": z.array(z.json()) });
+
+/** Shops often point og:image at a banner; their JSON-LD product entry names the item photo or cover. */
+const jsonLdProductImage: metascraper.Rules = {
+  image: ({ htmlDom: $, url }) => {
+    for (const script of $('script[type="application/ld+json"]').toArray()) {
+      for (const src of productImagesFromJsonLd($(script).text())) {
+        const resolved = resolveHttpUrl(src, url);
+        if (resolved) return resolved;
+      }
+    }
+    return undefined;
+  },
+};
+
+function productImagesFromJsonLd(text: string): (string | undefined)[] {
+  const parsed = z.json().safeParse(safeJsonParse(text));
+  if (!parsed.success) return [];
+  const roots = Array.isArray(parsed.data) ? parsed.data : [parsed.data];
+  const nodes = roots.flatMap((root) => {
+    const graph = JsonLdGraph.safeParse(root);
+    return graph.success ? [root, ...graph.data["@graph"]] : [root];
+  });
+  return nodes.flatMap((node) => {
+    const product = JsonLdProduct.safeParse(node);
+    if (!product.success) return [];
+    const types = [product.data["@type"]].flat();
+    if (!types.some((type) => PRODUCT_TYPES.has(type))) return [];
+    return [product.data.image].flat();
+  });
+}
+
+function safeJsonParse(text: string) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+}
+
 const scrape = metascraper([
   metascraperTitle(),
   metascraperDescription(),
+  amazonProductImage,
+  jsonLdProductImage,
   metascraperImage(),
   metascraperLogoFavicon(),
   metascraperAuthor(),
