@@ -40,8 +40,7 @@ describe("sensitive-content processing settings", () => {
     expect(fallback).toMatchObject({
       control: "switch",
       title: "Image Processing Fallback",
-      description:
-        "Use the built-in model when the local model can't process an image.",
+      description: "Uses the built-in model if this one fails.",
     });
     expect(fallback?.visible?.(DEFAULT_PREFS.ai)).toBe(false);
     expect(
