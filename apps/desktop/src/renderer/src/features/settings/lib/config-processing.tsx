@@ -174,7 +174,7 @@ export const processingSection = defineSection("ai", {
           title: "Blur Sensitive Thumbnails",
           description: "Blur thumbnails with a likely-sensitive result.",
           keywords: ["sensitive", "nsfw", "blur", "thumbnail"],
-          visible: (v) => v.enableSensitiveContent === true,
+          disabled: (v) => v.enableSensitiveContent !== true,
         },
         {
           control: "switch",
