@@ -33,7 +33,7 @@ const REST_MAX_MS = 3_000;
 /** Battery, a background window, and fair heat stack, but the rest stays bounded so a backlog still finishes. */
 const COOLDOWN_FACTOR_CAP = 4;
 
-export function thermalHot(pace: MachinePace, now: number): boolean {
+function thermalHot(pace: MachinePace, now: number): boolean {
   if (pace.thermal === "serious" || pace.thermal === "critical") return true;
   return pace.reliefAt != null && now - pace.reliefAt < THERMAL_RELIEF_MS;
 }
