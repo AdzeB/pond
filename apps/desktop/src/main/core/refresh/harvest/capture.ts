@@ -159,7 +159,8 @@ async function capturePinterestPin(
   }
   if (
     signedIn &&
-    signed?.reason === "not_found" &&
+    signed?.ok === false &&
+    signed.reason === "not_found" &&
     result.reason === "harvest_failed"
   ) {
     throw new TerminalError("pinterest item no longer exists");
