@@ -6,8 +6,9 @@ import type {
   FishSummary,
 } from "@shared/fish-contracts";
 import { clsx as cn } from "clsx";
-import { useId } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { EYE_PATHS, type FishFace, HEART_PATH, SPECIES_ART } from "./art";
+import { watchOffscreen } from "./offscreen";
 import styles from "./styles.module.css";
 
 export { SPECIES_LABELS } from "./art";
@@ -71,7 +72,14 @@ export function FishMark({
   style,
   ...props
 }: FishMarkProps) {
+  const markRef = useRef<HTMLSpanElement>(null);
+  const [offscreen, setOffscreen] = useState(false);
   const id = useId();
+  useEffect(() => {
+    const node = markRef.current;
+    if (!node) return;
+    return watchOffscreen(node, setOffscreen);
+  }, []);
   const clipId = `fish-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const shadeId = `${clipId}-shade`;
   const art = SPECIES_ART[species];
@@ -90,7 +98,9 @@ export function FishMark({
 
   return (
     <span
+      ref={markRef}
       className={cn(styles.mark, className)}
+      data-offscreen={offscreen || undefined}
       data-species={species}
       data-activity={activity ?? undefined}
       data-mood={mood}

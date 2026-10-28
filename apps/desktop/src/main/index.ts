@@ -22,6 +22,7 @@ import {
 } from "./core/global-shortcuts";
 import { syncLibraryRootMetadata } from "./core/library-ops";
 import { stopLibraryTransfers } from "./core/library-transfers";
+import { startMachinePace } from "./core/machine-pace";
 import { flushGovernor } from "./core/pipeline/rate-governor";
 import {
   resumeReconcilerAfterSuspend,
@@ -272,6 +273,7 @@ app.whenReady().then(async () => {
   }
 
   registerIpc();
+  startMachinePace();
   if (!process.env.POND_SANDBOX) registerAutoUpdater();
   subscribePrefs((prefs) => broadcast(IPC.prefsChanged, prefs));
   registerCombineImagesWindowIpc();

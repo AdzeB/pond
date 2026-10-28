@@ -1026,6 +1026,15 @@
   }
 }
 
+/* Yaw feeds cos() and sin() on every lobe, so freeze the loops offscreen and while the window is idle. */
+.mark[data-offscreen]
+:is(.stage, .fish, .squash, .lobe, .face, .lid, .bulb, .bubble, .heart),
+:global(html[data-motion-paused])
+  .mark
+  :is(.stage, .fish, .squash, .lobe, .face, .lid, .bulb, .bubble, .heart) {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mark[data-face][data-mood]
     :is(
