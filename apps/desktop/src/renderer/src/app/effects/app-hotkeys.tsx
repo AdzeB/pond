@@ -1,6 +1,5 @@
 import { useHotkeySequences, useHotkeys } from "@tanstack/react-hotkeys";
 import { useEffect } from "react";
-import { fishIdFromPath } from "@/features/fish";
 import {
   createNote,
   importPaths,
@@ -27,9 +26,7 @@ import {
   collectionOwnsKeyboard,
   saveOwnsKeyboard,
 } from "@/features/saves/lib/keyboard-owner";
-import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { inspect } from "@/features/saves/state/inspect";
-import { selection } from "@/features/saves/state/selection";
 import { openSources } from "@/features/sources/lib/open";
 import { getAppRouter } from "@/shared/lib/app-router";
 import {
@@ -209,16 +206,7 @@ export function AppHotkeys() {
       },
       {
         hotkey: bindingKeys(shortcuts, "view.inspector"),
-        callback: () => {
-          const pathname = getAppRouter()?.state.location.pathname ?? "";
-          const openId = saveIdFromPath(pathname);
-          if (openId || fishIdFromPath(pathname)) {
-            libraryChrome.toggleDetails();
-            return;
-          }
-          const anchor = selection.getCursor();
-          if (anchor) openSave(anchor);
-        },
+        callback: () => libraryChrome.toggleDetails(),
         options: { ignoreInputs: true },
       },
       {

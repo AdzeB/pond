@@ -250,6 +250,23 @@ describe("app hotkeys in text fields", () => {
     expect(getViewState().layout).toBe(layout);
   });
 
+  it("toggles details on the library without opening a save", async () => {
+    await mount();
+    libraryChrome.setDetailsOpen(true);
+    const open = libraryChrome.getState().detailsOpen;
+    await act(async () => {
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "i",
+          metaKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+    expect(libraryChrome.getState().detailsOpen).toBe(!open);
+  });
+
   it("runs a global shortcut command outside an input", async () => {
     await mount();
     const layout = getViewState().layout;
