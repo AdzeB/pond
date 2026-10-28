@@ -1,16 +1,15 @@
 import { useLayoutEffect } from "react";
-import { eventFromEditable } from "@/shared/lib/editable-target";
-import { matchesShortcut } from "@/shared/lib/shortcuts";
+import { appHotkeyBlockedByEditable } from "@/shared/lib/editable-target";
 
 export function EditableHotkeyGuard() {
   useLayoutEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (!eventFromEditable(event)) return;
-      if (matchesShortcut(event, "library.search")) return;
+      if (!appHotkeyBlockedByEditable(event)) return;
       event.stopImmediatePropagation();
     };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    /** Window capture runs before TanStack hotkeys, which register on window without capture. */
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, []);
   return null;
 }

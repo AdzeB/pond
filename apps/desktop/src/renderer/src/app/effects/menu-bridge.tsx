@@ -70,7 +70,10 @@ import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { openSettings } from "@/shared/lib/open-settings";
 import { usePrefs } from "@/shared/state/prefs";
-import { handleNativeMenuAction } from "./native-menu-actions";
+import {
+  handleNativeMenuAction,
+  shouldIgnoreMenuAction,
+} from "./native-menu-actions";
 
 export function MenuBridge() {
   const [, patchPreferences] = usePrefs("preferences");
@@ -86,7 +89,8 @@ export function MenuBridge() {
 
   useEffect(() => {
     return window.pond.onMenuAction(({ id, source }) => {
-      if (handleNativeMenuAction(id, source)) return;
+      if (shouldIgnoreMenuAction(source, id)) return;
+      if (handleNativeMenuAction(id)) return;
       if (id.startsWith("library.new-blank-")) {
         const kind = id.slice("library.new-blank-".length);
         if (isBlankDocumentKind(kind)) {

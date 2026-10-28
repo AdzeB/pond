@@ -132,6 +132,45 @@ describe("app hotkeys in text fields", () => {
     expect(libraryChrome.getState().sidebarOpen).toBe(open);
   });
 
+  it("does not run layout or view keys from a nested fish composer node", async () => {
+    const field = document.createElement("div");
+    field.setAttribute("role", "textbox");
+    field.tabIndex = 0;
+    const span = document.createElement("span");
+    field.append(span);
+    await mount(field);
+    span.focus();
+    const open = libraryChrome.getState().sidebarOpen;
+    const layout = getViewState().layout;
+    await act(async () => {
+      press("1", span);
+      press("v", span);
+      press("d", span);
+      press("y", span);
+      press("o", span);
+      press("i", span);
+      press("x", span);
+      press("g", span);
+      press("l", span);
+    });
+    expect(libraryChrome.getState().sidebarOpen).toBe(open);
+    expect(getViewState().layout).toBe(layout);
+    expect(attr("popover")).toBe("closed");
+  });
+
+  it("stops typing keys in capture before window bubble listeners", async () => {
+    const input = document.createElement("input");
+    await mount(input);
+    const seen: string[] = [];
+    const onBubble = (event: KeyboardEvent) => {
+      seen.push(event.key);
+    };
+    window.addEventListener("keydown", onBubble);
+    await act(async () => press("[", input));
+    window.removeEventListener("keydown", onBubble);
+    expect(seen).toEqual([]);
+  });
+
   it("opens search from a field", async () => {
     const input = document.createElement("input");
     await mount(input);
