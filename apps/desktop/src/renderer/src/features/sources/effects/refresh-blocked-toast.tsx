@@ -1,7 +1,7 @@
 import { sourceLabel } from "@pond/schema/sources";
 import type { WireSyncAction } from "@shared/wire";
 import { useEffect } from "react";
-import { pool } from "@/features/saves/state/pool";
+import { pool } from "@/features/saves/pool";
 import { startConnect } from "@/features/sources/lib/create";
 import { connectFlow } from "@/features/sources/state/connect-flow";
 import { sourceFlow } from "@/features/sources/state/source-flow";
